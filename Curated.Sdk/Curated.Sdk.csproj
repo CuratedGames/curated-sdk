@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Curated.Sdk</RootNamespace>
+    <AssemblyName>Curated.Sdk</AssemblyName>
+    <Description>Unity-friendly Curated game client: Init, achievements, Cloud Save, friends and presence. Facepunch-style public API; hub transport stays internal.</Description>
+    <Version>1.0.0</Version>
+    <Authors>Curated</Authors>
+    <Company>Curated</Company>
+    <PackageId>Curated.Sdk</PackageId>
+    <PackageTags>curated;games;achievements;cloud-save;friends;unity</PackageTags>
+    <PackageProjectUrl>https://github.com/RikuTheFuffs/curated-sdk</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/RikuTheFuffs/curated-sdk</RepositoryUrl>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryBranch>main</RepositoryBranch>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>
