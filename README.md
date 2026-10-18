@@ -1,9 +1,8 @@
 # Curated.Sdk
 
-Unity-friendly C# client for Curated. One DLL, Curated-style naming, no hub transport types in the public surface.
+Unity-friendly C# client and developer tooling for [Curated](https://curated.games). One managed DLL for games, plus the Content Builder CLI for depot uploads.
 
-**Canonical public repo:** [CuratedGames/curated-sdk](https://github.com/CuratedGames/curated-sdk)  
-This folder (`packages/sdk-csharp` in the Curated monorepo) is a development mirror. GitHub Release assets (Unity zip, DLL, NuGet) publish from **curated-sdk**. Sync with `scripts/push-to-curated-sdk.sh` when you have write access.
+**Repository:** [CuratedGames/curated-sdk](https://github.com/CuratedGames/curated-sdk) — source of truth for the SDK and CLI.
 
 | Feature | Supported |
 |---------|-----------|
@@ -12,11 +11,12 @@ This folder (`packages/sdk-csharp` in the Curated monorepo) is a development mir
 | Achievements unlock | ✔ |
 | Cloud Save (launch + quit) | ✔ |
 | Friends + presence | ✔ |
+| Content Builder CLI | ✔ (`tooling/content-builder`) |
 | Curated SDK License | ✔ (see LICENSE.md) |
 
-## Getting started
+## Getting started (SDK)
 
-Download the Unity zip from [curated-sdk Releases](https://github.com/CuratedGames/curated-sdk/releases) and drop `Curated.Sdk.dll` into `Assets/Plugins/Curated.Sdk/`. Initialize once with your Curated app id and the session token from the Curated launcher:
+Download the Unity zip from [Releases](https://github.com/CuratedGames/curated-sdk/releases) and drop `Curated.Sdk.dll` into `Assets/Plugins/Curated.Sdk/`. Initialize once with your Curated app id and the session token from the Curated launcher:
 
 ```csharp
 using Curated.Sdk;
@@ -36,6 +36,20 @@ When the game is closing:
 ```csharp
 CuratedClient.Shutdown();
 ```
+
+## Content Builder CLI
+
+Windows-first tool to upload depot builds for apps you own:
+
+```bat
+cd tooling\content-builder
+cargo build --release
+curated-content-builder.exe login --login you@studio.com --password "…"
+curated-content-builder.exe list-depots --app-id 1000
+curated-content-builder.exe upload --app-id 1000 --depot-key content --content C:\game\content --version 1.2.3
+```
+
+See [tooling/content-builder/README.md](tooling/content-builder/README.md) and [Agents.md](Agents.md).
 
 ## Achievements
 
@@ -76,6 +90,8 @@ await Presence.HeartbeatAsync();
 dotnet test Curated.Sdk.sln --configuration Release
 dotnet pack Curated.Sdk/Curated.Sdk.csproj --configuration Release -o artifacts/nuget
 bash scripts/pack-unity-zip.sh
+
+cd tooling/content-builder && cargo test && cargo build --release
 ```
 
 ## Public API surface

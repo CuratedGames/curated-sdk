@@ -1,4 +1,4 @@
-// Curated-style entry point: Init once, then use Achievements / Cloud / Friends.
+// Entry point: Init once, then use Achievements / Cloud / Friends.
 
 using System;
 using Curated.Sdk.Internal;

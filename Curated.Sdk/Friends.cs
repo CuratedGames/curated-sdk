@@ -6,7 +6,7 @@ using Curated.Sdk.Internal;
 
 namespace Curated.Sdk;
 
-/// <summary>Friends list and requests (Curated-style helpers over Curated social).</summary>
+/// <summary>Friends list and requests (helpers over Curated social).</summary>
 public static class Friends
 {
     /// <summary>Accepted friends, with presence when available.</summary>

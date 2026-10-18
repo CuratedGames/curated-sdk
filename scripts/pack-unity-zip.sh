@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Build Release Curated.Sdk.dll and zip it for Unity Plugins drop-in.
-# Works from the monorepo (packages/sdk-csharp) or a dedicated SDK repo root.
 set -euo pipefail
 
 SDK_DIR="$(cd "$(dirname "$0")/.." && pwd)"
