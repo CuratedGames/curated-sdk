@@ -1,4 +1,4 @@
-# Canonical release workflow for https://github.com/CuratedGames/curated-sdk
+# Release workflow for this repository (SDK + Content Builder artifacts)
 name: Release Curated.Sdk
 
 on:

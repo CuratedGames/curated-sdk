@@ -2,8 +2,6 @@
 
 Guide for coding agents and developers integrating a game with Curated.
 
-**Source of truth:** [github.com/CuratedGames/curated-sdk](https://github.com/CuratedGames/curated-sdk)
-
 | Piece | Path / download |
 |-------|-----------------|
 | Game SDK (C# DLL) | `Curated.Sdk/` — Releases ship Unity zip + NuGet + DLL |
@@ -16,7 +14,7 @@ Guide for coding agents and developers integrating a game with Curated.
 
 ### Download
 
-1. Open [curated-sdk Releases](https://github.com/CuratedGames/curated-sdk/releases).
+1. Open this repository's Releases.
 2. Download `Curated.Sdk.*.unity.zip` (or the stable `Curated.Sdk.unity.zip`).
 3. Extract `Curated.Sdk.dll` into `Assets/Plugins/Curated.Sdk/`.
 
@@ -99,7 +97,7 @@ cd tooling\content-builder
 cargo build --release
 ```
 
-Or take the Windows artifact from [Releases](https://github.com/CuratedGames/curated-sdk/releases) when published.
+Or take the Windows artifact from this repository's Releases when published.
 
 ### Login (email or username + password)
 

@@ -2,7 +2,7 @@
 
 Windows-first CLI to upload game files into a **depot** for any app you own, including drafts and titles still in review. Sign in once, list depots, pack a content folder, upload, and register the build.
 
-Canonical home: [CuratedGames/curated-sdk](https://github.com/CuratedGames/curated-sdk) under `tooling/content-builder`.
+Lives in `tooling/content-builder` in this repository.
 
 Codesign of this CLI is deferred; unsigned builds are fine for developers.
 
@@ -22,7 +22,7 @@ cargo build --release
 
 Binary: `target\release\curated-content-builder.exe`
 
-Prebuilt Windows binaries ship on [curated-sdk Releases](https://github.com/CuratedGames/curated-sdk/releases) when CI publishes them.
+Prebuilt Windows binaries ship on this repository's Releases when CI publishes them.
 
 Cross-compile from Linux/macOS (optional):
 
