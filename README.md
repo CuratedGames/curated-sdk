@@ -2,8 +2,6 @@
 
 Unity-friendly C# client and developer tooling for [Curated](https://curated.games). One managed DLL for games, plus the Content Builder CLI for depot uploads.
 
-**Repository:** [RikuTheFuffs/curated-sdk](https://github.com/RikuTheFuffs/curated-sdk) — source of truth for the SDK and CLI.
-
 | Feature | Supported |
 |---------|-----------|
 | Unity / .NET | ✔ |
@@ -16,7 +14,7 @@ Unity-friendly C# client and developer tooling for [Curated](https://curated.gam
 
 ## Getting started (SDK)
 
-Download the Unity zip from [Releases](https://github.com/RikuTheFuffs/curated-sdk/releases) and drop `Curated.Sdk.dll` into `Assets/Plugins/Curated.Sdk/`. Initialize once with your Curated app id and the session token from the Curated launcher:
+Download the Unity zip from this repository's Releases and drop `Curated.Sdk.dll` into `Assets/Plugins/Curated.Sdk/`. Initialize once with your Curated app id and the session token from the Curated launcher:
 
 ```csharp
 using Curated.Sdk;
