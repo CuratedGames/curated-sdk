@@ -1,0 +1,20 @@
+# Curated content builder script.
+# Paths are relative to this file unless absolute.
+
+app_id = 1000
+desc = "This is a simple build script"
+content_root = "../content"
+build_output = "../output"
+version = "1.0.0"
+
+# Target depot by key (from admin → Packages) or by UUID:
+depot_key = "content"
+# depot_id = "00000000-0000-0000-0000-000000000000"
+
+filename = "depot.zip"
+
+[[depots]]
+depot_key = "content"
+local_path = "*"
+depot_path = "."
+recursive = true

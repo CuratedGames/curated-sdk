@@ -1,0 +1,3 @@
+# Match apps/api and apps/launcher (Cargo.lock / transitive crates need rustc ≥ 1.89).
+[toolchain]
+channel = "1.89.0"

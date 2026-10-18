@@ -1,5 +1,4 @@
 # Canonical release workflow for https://github.com/RikuTheFuffs/curated-sdk
-# When this folder is the repo root (or mirrored there), Releases publish on main.
 name: Release Curated.Sdk
 
 on:
@@ -8,10 +7,12 @@ on:
     paths:
       - "Curated.Sdk/**"
       - "Curated.Sdk.Tests/**"
+      - "tooling/content-builder/**"
       - "scripts/**"
       - "Curated.Sdk.sln"
       - "LICENSE.md"
       - "README.md"
+      - "Agents.md"
       - ".github/workflows/release.yml"
   workflow_dispatch:
 
@@ -19,8 +20,10 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  sdk:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.pack.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -45,24 +48,97 @@ jobs:
             "${RUNNER_TEMP}/sdk-release/"
           cp "${RUNNER_TEMP}/sdk-unity/publish/Curated.Sdk.dll" \
             "${RUNNER_TEMP}/sdk-release/Curated.Sdk.dll"
+      - name: Upload SDK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-release
+          path: ${{ runner.temp }}/sdk-release/*
+
+  cli-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install 1.89.0 --profile minimal
+          rustup default 1.89.0
+      - name: Test CLI
+        working-directory: tooling/content-builder
+        run: cargo test
+      - name: Build Linux release
+        working-directory: tooling/content-builder
+        run: |
+          cargo build --release
+          mkdir -p "${RUNNER_TEMP}/cli-linux"
+          cp target/release/curated-content-builder \
+            "${RUNNER_TEMP}/cli-linux/curated-content-builder-linux-x64"
+      - name: Upload CLI Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-linux
+          path: ${{ runner.temp }}/cli-linux/*
+
+  cli-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install 1.89.0 --profile minimal
+          rustup default 1.89.0
+      - name: Build Windows release
+        working-directory: tooling/content-builder
+        run: |
+          cargo build --release
+          New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/cli-windows" | Out-Null
+          Copy-Item target/release/curated-content-builder.exe `
+            "$env:RUNNER_TEMP/cli-windows/curated-content-builder-windows-x64.exe"
+      - name: Upload CLI Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-windows
+          path: ${{ runner.temp }}/cli-windows/*
+
+  release:
+    needs: [sdk, cli-linux, cli-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download SDK artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: sdk-release
+          path: release-assets
+      - name: Download CLI Linux
+        uses: actions/download-artifact@v4
+        with:
+          name: cli-linux
+          path: release-assets
+      - name: Download CLI Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: cli-windows
+          path: release-assets
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.pack.outputs.version }}
-          name: Curated.Sdk ${{ steps.pack.outputs.version }}
+          tag_name: v${{ needs.sdk.outputs.version }}
+          name: Curated.Sdk ${{ needs.sdk.outputs.version }}
           body: |
-            **Curated.Sdk** ${{ steps.pack.outputs.version }} — Unity-friendly DLL + NuGet.
+            **Curated.Sdk** ${{ needs.sdk.outputs.version }} — Unity-friendly DLL + NuGet + Content Builder CLI.
 
-            Facepunch-style public API: `CuratedClient.Init`, achievements, Cloud Save, friends/presence.
-            Drop `Curated.Sdk.dll` from the `.unity.zip` into `Assets/Plugins/Curated.Sdk/`.
+            - Drop `Curated.Sdk.dll` from the `.unity.zip` into `Assets/Plugins/Curated.Sdk/`.
+            - CLI: `curated-content-builder-windows-x64.exe` (login, list-depots, upload). See Agents.md.
 
             License: see LICENSE.md (Curated SDK License).
           files: |
-            ${{ runner.temp }}/sdk-release/Curated.Sdk.${{ steps.pack.outputs.version }}.nupkg
-            ${{ runner.temp }}/sdk-release/Curated.Sdk.${{ steps.pack.outputs.version }}.snupkg
-            ${{ runner.temp }}/sdk-release/Curated.Sdk.nupkg
-            ${{ runner.temp }}/sdk-release/Curated.Sdk.${{ steps.pack.outputs.version }}.unity.zip
-            ${{ runner.temp }}/sdk-release/Curated.Sdk.unity.zip
-            ${{ runner.temp }}/sdk-release/Curated.Sdk.dll
+            release-assets/Curated.Sdk.${{ needs.sdk.outputs.version }}.nupkg
+            release-assets/Curated.Sdk.${{ needs.sdk.outputs.version }}.snupkg
+            release-assets/Curated.Sdk.nupkg
+            release-assets/Curated.Sdk.${{ needs.sdk.outputs.version }}.unity.zip
+            release-assets/Curated.Sdk.unity.zip
+            release-assets/Curated.Sdk.dll
+            release-assets/curated-content-builder-linux-x64
+            release-assets/curated-content-builder-windows-x64.exe
           fail_on_unmatched_files: true
           make_latest: true

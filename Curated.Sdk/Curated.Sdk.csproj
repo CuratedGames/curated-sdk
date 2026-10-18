@@ -6,8 +6,8 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Curated.Sdk</RootNamespace>
     <AssemblyName>Curated.Sdk</AssemblyName>
-    <Description>Unity-friendly Curated game client: Init, achievements, Cloud Save, friends and presence. Facepunch-style public API; hub transport stays internal.</Description>
-    <Version>1.0.0</Version>
+    <Description>Unity-friendly Curated game client: Init, achievements, Cloud Save, friends and presence. Hub transport stays internal.</Description>
+    <Version>1.0.1</Version>
     <Authors>Curated</Authors>
     <Company>Curated</Company>
     <PackageId>Curated.Sdk</PackageId>
