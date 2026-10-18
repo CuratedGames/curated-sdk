@@ -1,0 +1,68 @@
+# Canonical release workflow for https://github.com/CuratedGames/curated-sdk
+# When this folder is the repo root (or mirrored there), Releases publish on main.
+name: Release Curated.Sdk
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Curated.Sdk/**"
+      - "Curated.Sdk.Tests/**"
+      - "scripts/**"
+      - "Curated.Sdk.sln"
+      - "LICENSE.md"
+      - "README.md"
+      - ".github/workflows/release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Test
+        run: dotnet test Curated.Sdk.sln --configuration Release
+      - name: Pack assets
+        id: pack
+        run: |
+          VERSION="$(grep -oP '(?<=<Version>)[^<]+' Curated.Sdk/Curated.Sdk.csproj | head -1)"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          mkdir -p "${RUNNER_TEMP}/sdk-release"
+          dotnet pack Curated.Sdk/Curated.Sdk.csproj --configuration Release \
+            -o "${RUNNER_TEMP}/sdk-release"
+          bash scripts/pack-unity-zip.sh "${RUNNER_TEMP}/sdk-unity"
+          cp "${RUNNER_TEMP}/sdk-release/Curated.Sdk.${VERSION}.nupkg" \
+            "${RUNNER_TEMP}/sdk-release/Curated.Sdk.nupkg"
+          cp "${RUNNER_TEMP}/sdk-unity/Curated.Sdk.${VERSION}.unity.zip" \
+            "${RUNNER_TEMP}/sdk-release/"
+          cp "${RUNNER_TEMP}/sdk-unity/Curated.Sdk.unity.zip" \
+            "${RUNNER_TEMP}/sdk-release/"
+          cp "${RUNNER_TEMP}/sdk-unity/publish/Curated.Sdk.dll" \
+            "${RUNNER_TEMP}/sdk-release/Curated.Sdk.dll"
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.pack.outputs.version }}
+          name: Curated.Sdk ${{ steps.pack.outputs.version }}
+          body: |
+            **Curated.Sdk** ${{ steps.pack.outputs.version }} — Unity-friendly DLL + NuGet.
+
+            Curated-style public API: `CuratedClient.Init`, achievements, Cloud Save, friends/presence.
+            Drop `Curated.Sdk.dll` from the `.unity.zip` into `Assets/Plugins/Curated.Sdk/`.
+
+            License: see LICENSE.md (Curated SDK License).
+          files: |
+            ${{ runner.temp }}/sdk-release/Curated.Sdk.${{ steps.pack.outputs.version }}.nupkg
+            ${{ runner.temp }}/sdk-release/Curated.Sdk.${{ steps.pack.outputs.version }}.snupkg
+            ${{ runner.temp }}/sdk-release/Curated.Sdk.nupkg
+            ${{ runner.temp }}/sdk-release/Curated.Sdk.${{ steps.pack.outputs.version }}.unity.zip
+            ${{ runner.temp }}/sdk-release/Curated.Sdk.unity.zip
+            ${{ runner.temp }}/sdk-release/Curated.Sdk.dll
+          fail_on_unmatched_files: true
+          make_latest: true
