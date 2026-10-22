@@ -5,8 +5,10 @@ info:
   description: |
     The subset of the Curated API that games call at runtime. Every engine binding talks to
     these operations only. Authenticate with the `CURATED_SESSION_TOKEN` the launcher sets on
-    the game process (see ../launch-contract.md). Fields not listed here may appear in
-    responses; bindings must ignore unknown fields.
+    the game process (see ../launch-contract.md). That token is scoped to the launched app:
+    it works only on these operations, returns 403 on another app's routes, and 401 on every
+    other Curated endpoint. Fields not listed here may appear in responses; bindings must
+    ignore unknown fields.
 servers:
   - url: https://api.curated.games
     description: Production
@@ -45,7 +47,7 @@ paths:
       description: |
         Step 2 of the startup sequence. The player owns the game when an item's `app_id` equals
         the game's app id. Only active entitlements are returned, so refunded, resold, or revoked
-        copies are absent.
+        copies are absent. With a game-scoped token the array holds at most this app's entry.
       responses:
         "200":
           description: Active entitlements

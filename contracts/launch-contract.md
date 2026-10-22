@@ -25,7 +25,7 @@ launcher.
 | `CURATED_LAUNCHER` | yes | `1` | Marker: the game was started by the Curated launcher. |
 | `CURATED_CONTRACT_VERSION` | yes | `1` | Contract version the launcher speaks. |
 | `CURATED_APP_ID` | yes | `1002` | Curated app id the player launched. |
-| `CURATED_SESSION_TOKEN` | yes | `9f2c...` | Opaque bearer token for the signed-in player. Secret. |
+| `CURATED_SESSION_TOKEN` | yes | `9f2c...` | Opaque bearer token for the signed-in player, scoped to this game (see [Token scope](#token-scope)). Secret. |
 | `CURATED_API_BASE` | no | `https://api.curated.games` | API origin. Use the default when unset or blank. |
 | `CURATED_USER_ID` | no | `0b4c...-uuid` | Player id hint. Authoritative value comes from the session call. |
 | `CURATED_USERNAME` | no | `paolo` | Player display name hint. |
@@ -47,6 +47,19 @@ Rules for bindings:
 6. Only send the token to `CURATED_API_BASE` (or the default). Never log it, never persist it,
    never pass it to third-party services or child processes.
 
+### Token scope
+
+The launcher never hands a game the player's account session. On each Play it requests a token
+scoped to the launched app. That token:
+
+- Works only on the game-facing operations in the OpenAPI file, and only for this app. Calls for
+  another app return `403`; every other Curated endpoint (store, cart, wallet, account settings)
+  returns `401`.
+- Expires after at most 12 hours, and immediately when the player signs out of the launcher.
+  Long sessions should treat a `401` as `session_invalid` and ask the player to relaunch.
+
+Bindings need no special handling: the same variable, endpoints, and error codes apply.
+
 ### Command-line arguments
 
 Players can add their own launch options per game in the launcher (Library, game, Properties,
@@ -58,8 +71,9 @@ the command line, so games can log their arguments safely.
 
 Set the same variables in your IDE or shell to run a development build against Curated. Use a
 session token from your own signed-in account (for example the `token` that
-`curated-content-builder login` caches in `%USERPROFILE%\.curated\credentials.json`); it behaves
-exactly like a launcher session. Your account needs an entitlement for the app.
+`curated-content-builder login` caches in `%USERPROFILE%\.curated\credentials.json`). Game-facing
+operations accept it the same way as a launcher-issued game token, but it is not limited to one
+game, so keep it out of builds you share. Your account needs an entitlement for the app.
 
 ## 2. Game to Curated: authentication
 
@@ -74,8 +88,8 @@ Authorization: Bearer {CURATED_SESSION_TOKEN}
 | `401` | `session_invalid`. The session expired or the player signed out. Ask the player to relaunch from Curated. |
 | other | `hub_error` (5xx) or `network_error` (no response). Retry with backoff. |
 
-The response also contains account fields (for example `email`) that games must ignore. Bindings
-expose only `user_id` and `username`.
+The response also contains account fields (for example `email`, which is empty for game-scoped
+tokens) that games must ignore. Bindings expose only `user_id` and `username`.
 
 ## 3. Game to Curated: entitlement
 
@@ -84,8 +98,9 @@ GET {api_base}/library
 Authorization: Bearer {CURATED_SESSION_TOKEN}
 ```
 
-The body is an array of the player's **active** entitlements. The player owns the game when an
-item's `app_id` equals the game's app id. Bindings report:
+The body is an array of the player's **active** entitlements. With a game-scoped token it holds at
+most the entry for this app; with a development account token it holds every owned game. Either
+way, the player owns the game when an item's `app_id` equals the game's app id. Bindings report:
 
 | Field | Source |
 |-------|--------|
@@ -125,7 +140,7 @@ All bindings use these exact strings so support logs read the same across engine
 Achievements, Cloud Save, friends, and presence use the same bearer token and are listed in the
 OpenAPI file. They all require an active entitlement for the app on the server side, so a binding
 that skips the entitlement check still cannot unlock achievements for players who do not own the
-game.
+game. A game-scoped token gets `403` on another app's routes.
 
 ## 7. Dedicated servers
 
