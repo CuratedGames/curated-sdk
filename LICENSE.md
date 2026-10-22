@@ -1,9 +1,14 @@
 # Curated SDK License
 
-Copyright (c) Curated. All rights reserved.
+Copyright (c) Margherita Roncone. All rights reserved. Licensed to Fatum Games SL.
 
-These license terms are an agreement between you ("Licensee") and Curated for the
-Curated software development kit and redistributable client libraries (the "SDK").
+Curated Games is operated by Fatum Games SL (Business ID: B21832985), Calle Mediodia 7,
+35015, Las Palmas De Gran Canaria, Las Palmas, Spain, under license from Margherita
+Roncone. Support: support@curated.games.
+
+These license terms are an agreement between you ("Licensee") and Fatum Games SL
+("Curated") for the Curated software development kit and redistributable client
+libraries (the "SDK").
 Please read them before downloading or using the SDK. By downloading, installing,
 or using the SDK, you agree to these terms. If you do not agree, do not download
 or use the SDK.
@@ -77,15 +82,16 @@ store, display, or transmit it to any other party or service.
 
 ## 5. Trademarks and relationship
 
-This license does not grant any right to use Curated names, logos, or trademarks
-except as needed to describe factual compatibility (for example, "supports Curated").
+The Curated and Curated Games names, logos, and trademarks are the property of Margherita
+Roncone and are licensed to Fatum Games SL. This license does not grant any right to use
+them except as needed to describe factual compatibility (for example, "supports Curated").
 Licensee will not suggest that Curated sponsors, endorses, or partners with
 Licensee Software unless Curated has agreed in writing.
 
 ## 6. Ownership
 
-The SDK is licensed, not sold. Curated and its licensors retain all title and
-ownership in the SDK and all copies. Licensee retains all rights in Licensee
+The SDK is licensed, not sold. Margherita Roncone, Fatum Games SL, and their licensors
+retain all title and ownership in the SDK and all copies. Licensee retains all rights in Licensee
 Software, excluding the SDK itself.
 
 ## 7. Updates
