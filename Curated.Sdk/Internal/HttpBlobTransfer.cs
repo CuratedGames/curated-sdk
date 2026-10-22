@@ -30,9 +30,9 @@ internal sealed class HttpBlobTransfer : IBlobTransfer, IDisposable
         long contentLength,
         CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        Guard.NotDisposed(_disposed, this);
         ValidateUrl(signedUrl);
-        ArgumentNullException.ThrowIfNull(content);
+        Guard.NotNull(content, nameof(content));
 
         using var request = new HttpRequestMessage(HttpMethod.Put, signedUrl);
         var streamContent = new StreamContent(content);
@@ -47,7 +47,7 @@ internal sealed class HttpBlobTransfer : IBlobTransfer, IDisposable
         using var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var body = await Compat.ReadBodyAsync(response.Content, cancellationToken).ConfigureAwait(false);
             throw new CuratedException(response.StatusCode, body, "Cloud Save upload failed");
         }
     }
@@ -57,9 +57,9 @@ internal sealed class HttpBlobTransfer : IBlobTransfer, IDisposable
         Stream destination,
         CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        Guard.NotDisposed(_disposed, this);
         ValidateUrl(signedUrl);
-        ArgumentNullException.ThrowIfNull(destination);
+        Guard.NotNull(destination, nameof(destination));
 
         using var response = await _http.GetAsync(
             signedUrl,
@@ -67,11 +67,11 @@ internal sealed class HttpBlobTransfer : IBlobTransfer, IDisposable
             cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var body = await Compat.ReadBodyAsync(response.Content, cancellationToken).ConfigureAwait(false);
             throw new CuratedException(response.StatusCode, body, "Cloud Save download failed");
         }
 
-        await response.Content.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
+        await Compat.CopyBodyToAsync(response.Content, destination, cancellationToken).ConfigureAwait(false);
     }
 
     public void Dispose()

@@ -1,0 +1,392 @@
+openapi: 3.1.0
+info:
+  title: Curated game SDK API (launch contract v1)
+  version: 1.0.0
+  description: |
+    The subset of the Curated API that games call at runtime. Every engine binding talks to
+    these operations only. Authenticate with the `CURATED_SESSION_TOKEN` the launcher sets on
+    the game process (see ../launch-contract.md). That token is scoped to the launched app:
+    it works only on these operations, returns 403 on another app's routes, and 401 on every
+    other Curated endpoint. Fields not listed here may appear in responses; bindings must
+    ignore unknown fields.
+servers:
+  - url: https://api.curated.games
+    description: Production
+security:
+  - launcherSession: []
+tags:
+  - name: auth
+  - name: entitlements
+  - name: achievements
+  - name: cloud-save
+  - name: social
+paths:
+  /auth/me:
+    get:
+      operationId: getSessionUser
+      tags: [auth]
+      summary: Validate the launcher session and identify the player
+      description: |
+        Step 1 of the startup sequence. A 401 means the session expired or the player signed
+        out (`session_invalid`). The response includes account fields such as `email`; games
+        must not read, store, or display them.
+      responses:
+        "200":
+          description: Signed-in player
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /library:
+    get:
+      operationId: listEntitlements
+      tags: [entitlements]
+      summary: Active entitlements of the signed-in player
+      description: |
+        Step 2 of the startup sequence. The player owns the game when an item's `app_id` equals
+        the game's app id. Only active entitlements are returned, so refunded, resold, or revoked
+        copies are absent. With a game-scoped token the array holds at most this app's entry.
+      responses:
+        "200":
+          description: Active entitlements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Entitlement"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /games/app/{app_id}/achievements/progress:
+    get:
+      operationId: getAchievementProgress
+      tags: [achievements]
+      summary: Achievement definitions and unlock state for the player
+      parameters:
+        - $ref: "#/components/parameters/AppId"
+      responses:
+        "200":
+          description: Progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AchievementProgress"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotEntitled"
+  /games/app/{app_id}/achievements/{api_name}/unlock:
+    post:
+      operationId: unlockAchievement
+      tags: [achievements]
+      summary: Unlock an achievement (idempotent)
+      parameters:
+        - $ref: "#/components/parameters/AppId"
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        "200":
+          description: Unlock result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnlockResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotEntitled"
+        "404":
+          description: Achievement not defined for this app
+  /games/app/{app_id}/cloud-save/manifest:
+    get:
+      operationId: getCloudSaveManifest
+      tags: [cloud-save]
+      summary: Files currently stored for the player
+      parameters:
+        - $ref: "#/components/parameters/AppId"
+      responses:
+        "200":
+          description: Manifest
+        "403":
+          $ref: "#/components/responses/NotEntitled"
+  /games/app/{app_id}/cloud-save/sync:
+    post:
+      operationId: syncCloudSave
+      tags: [cloud-save]
+      summary: Plan an upload (quit) or download (launch); returns signed transfer URLs
+      parameters:
+        - $ref: "#/components/parameters/AppId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CloudSaveSyncRequest"
+      responses:
+        "200":
+          description: Transfer plan. Conflict policy is last write wins.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CloudSaveSyncPlan"
+        "403":
+          $ref: "#/components/responses/NotEntitled"
+  /friends:
+    get:
+      operationId: listFriends
+      tags: [social]
+      summary: Accepted friends
+      responses:
+        "200":
+          description: Friends
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Friend"
+  /friends/presence:
+    get:
+      operationId: listFriendsPresence
+      tags: [social]
+      summary: Presence of accepted friends
+      responses:
+        "200":
+          description: Presence rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Presence"
+  /presence:
+    put:
+      operationId: setPresence
+      tags: [social]
+      summary: Set the player's presence and rich text
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetPresenceRequest"
+      responses:
+        "200":
+          description: Updated presence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Presence"
+  /presence/heartbeat:
+    post:
+      operationId: presenceHeartbeat
+      tags: [social]
+      summary: Keep the player's presence fresh while the game runs
+      responses:
+        "200":
+          description: OK
+components:
+  securitySchemes:
+    launcherSession:
+      type: http
+      scheme: bearer
+      description: Value of `CURATED_SESSION_TOKEN`. Secret; never log or persist it.
+  parameters:
+    AppId:
+      name: app_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  responses:
+    Unauthorized:
+      description: Session missing, expired, or signed out (`session_invalid`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotEntitled:
+      description: The player has no active entitlement for this app
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    SessionUser:
+      type: object
+      required: [user_id, username]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        username:
+          type: string
+    Entitlement:
+      type: object
+      required: [app_id, source, acquired_at]
+      properties:
+        entitlement_id:
+          type: string
+          format: uuid
+        app_id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        source:
+          type: string
+          enum: [primary, resale, grant, bonus]
+        acquired_at:
+          type: string
+          format: date-time
+    AchievementProgress:
+      type: object
+      required: [app_id, achievements]
+      properties:
+        app_id:
+          type: integer
+          format: int64
+        unlocked:
+          type: integer
+        total:
+          type: integer
+        achievements:
+          type: array
+          items:
+            $ref: "#/components/schemas/AchievementState"
+    AchievementState:
+      type: object
+      required: [api_name, unlocked]
+      properties:
+        api_name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        unlocked:
+          type: boolean
+        unlocked_at:
+          type: [string, "null"]
+          format: date-time
+        source:
+          type: [string, "null"]
+    UnlockResult:
+      type: object
+      required: [app_id, api_name, newly_unlocked]
+      properties:
+        app_id:
+          type: integer
+          format: int64
+        api_name:
+          type: string
+        achievement_id:
+          type: string
+          format: uuid
+        newly_unlocked:
+          type: boolean
+        source:
+          type: string
+    CloudSaveSyncRequest:
+      type: object
+      required: [direction, files]
+      properties:
+        direction:
+          type: string
+          enum: [upload, download]
+        files:
+          type: array
+          items:
+            type: object
+            required: [relative_path, content_hash, size_bytes]
+            properties:
+              relative_path:
+                type: string
+              content_hash:
+                type: string
+                description: "`sha256:` followed by lowercase hex"
+              size_bytes:
+                type: integer
+                format: int64
+    CloudSaveSyncPlan:
+      type: object
+      properties:
+        direction:
+          type: string
+        conflict_policy:
+          type: string
+          example: last_write_wins
+        urls:
+          type: array
+          items:
+            type: object
+            properties:
+              relative_path:
+                type: string
+              action:
+                type: string
+                enum: [put, get, unchanged]
+              url:
+                type: [string, "null"]
+              content_hash:
+                type: string
+              size_bytes:
+                type: integer
+                format: int64
+    Friend:
+      type: object
+      required: [user_id, username, status]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        status:
+          type: string
+    Presence:
+      type: object
+      required: [user_id, status]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        username:
+          type: [string, "null"]
+        status:
+          type: string
+          enum: [online, away, offline, in_game]
+        rich_text:
+          type: string
+        app_id:
+          type: [integer, "null"]
+          format: int64
+        updated_at:
+          type: string
+          format: date-time
+    SetPresenceRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [online, away, offline, in_game]
+        rich_text:
+          type: string
+          maxLength: 256
+        app_id:
+          type: [integer, "null"]
+          format: int64

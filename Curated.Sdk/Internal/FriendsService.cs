@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -147,7 +146,7 @@ internal static class FriendsService
 
     private static IReadOnlyList<T> DeserializeList<T>(string json)
     {
-        var value = JsonSerializer.Deserialize<List<T>>(json, JsonOptions.Default);
+        var value = Json.Deserialize<List<T>>(json);
         return value ?? new List<T>();
     }
 }

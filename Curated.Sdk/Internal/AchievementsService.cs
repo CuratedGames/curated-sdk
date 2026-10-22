@@ -1,5 +1,4 @@
 using System;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -46,7 +45,7 @@ internal static class AchievementsService
 
     private static T Deserialize<T>(string json)
     {
-        var value = JsonSerializer.Deserialize<T>(json, JsonOptions.Default);
+        var value = Json.Deserialize<T>(json);
         if (value is null)
         {
             throw new InvalidOperationException($"failed to deserialize {typeof(T).Name}");

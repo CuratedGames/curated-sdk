@@ -1,0 +1,20 @@
+{
+    "name": "Curated.Unity",
+    "rootNamespace": "Curated.Unity",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [
+        "WebGL"
+    ],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Curated.Sdk.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "!UNITY_SERVER"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

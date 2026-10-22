@@ -10,18 +10,30 @@ internal static class CloudSaveHash
 {
     public static string OfBytes(ReadOnlySpan<byte> data)
     {
-        var hash = SHA256.HashData(data);
-        return "sha256:" + Convert.ToHexString(hash).ToLowerInvariant();
+        var hash = Compat.Sha256(data.ToArray());
+        return "sha256:" + Compat.ToLowerHex(hash);
     }
 
     public static async Task<string> OfStreamAsync(
         Stream stream,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(stream);
+        Guard.NotNull(stream, nameof(stream));
         using var sha = SHA256.Create();
+#if NET5_0_OR_GREATER
         var hash = await sha.ComputeHashAsync(stream, cancellationToken).ConfigureAwait(false);
-        return "sha256:" + Convert.ToHexString(hash).ToLowerInvariant();
+#else
+        var buffer = new byte[81920];
+        int read;
+        while ((read = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false)) > 0)
+        {
+            sha.TransformBlock(buffer, 0, read, null, 0);
+        }
+
+        sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+        var hash = sha.Hash!;
+#endif
+        return "sha256:" + Compat.ToLowerHex(hash);
     }
 
     public static async Task<string> OfFileAsync(

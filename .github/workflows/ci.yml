@@ -16,6 +16,23 @@ jobs:
       - name: Test SDK
         run: dotnet test Curated.Sdk.sln --configuration Release
 
+  engines:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Test RPG Maker plugin against the launch contract fixture
+        run: node --test engines/rpgmaker/CuratedSDK.test.mjs
+      - name: Pack engine bindings
+        run: |
+          bash scripts/pack-unity-zip.sh "${RUNNER_TEMP}/sdk-unity"
+          bash scripts/pack-engines.sh "${RUNNER_TEMP}/sdk-unity/publish/Curated.Sdk.dll" "${RUNNER_TEMP}/engines"
+
   content-builder:
     runs-on: ubuntu-latest
     steps:

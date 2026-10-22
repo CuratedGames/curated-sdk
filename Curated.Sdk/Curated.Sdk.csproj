@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>netstandard2.1;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <RootNamespace>Curated.Sdk</RootNamespace>
     <AssemblyName>Curated.Sdk</AssemblyName>
-    <Description>Unity-friendly Curated game client: Init, achievements, Cloud Save, friends and presence. Hub transport stays internal.</Description>
-    <Version>1.0.1</Version>
+    <Description>Curated game client: launcher authentication, entitlement checks, achievements, Cloud Save, friends and presence. No third-party dependencies; netstandard2.1 for Unity and Godot.</Description>
+    <Version>1.1.0</Version>
     <Authors>Curated</Authors>
     <Company>Curated</Company>
     <PackageId>Curated.Sdk</PackageId>
