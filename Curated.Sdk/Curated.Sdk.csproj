@@ -8,8 +8,10 @@
     <AssemblyName>Curated.Sdk</AssemblyName>
     <Description>Curated game client: launcher authentication, entitlement checks, achievements, Cloud Save, friends and presence. No third-party dependencies; netstandard2.1 for Unity and Godot.</Description>
     <Version>1.1.0</Version>
-    <Authors>Curated</Authors>
-    <Company>Curated</Company>
+    <Authors>Fatum Games SL</Authors>
+    <Company>Fatum Games SL</Company>
+    <Product>Curated SDK</Product>
+    <Copyright>Copyright (c) Margherita Roncone. Licensed to Fatum Games SL.</Copyright>
     <PackageId>Curated.Sdk</PackageId>
     <PackageTags>curated;games;achievements;cloud-save;friends;unity</PackageTags>
     <PackageProjectUrl>https://github.com/CuratedGames/curated-sdk</PackageProjectUrl>

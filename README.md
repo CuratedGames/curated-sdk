@@ -140,3 +140,7 @@ Godot and Unreal tests run inside the engine (see their READMEs).
 See [LICENSE.md](LICENSE.md). Ship the official packages (DLL, NuGet, and the engine bindings in
 `engines/`) only as part of your game. Never log or store the player's session token, and send
 it only to the Curated API address the launcher provides.
+
+Copyright (c) Margherita Roncone, licensed to Fatum Games SL (Business ID: B21832985), Calle
+Mediodia 7, 35015, Las Palmas De Gran Canaria, Las Palmas, Spain. Curated and Curated Games are
+trademarks of Margherita Roncone, licensed to Fatum Games SL. Support: support@curated.games.
