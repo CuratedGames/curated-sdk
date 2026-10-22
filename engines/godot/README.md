@@ -1,0 +1,46 @@
+# Curated SDK for Godot 4
+
+GDScript addon implementing launch contract v1 (`contracts/launch-contract.md`). Works in
+GDScript and C# projects; C# projects can also reference `Curated.Sdk.dll` (netstandard2.1)
+for Cloud Save, friends, and presence.
+
+## Install
+
+1. Download `curated-godot-<version>.zip` from the curated-sdk Releases.
+2. Unzip it into the project root so the files land in `res://addons/curated/`.
+3. **Project > Project Settings > Plugins**: enable **Curated SDK**. This registers the
+   `Curated` autoload.
+
+## Use
+
+```gdscript
+func _ready() -> void:
+	var result: Dictionary = await Curated.init_from_launcher(1002)
+	if not result.ok:
+		# result.error: not_launched_by_curated, not_entitled, session_invalid, ...
+		get_tree().quit()
+		return
+	print("Signed in as %s" % result.session.username)
+
+func _on_boss_defeated() -> void:
+	await Curated.unlock_achievement("BOSS_1")
+```
+
+`Curated.check_entitlement()` re-checks ownership during long sessions. `Curated.session`
+holds `user_id`, `username`, `language`, and `entitlement` after a successful init.
+
+## Dedicated servers
+
+`init_from_launcher` returns `not_launched_by_curated` without touching the network when the
+build has the `dedicated_server` feature (Godot's **Dedicated Server** export preset adds it).
+To leave the addon out of server exports entirely, add `addons/curated/*` to the preset's
+**Resources > Filters to exclude files**, and guard calls with
+`if Engine.has_singleton("Curated") or has_node("/root/Curated")`.
+
+## Tests
+
+From a Godot 4 project containing the addon:
+
+```bash
+godot --headless --script res://addons/curated/tests/run_conformance.gd -- /path/to/contracts/fixtures/conformance.v1.json
+```

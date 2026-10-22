@@ -1,0 +1,22 @@
+{
+	"FileVersion": 3,
+	"Version": 3,
+	"VersionName": "1.1.0",
+	"FriendlyName": "Curated SDK",
+	"Description": "Curated launcher sign-in, ownership check, and achievements (launch contract v1).",
+	"Category": "Online Platform",
+	"CreatedBy": "Curated",
+	"CreatedByURL": "https://curated.games",
+	"DocsURL": "https://github.com/CuratedGames/curated-sdk",
+	"CanContainContent": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "CuratedSDK",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"TargetDenyList": [ "Server" ],
+			"PlatformAllowList": [ "Win64", "Linux", "Mac" ]
+		}
+	]
+}
