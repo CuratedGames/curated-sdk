@@ -15,24 +15,33 @@ terminable, worldwide, nontransferable license to:
 
 1. Use and locally reproduce the SDK (including source form when provided) solely
    to develop games and applications that integrate with Curated platform services
-   ("Licensee Software"); and
+   ("Licensee Software");
 2. Reproduce and distribute the SDK redistributable object-code files that Curated
    designates for redistribution (including `Curated.Sdk.dll` and accompanying
    documentation files shipped in official Unity or NuGet packages) solely as
-   embedded components of Licensee Software.
+   embedded components of Licensee Software;
+3. Modify, compile, reproduce, and distribute the official engine bindings published in
+   the SDK's `engines/` folder (the Unity package, Godot addon, Unreal Engine plugin, and
+   RPG Maker plugin, together the "Engine Bindings"), in source or compiled form, solely
+   as embedded components of Licensee Software; and
+4. Implement the published Curated launch contract (the SDK's `contracts/` folder) in
+   Licensee Software built with an engine or framework for which Curated does not provide
+   an Engine Binding, solely so that Licensee Software can integrate with Curated
+   platform services.
 
 Curated reserves all rights not expressly granted. No other license is granted by
 implication, estoppel, or otherwise.
 
 ## 2. Redistribution limits
 
-Licensee may distribute only the redistributable object-code packages Curated
-publishes for that purpose, and only together with Licensee Software.
+Licensee may distribute only the redistributable object-code packages and Engine
+Bindings Curated publishes for that purpose, and only together with Licensee Software.
 
 Licensee may not:
 
-1. Redistribute SDK source, internal tools, headers, samples, or non-redistributable
-   packages as a standalone SDK, toolkit, or competing middleware product;
+1. Redistribute SDK source (including Engine Bindings), internal tools, headers,
+   samples, or non-redistributable packages as a standalone SDK, toolkit, or competing
+   middleware product;
 2. Remove, alter, or obscure copyright, attribution, or license notices included
    with the SDK redistributables;
 3. Sublicense the SDK on a standalone basis, or grant rights broader than this
@@ -54,9 +63,17 @@ compliance with Curated policies.
 Licensee will not reverse engineer the SDK except to the limited extent such
 restriction is prohibited by applicable law. If Licensee Software communicates with
 Curated platform services for features exposed by the SDK, Licensee will do so
-through the interfaces provided by the official SDK redistributables, and will not
-develop substitute client libraries for the purpose of bypassing SDK terms,
-authentication, entitlement checks, or Curated policy enforcement.
+through the interfaces provided by the official SDK redistributables or Engine
+Bindings, or through an implementation of the launch contract permitted by Section 1,
+and will not develop substitute client libraries for the purpose of bypassing SDK
+terms, authentication, entitlement checks, or Curated policy enforcement.
+
+## 4a. Player session credentials
+
+Curated platform services may hand Licensee Software a player session credential (for
+example `CURATED_SESSION_TOKEN` under the launch contract). Licensee Software will use it
+only to call the Curated platform service address supplied with it, and will not log,
+store, display, or transmit it to any other party or service.
 
 ## 5. Trademarks and relationship
 

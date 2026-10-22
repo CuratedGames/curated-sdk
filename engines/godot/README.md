@@ -32,10 +32,9 @@ holds `user_id`, `username`, `language`, and `entitlement` after a successful in
 ## Dedicated servers
 
 `init_from_launcher` returns `not_launched_by_curated` without touching the network when the
-build has the `dedicated_server` feature (Godot's **Dedicated Server** export preset adds it).
-To leave the addon out of server exports entirely, add `addons/curated/*` to the preset's
-**Resources > Filters to exclude files**, and guard calls with
-`if Engine.has_singleton("Curated") or has_node("/root/Curated")`.
+build has the `dedicated_server` feature (Godot's **Dedicated Server** export preset adds it),
+so server exports can keep the addon: it stays inert and never reads launch variables. Skip
+your own Curated calls there with `if not OS.has_feature("dedicated_server")`.
 
 ## Tests
 
