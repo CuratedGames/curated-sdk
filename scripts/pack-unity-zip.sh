@@ -11,7 +11,8 @@ VERSION="$(
 )"
 
 mkdir -p "$OUT_DIR"
-dotnet publish "$PROJ" --configuration Release -o "$OUT_DIR/publish" --no-self-contained
+# netstandard2.1 is the build Unity and Godot load; it has no third-party dependencies.
+dotnet publish "$PROJ" --configuration Release -f netstandard2.1 -o "$OUT_DIR/publish"
 
 ZIP_NAME="Curated.Sdk.${VERSION}.unity.zip"
 STAGE="$OUT_DIR/stage"

@@ -9,6 +9,8 @@ on:
       - "Curated.Sdk.Tests/**"
       - "tooling/content-builder/**"
       - "scripts/**"
+      - "contracts/**"
+      - "engines/**"
       - "Curated.Sdk.sln"
       - "LICENSE.md"
       - "README.md"
@@ -29,8 +31,13 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - name: Test
-        run: dotnet test Curated.Sdk.sln --configuration Release
+        run: |
+          dotnet test Curated.Sdk.sln --configuration Release
+          node --test engines/rpgmaker/CuratedSDK.test.mjs
       - name: Pack assets
         id: pack
         run: |
@@ -48,6 +55,10 @@ jobs:
             "${RUNNER_TEMP}/sdk-release/"
           cp "${RUNNER_TEMP}/sdk-unity/publish/Curated.Sdk.dll" \
             "${RUNNER_TEMP}/sdk-release/Curated.Sdk.dll"
+          bash scripts/pack-engines.sh "${RUNNER_TEMP}/sdk-unity/publish/Curated.Sdk.dll" \
+            "${RUNNER_TEMP}/sdk-release"
+          cp contracts/launch-contract.md contracts/fixtures/conformance.v1.json \
+            "${RUNNER_TEMP}/sdk-release/"
       - name: Upload SDK artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -125,9 +136,13 @@ jobs:
           tag_name: v${{ needs.sdk.outputs.version }}
           name: Curated.Sdk ${{ needs.sdk.outputs.version }}
           body: |
-            **Curated.Sdk** ${{ needs.sdk.outputs.version }} — Unity-friendly DLL + NuGet + Content Builder CLI.
+            **Curated.Sdk** ${{ needs.sdk.outputs.version }}: launch contract v1, engine bindings, NuGet package, and Content Builder CLI.
 
-            - Drop `Curated.Sdk.dll` from the `.unity.zip` into `Assets/Plugins/Curated.Sdk/`.
+            - Unity: add `games.curated.sdk-${{ needs.sdk.outputs.version }}.tgz` with Package Manager (Add package from tarball).
+            - Godot 4: unzip `curated-godot-${{ needs.sdk.outputs.version }}.zip` into the project root and enable the plugin.
+            - Unreal Engine 5: unzip `curated-unreal-${{ needs.sdk.outputs.version }}.zip` into the project's `Plugins/` folder.
+            - RPG Maker MZ/MV: copy `CuratedSDK.js` into `js/plugins/`.
+            - Other engines: implement `launch-contract.md` and check it against `conformance.v1.json`.
             - CLI: `curated-content-builder-windows-x64.exe` (login, list-depots, upload). See Agents.md.
 
             License: see LICENSE.md (Curated SDK License).
@@ -138,6 +153,12 @@ jobs:
             release-assets/Curated.Sdk.${{ needs.sdk.outputs.version }}.unity.zip
             release-assets/Curated.Sdk.unity.zip
             release-assets/Curated.Sdk.dll
+            release-assets/games.curated.sdk-${{ needs.sdk.outputs.version }}.tgz
+            release-assets/curated-godot-${{ needs.sdk.outputs.version }}.zip
+            release-assets/curated-unreal-${{ needs.sdk.outputs.version }}.zip
+            release-assets/CuratedSDK.js
+            release-assets/launch-contract.md
+            release-assets/conformance.v1.json
             release-assets/curated-content-builder-linux-x64
             release-assets/curated-content-builder-windows-x64.exe
           fail_on_unmatched_files: true

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,7 +20,7 @@ internal static class CloudSaveService
             throw new ArgumentException("local folder is required", nameof(localRoot));
         }
 
-        ArgumentNullException.ThrowIfNull(blobs);
+        Guard.NotNull(blobs, nameof(blobs));
 
         Directory.CreateDirectory(localRoot);
         var sync = await SyncAsync(state, "download", Array.Empty<CloudSaveFile>(), ct)
@@ -69,8 +68,8 @@ internal static class CloudSaveService
             throw new ArgumentException("local folder is required", nameof(localRoot));
         }
 
-        ArgumentNullException.ThrowIfNull(relativePaths);
-        ArgumentNullException.ThrowIfNull(blobs);
+        Guard.NotNull(relativePaths, nameof(relativePaths));
+        Guard.NotNull(blobs, nameof(blobs));
 
         var files = new List<CloudSaveFile>();
         foreach (var raw in relativePaths)
@@ -188,7 +187,7 @@ internal static class CloudSaveService
 
     private static T Deserialize<T>(string json)
     {
-        var value = JsonSerializer.Deserialize<T>(json, JsonOptions.Default);
+        var value = Json.Deserialize<T>(json);
         if (value is null)
         {
             throw new InvalidOperationException($"failed to deserialize {typeof(T).Name}");

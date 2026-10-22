@@ -1,6 +1,10 @@
 // Entry point: Init once, then use Achievements / Cloud / Friends.
 
 using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using Curated.Sdk.Internal;
 
 namespace Curated.Sdk;
@@ -12,6 +16,7 @@ public static class CuratedClient
 {
     private static readonly object Gate = new();
     private static ClientState? _state;
+    private static CuratedSession? _session;
 
     /// <summary>Default Curated hub used when Init is called without an explicit URL.</summary>
     public static readonly Uri DefaultHubUrl = new("https://api.curated.games");
@@ -64,18 +69,83 @@ public static class CuratedClient
             throw new ArgumentException("session token is required", nameof(sessionToken));
         }
 
-        ArgumentNullException.ThrowIfNull(hubUrl);
+        Guard.NotNull(hubUrl, nameof(hubUrl));
+        InitCore(appId, new HttpTransport(hubUrl, sessionToken.Trim()));
+    }
 
+    /// <summary>
+    /// The authenticated, entitled session after a successful
+    /// <see cref="InitFromLauncherAsync(long, CancellationToken)"/>; otherwise null.
+    /// </summary>
+    public static CuratedSession? Session
+    {
+        get
+        {
+            lock (Gate)
+            {
+                return _session;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Start Curated from the launch variables the Curated launcher set on this process,
+    /// verify the player session, and confirm the player owns <paramref name="appId"/>.
+    /// On failure Curated is left shut down and a <see cref="CuratedLaunchException"/> carries the
+    /// launch contract error code.
+    /// </summary>
+    /// <param name="appId">This game's Curated app id (compiled into the game).</param>
+    /// <param name="cancellationToken">Cancels the session and entitlement calls.</param>
+    public static Task<CuratedSession> InitFromLauncherAsync(long appId, CancellationToken cancellationToken = default) =>
+        InitFromLauncherAsync(appId, LaunchContext.FromEnvironment(appId), null, cancellationToken);
+
+    internal static Task<CuratedSession> InitFromLauncherAsync(
+        long appId,
+        IReadOnlyDictionary<string, string?> environment,
+        HttpMessageHandler? handler,
+        CancellationToken cancellationToken = default) =>
+        InitFromLauncherAsync(appId, LaunchContext.ParseVariables(environment, appId), handler, cancellationToken);
+
+    private static async Task<CuratedSession> InitFromLauncherAsync(
+        long appId,
+        LaunchContext context,
+        HttpMessageHandler? handler,
+        CancellationToken cancellationToken)
+    {
+        var state = InitCore(appId, new HttpTransport(context.ApiBase, context.SessionToken, handler));
+        try
+        {
+            var session = await SessionService.StartAsync(state, context, cancellationToken).ConfigureAwait(false);
+            lock (Gate)
+            {
+                if (ReferenceEquals(_state, state))
+                {
+                    _session = session;
+                }
+            }
+
+            return session;
+        }
+        catch
+        {
+            Shutdown();
+            throw;
+        }
+    }
+
+    private static ClientState InitCore(long appId, HttpTransport transport)
+    {
         lock (Gate)
         {
             if (_state is not null)
             {
+                transport.Dispose();
                 throw new InvalidOperationException("CuratedClient.Init was already called");
             }
 
-            var transport = new HttpTransport(hubUrl, sessionToken.Trim());
             var blobs = new HttpBlobTransfer();
             _state = new ClientState(appId, transport, blobs, ownsTransport: true, ownsBlobs: true);
+            return _state;
         }
     }
 
@@ -87,6 +157,7 @@ public static class CuratedClient
         {
             old = _state;
             _state = null;
+            _session = null;
         }
 
         old?.Dispose();
@@ -100,7 +171,7 @@ public static class CuratedClient
             throw new ArgumentOutOfRangeException(nameof(appId));
         }
 
-        ArgumentNullException.ThrowIfNull(transport);
+        Guard.NotNull(transport, nameof(transport));
 
         // Tests always replace the prior fake client.
         Shutdown();
