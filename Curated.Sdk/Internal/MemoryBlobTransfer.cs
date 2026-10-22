@@ -26,7 +26,7 @@ internal sealed class MemoryBlobTransfer : IBlobTransfer
             throw new ArgumentException("signedUrl is required", nameof(signedUrl));
         }
 
-        ArgumentNullException.ThrowIfNull(content);
+        Guard.NotNull(content, nameof(content));
         using var ms = new MemoryStream();
         content.CopyTo(ms);
         _store[signedUrl] = ms.ToArray();

@@ -52,7 +52,7 @@ public class CloudTests : IDisposable
         {
             if (path.Contains("/cloud-save/sync", System.StringComparison.Ordinal))
             {
-                return System.Text.Json.JsonSerializer.Serialize(
+                return Json.Serialize(
                     new CloudSaveSyncResultWire
                     {
                         Direction = "download",
@@ -72,8 +72,7 @@ public class CloudTests : IDisposable
                                 Url = null
                             }
                         }
-                    },
-                    JsonOptions.Default);
+                    });
             }
 
             return "{}";

@@ -3,6 +3,22 @@ using System.Collections.Generic;
 
 namespace Curated.Sdk.Internal;
 
+internal sealed class SessionUserWire
+{
+    public Guid UserId { get; set; }
+
+    public string Username { get; set; } = "";
+}
+
+internal sealed class EntitlementWire
+{
+    public long AppId { get; set; }
+
+    public string? Source { get; set; }
+
+    public DateTimeOffset? AcquiredAt { get; set; }
+}
+
 internal sealed class UnlockResult
 {
     public long AppId { get; set; }

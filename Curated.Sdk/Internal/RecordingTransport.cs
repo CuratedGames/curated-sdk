@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -35,15 +34,14 @@ internal sealed class RecordingTransport : ITransport
             && method.Equals("POST", StringComparison.OrdinalIgnoreCase))
         {
             var apiName = Uri.UnescapeDataString(path.Split('/')[^2]);
-            return JsonSerializer.Serialize(
+            return Json.Serialize(
                 new UnlockResult
                 {
                     AppId = 0,
                     ApiName = apiName,
                     NewlyUnlocked = true,
                     Source = "native"
-                },
-                JsonOptions.Default);
+                });
         }
 
         if (path.EndsWith("/cloud-save/sync", StringComparison.Ordinal)
@@ -71,42 +69,38 @@ internal sealed class RecordingTransport : ITransport
                 }
             }
 
-            return JsonSerializer.Serialize(
+            return Json.Serialize(
                 new CloudSaveSyncResultWire
                 {
                     Direction = direction,
                     ConflictPolicy = "last_write_wins",
                     Urls = urls
-                },
-                JsonOptions.Default);
+                });
         }
 
         if (path.EndsWith("/cloud-save/manifest", StringComparison.Ordinal)
             && method.Equals("GET", StringComparison.OrdinalIgnoreCase))
         {
-            return JsonSerializer.Serialize(
-                new { app_id = 0, enabled = true, conflict_policy = "last_write_wins", files = Array.Empty<object>() },
-                JsonOptions.Default);
+            return Json.Serialize(
+                new { app_id = 0, enabled = true, conflict_policy = "last_write_wins", files = Array.Empty<object>() });
         }
 
         if (path.EndsWith("/achievements/progress", StringComparison.Ordinal))
         {
-            return JsonSerializer.Serialize(
+            return Json.Serialize(
                 new AchievementProgressResult
                 {
                     Unlocked = 0,
                     Total = 0,
                     Achievements = Array.Empty<AchievementProgressItem>()
-                },
-                JsonOptions.Default);
+                });
         }
 
         if (path.EndsWith("/achievements/me", StringComparison.Ordinal)
             || path.EndsWith("/achievements", StringComparison.Ordinal))
         {
-            return JsonSerializer.Serialize(
-                new AchievementListResult { Achievements = Array.Empty<AchievementProgressItem>() },
-                JsonOptions.Default);
+            return Json.Serialize(
+                new AchievementListResult { Achievements = Array.Empty<AchievementProgressItem>() });
         }
 
         if (path.Equals("/friends", StringComparison.Ordinal)
@@ -128,40 +122,38 @@ internal sealed class RecordingTransport : ITransport
         if (path.Equals("/friends/request", StringComparison.Ordinal)
             && method.Equals("POST", StringComparison.OrdinalIgnoreCase))
         {
-            return JsonSerializer.Serialize(new { status = "pending" }, JsonOptions.Default);
+            return Json.Serialize(new { status = "pending" });
         }
 
         if (path.Contains("/friends/", StringComparison.Ordinal)
             && path.EndsWith("/accept", StringComparison.Ordinal))
         {
-            return JsonSerializer.Serialize(new { status = "accepted" }, JsonOptions.Default);
+            return Json.Serialize(new { status = "accepted" });
         }
 
         if (path.Equals("/presence", StringComparison.Ordinal))
         {
-            return JsonSerializer.Serialize(
+            return Json.Serialize(
                 new PresenceRow
                 {
                     Status = "online",
                     RichText = "",
                     UpdatedAt = DateTimeOffset.UtcNow
-                },
-                JsonOptions.Default);
+                });
         }
 
         if (path.Equals("/presence/heartbeat", StringComparison.Ordinal))
         {
-            return JsonSerializer.Serialize(
+            return Json.Serialize(
                 new PresenceRow
                 {
                     Status = "online",
                     RichText = "",
                     UpdatedAt = DateTimeOffset.UtcNow
-                },
-                JsonOptions.Default);
+                });
         }
 
-        return JsonSerializer.Serialize(new { ok = true }, JsonOptions.Default);
+        return Json.Serialize(new { ok = true });
     }
 }
 

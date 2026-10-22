@@ -2,7 +2,6 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,14 +14,20 @@ internal sealed class HttpTransport : ITransport, IDisposable
     private bool _disposed;
 
     public HttpTransport(Uri hubUrl, string sessionToken)
+        : this(hubUrl, sessionToken, null)
     {
-        ArgumentNullException.ThrowIfNull(hubUrl);
+    }
+
+    public HttpTransport(Uri hubUrl, string sessionToken, HttpMessageHandler? handler)
+    {
+        Guard.NotNull(hubUrl, nameof(hubUrl));
         if (string.IsNullOrWhiteSpace(sessionToken))
         {
             throw new ArgumentException("session token is required", nameof(sessionToken));
         }
 
-        _http = new HttpClient { BaseAddress = EnsureTrailingSlash(hubUrl) };
+        _http = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: true);
+        _http.BaseAddress = EnsureTrailingSlash(hubUrl);
         _http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", sessionToken.Trim());
         _disposeHttp = true;
@@ -40,7 +45,7 @@ internal sealed class HttpTransport : ITransport, IDisposable
         object? jsonBody,
         CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        Guard.NotDisposed(_disposed, this);
         if (string.IsNullOrWhiteSpace(method))
         {
             throw new ArgumentException("method is required", nameof(method));
@@ -56,12 +61,12 @@ internal sealed class HttpTransport : ITransport, IDisposable
             relativePath);
         if (jsonBody is not null)
         {
-            var payload = JsonSerializer.Serialize(jsonBody, JsonOptions.Default);
+            var payload = Json.Serialize(jsonBody);
             request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
         }
 
         using var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        var body = await Compat.ReadBodyAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             var detail = TryReadError(body) ?? response.ReasonPhrase ?? "request failed";
@@ -88,7 +93,7 @@ internal sealed class HttpTransport : ITransport, IDisposable
     private static Uri EnsureTrailingSlash(Uri baseUrl)
     {
         var s = baseUrl.AbsoluteUri;
-        if (!s.EndsWith('/'))
+        if (!s.EndsWith("/", StringComparison.Ordinal))
         {
             s += "/";
         }
@@ -105,14 +110,14 @@ internal sealed class HttpTransport : ITransport, IDisposable
 
         try
         {
-            using var doc = JsonDocument.Parse(body);
-            if (doc.RootElement.TryGetProperty("error", out var err)
-                && err.ValueKind == JsonValueKind.String)
+            if (Json.Parse(body) is System.Collections.Generic.Dictionary<string, object?> doc
+                && doc.TryGetValue("error", out var err)
+                && err is string message)
             {
-                return err.GetString();
+                return message;
             }
         }
-        catch (JsonException)
+        catch (FormatException)
         {
             // ignore non-JSON error bodies
         }
