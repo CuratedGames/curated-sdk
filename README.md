@@ -140,8 +140,12 @@ cd tooling\content-builder
 cargo build --release
 curated-content-builder.exe login --login you@studio.com --password "..."
 curated-content-builder.exe list-depots --app-id 1000
-curated-content-builder.exe upload --app-id 1000 --depot-key content --content C:\game\content --version 1.2.3
+curated-content-builder.exe upload --app-id 1000 --depot-id 1000_00 --content C:\game\content --version 1.2.3
 ```
+
+Depots are identified by their depot ID `<app_id>_<NN>` (`1000_00` is the base depot, shown on
+admin Game Build > Builds and Depots and by `list-depots`). `--depot-key` and depot keys such as
+`content` are no longer accepted.
 
 See [tooling/content-builder/README.md](tooling/content-builder/README.md) and [Agents.md](Agents.md).
 

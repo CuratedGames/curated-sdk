@@ -4,7 +4,7 @@
 //=============================================================================
 /*:
  * @target MZ
- * @plugindesc v1.2.0 Curated launcher sign-in, ownership check, and achievements.
+ * @plugindesc v1.3.0 Curated launcher sign-in, ownership check, and achievements.
  * @author Fatum Games SL
  * @url https://github.com/CuratedGames/curated-sdk
  *

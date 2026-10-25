@@ -4,15 +4,14 @@ use crate::client::{ApiClient, ApiError, RegisteredBuild};
 use crate::pack::{pack_content_directory, read_file_chunks, PackError};
 use std::fs;
 use std::path::{Path, PathBuf};
-use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct UploadOptions {
     pub app_id: i64,
     pub content_root: PathBuf,
     pub version: String,
-    pub depot_id: Option<Uuid>,
-    pub depot_key: Option<String>,
+    /// Depot ID `<app_id>_<NN>`. `None`: the base depot `<app_id>_00`.
+    pub depot_id: Option<String>,
     pub desc: Option<String>,
     pub filename: Option<String>,
     pub build_output: Option<PathBuf>,
@@ -24,7 +23,7 @@ pub struct UploadResult {
     pub build: RegisteredBuild,
     pub artifact_uri: String,
     pub artifact_sha256: String,
-    pub depot_id: Uuid,
+    pub depot_id: String,
     pub zip_path: PathBuf,
     pub file_count: usize,
 }
@@ -60,28 +59,44 @@ impl From<PackError> for UploadError {
     }
 }
 
-fn resolve_depot_id(client: &ApiClient, app_id: i64, opts: &UploadOptions) -> Result<Uuid, UploadError> {
-    if let Some(id) = opts.depot_id {
-        return Ok(id);
+/// Check a depot ID before any network call: `<app_id>_<NN>` (two-digit number) of the
+/// app being uploaded. Returns the trimmed ID.
+pub fn validate_depot_id(raw: &str, app_id: i64) -> Result<String, String> {
+    let id = raw.trim();
+    let well_formed = id.split_once('_').is_some_and(|(app, number)| {
+        !app.is_empty()
+            && app.bytes().all(|b| b.is_ascii_digit())
+            && number.len() == 2
+            && number.bytes().all(|b| b.is_ascii_digit())
+    });
+    if !well_formed {
+        return Err(format!(
+            "invalid depot id '{id}': expected <app_id>_<NN>, for example {app_id}_00 \
+(the base depot) or {app_id}_01. Depot keys such as 'content' and UUIDs are no longer \
+accepted; run `curated-content-builder list-depots --app-id {app_id}` to see the depot IDs"
+        ));
     }
-    let depots = client.list_depots(app_id)?;
-    if let Some(key) = opts.depot_key.as_deref() {
-        let key = key.trim();
-        let found = depots.iter().find(|d| d.depot_key.eq_ignore_ascii_case(key));
-        return found
-            .map(|d| d.id)
-            .ok_or_else(|| UploadError::Message(format!("no depot with key '{key}' for app {app_id}")));
+    let app_part = id.split('_').next().unwrap_or_default();
+    if app_part != app_id.to_string() {
+        return Err(format!(
+            "depot id '{id}' belongs to app {app_part}, not app {app_id}: \
+depot IDs of app {app_id} look like {app_id}_00"
+        ));
     }
-    if depots.len() == 1 {
-        return Ok(depots[0].id);
+    Ok(id.to_string())
+}
+
+/// Depot to upload to: the given depot ID, else the base depot `<app_id>_00`.
+fn resolve_depot_id(app_id: i64, opts: &UploadOptions) -> Result<String, UploadError> {
+    match opts
+        .depot_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        Some(raw) => validate_depot_id(raw, app_id).map_err(UploadError::Message),
+        None => Ok(format!("{app_id}_00")),
     }
-    let content = depots.iter().find(|d| d.depot_key == "content");
-    if let Some(d) = content {
-        return Ok(d.id);
-    }
-    Err(UploadError::Message(
-        "specify --depot-id or --depot-key (multiple depots on this app)".into(),
-    ))
 }
 
 fn default_zip_path(opts: &UploadOptions) -> PathBuf {
@@ -105,9 +120,9 @@ pub fn run_upload(client: &ApiClient, opts: UploadOptions) -> Result<UploadResul
     if opts.version.trim().is_empty() {
         return Err(UploadError::Message("version is required".into()));
     }
-    // Ownership gate before packing (also enforced again inside list_depots / server).
+    let depot_id = resolve_depot_id(opts.app_id, &opts)?;
+    // Ownership gate before packing (the server checks it again).
     client.require_app_ownership(opts.app_id)?;
-    let depot_id = resolve_depot_id(client, opts.app_id, &opts)?;
     let zip_path = default_zip_path(&opts);
     eprintln!(
         "Packing {} → {}",
@@ -132,7 +147,7 @@ pub fn run_upload(client: &ApiClient, opts: UploadOptions) -> Result<UploadResul
         opts.version.trim(),
         packed.size_bytes as i64,
         &packed.sha256,
-        Some(depot_id),
+        Some(depot_id.as_str()),
         Some(filename),
         opts.chunk_size,
     )?;
@@ -177,7 +192,7 @@ pub fn run_upload(client: &ApiClient, opts: UploadOptions) -> Result<UploadResul
         opts.version.trim(),
         &completed.artifact_uri,
         &completed.artifact_sha256,
-        completed.depot_id,
+        &completed.depot_id,
         opts.desc.as_deref(),
         &files,
     )?;
@@ -185,10 +200,7 @@ pub fn run_upload(client: &ApiClient, opts: UploadOptions) -> Result<UploadResul
     eprintln!(
         "Registered build {} on depot {} (scan: {})",
         build.id,
-        build
-            .depot_key
-            .as_deref()
-            .unwrap_or(&completed.depot_id.to_string()),
+        build.depot_id.as_deref().unwrap_or(&completed.depot_id),
         build.scan_status.as_deref().unwrap_or("pending")
     );
 
@@ -216,7 +228,6 @@ mod tests {
             content_root: PathBuf::from("C:/game/content"),
             version: "1.0.0".into(),
             depot_id: None,
-            depot_key: None,
             desc: None,
             filename: Some("win.zip".into()),
             build_output: Some(PathBuf::from("C:/game/output")),
@@ -226,5 +237,29 @@ mod tests {
             default_zip_path(&opts),
             PathBuf::from("C:/game/output/win.zip")
         );
+        assert_eq!(resolve_depot_id(1, &opts).unwrap(), "1_00");
+    }
+
+    #[test]
+    fn depot_ids_are_app_and_two_digits() {
+        assert_eq!(validate_depot_id("1000_00", 1000).unwrap(), "1000_00");
+        assert_eq!(validate_depot_id(" 1000_07 ", 1000).unwrap(), "1000_07");
+        for bad in [
+            "content",
+            "",
+            "1000",
+            "1000_7",
+            "1000_100",
+            "_00",
+            "abc_00",
+            "1000-00",
+            "00000000-0000-0000-0000-000000000000",
+        ] {
+            let e = validate_depot_id(bad, 1000).unwrap_err();
+            assert!(e.contains("<app_id>_<NN>"), "{bad}: {e}");
+            assert!(e.contains("1000_00"), "{bad}: {e}");
+        }
+        let other = validate_depot_id("2000_00", 1000).unwrap_err();
+        assert!(other.contains("not app 1000"), "{other}");
     }
 }

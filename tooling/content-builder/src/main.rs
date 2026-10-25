@@ -3,11 +3,10 @@
 use clap::{Parser, Subcommand};
 use curated_content_builder::{
     clear_credentials, credentials_path, load_build_script, load_credentials, login_and_store,
-    run_upload, ApiClient, UploadOptions, DEFAULT_API_BASE,
+    run_upload, validate_depot_id, ApiClient, UploadOptions, DEFAULT_API_BASE,
 };
 use std::path::PathBuf;
 use std::process::ExitCode;
-use uuid::Uuid;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -62,10 +61,9 @@ enum Commands {
         content: Option<PathBuf>,
         #[arg(long)]
         version: Option<String>,
-        #[arg(long)]
+        /// Depot ID `<app_id>_<NN>` (see list-depots). Default: the base depot `<app_id>_00`.
+        #[arg(long, env = "CURATED_DEPOT_ID")]
         depot_id: Option<String>,
-        #[arg(long)]
-        depot_key: Option<String>,
         #[arg(long)]
         desc: Option<String>,
         #[arg(long)]
@@ -112,13 +110,9 @@ fn resolve_client(
     ApiClient::new(&api_base, Some(&token)).map_err(|e| e.to_string())
 }
 
-fn parse_depot_id(raw: Option<&str>) -> Result<Option<Uuid>, String> {
-    match raw {
-        None => Ok(None),
-        Some(s) => Uuid::parse_str(s.trim())
-            .map(Some)
-            .map_err(|_| format!("invalid depot id '{s}' (expected UUID)")),
-    }
+/// Validate `--depot-id` / script `depot_id` locally (`<app_id>_<NN>`) before uploading.
+fn parse_depot_id(raw: Option<&str>, app_id: i64) -> Result<Option<String>, String> {
+    raw.map(|s| validate_depot_id(s, app_id)).transpose()
 }
 
 fn main() -> ExitCode {
@@ -186,21 +180,20 @@ fn run(cli: Cli) -> Result<(), String> {
                 println!("No depots for app {app_id}.");
                 return Ok(());
             }
-            println!(
-                "{:<38} {:<16} {:<24} {}",
-                "DEPOT ID", "KEY", "NAME", "OS/ARCH/LANG"
-            );
+            println!("{:<12} {:<32} {}", "DEPOT ID", "NAME", "OS/ARCH/LANG");
             for d in depots {
+                let language = d.language.as_deref().unwrap_or("");
                 println!(
-                    "{:<38} {:<16} {:<24} {}/{}/{}",
-                    d.id,
-                    d.depot_key,
+                    "{:<12} {:<32} {}/{}/{}",
+                    d.depot_id,
                     d.name,
                     d.os.as_deref().unwrap_or("-"),
                     d.arch.as_deref().unwrap_or("-"),
-                    d.language.as_deref().unwrap_or("-")
+                    if language.is_empty() { "all" } else { language }
                 );
             }
+            println!();
+            println!("Upload with: curated-content-builder upload --app-id {app_id} --depot-id {app_id}_00 ...");
             Ok(())
         }
         Commands::Upload {
@@ -209,7 +202,6 @@ fn run(cli: Cli) -> Result<(), String> {
             content,
             version,
             depot_id,
-            depot_key,
             desc,
             filename,
             build_output,
@@ -219,24 +211,27 @@ fn run(cli: Cli) -> Result<(), String> {
         } => {
             let opts = if let Some(script_path) = script.as_ref() {
                 let s = load_build_script(script_path).map_err(|e| e.to_string())?;
+                let app_id = app_id.unwrap_or(s.app_id);
                 UploadOptions {
-                    app_id: app_id.unwrap_or(s.app_id),
+                    app_id,
                     content_root: content.unwrap_or(s.content_root),
                     version: version.unwrap_or(s.version),
-                    depot_id: parse_depot_id(depot_id.as_deref().or(s.depot_id.as_deref()))?,
-                    depot_key: depot_key.or(s.depot_key),
+                    depot_id: parse_depot_id(
+                        depot_id.as_deref().or(s.depot_id.as_deref()),
+                        app_id,
+                    )?,
                     desc: desc.or(s.desc),
                     filename: filename.or(s.filename),
                     build_output: build_output.or(s.build_output),
                     chunk_size,
                 }
             } else {
+                let app_id = app_id.ok_or("--app-id is required without --script")?;
                 UploadOptions {
-                    app_id: app_id.ok_or("--app-id is required without --script")?,
+                    app_id,
                     content_root: content.ok_or("--content is required without --script")?,
                     version: version.ok_or("--version is required without --script")?,
-                    depot_id: parse_depot_id(depot_id.as_deref())?,
-                    depot_key,
+                    depot_id: parse_depot_id(depot_id.as_deref(), app_id)?,
                     desc,
                     filename,
                     build_output,
@@ -247,8 +242,8 @@ fn run(cli: Cli) -> Result<(), String> {
             let client = resolve_client(api_base, token)?;
             let result = run_upload(&client, opts).map_err(|e| e.to_string())?;
             println!(
-                "Build {} registered ({} files → {}).",
-                result.build.id, result.file_count, result.artifact_uri
+                "Build {} registered on depot {} ({} files → {}).",
+                result.build.id, result.depot_id, result.file_count, result.artifact_uri
             );
             Ok(())
         }
@@ -274,5 +269,42 @@ mod tests {
             "studio"
         );
         assert!(resolve_login_identity(None, None, None).is_err());
+    }
+
+    #[test]
+    fn depot_id_flag_is_validated_and_depot_key_is_gone() {
+        let cli = Cli::try_parse_from([
+            "curated-content-builder",
+            "upload",
+            "--app-id",
+            "1000",
+            "--depot-id",
+            "1000_01",
+            "--content",
+            "c",
+            "--version",
+            "1",
+        ])
+        .unwrap();
+        match cli.command {
+            Commands::Upload { depot_id, .. } => assert_eq!(depot_id.as_deref(), Some("1000_01")),
+            _ => panic!("expected upload"),
+        }
+        assert!(Cli::try_parse_from([
+            "curated-content-builder",
+            "upload",
+            "--app-id",
+            "1000",
+            "--depot-key",
+            "content",
+        ])
+        .is_err());
+        assert_eq!(
+            parse_depot_id(Some("1000_00"), 1000).unwrap().as_deref(),
+            Some("1000_00")
+        );
+        assert_eq!(parse_depot_id(None, 1000).unwrap(), None);
+        let e = parse_depot_id(Some("content"), 1000).unwrap_err();
+        assert!(e.contains("<app_id>_<NN>"), "{e}");
     }
 }

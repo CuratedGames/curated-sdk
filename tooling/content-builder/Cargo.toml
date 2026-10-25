@@ -1,6 +1,6 @@
 [package]
 name = "curated-content-builder"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Curated content builder CLI — upload depot builds (Windows-first)"
 publish = false

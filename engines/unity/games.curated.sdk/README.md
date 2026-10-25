@@ -8,7 +8,7 @@ dependencies) plus a small `Curated.Unity` helper assembly.
 1. Download `games.curated.sdk-<version>.tgz` from the curated-sdk Releases.
 2. Unity: **Window > Package Manager > + > Add package from tarball...** and pick the file.
    Or reference it from `Packages/manifest.json`:
-   `"games.curated.sdk": "file:../Packages-local/games.curated.sdk-1.2.0.tgz"`.
+   `"games.curated.sdk": "file:../Packages-local/games.curated.sdk-1.3.0.tgz"`.
 
 ## Use
 

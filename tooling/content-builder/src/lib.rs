@@ -19,7 +19,7 @@ pub use pack::{
     file_sha256_hex, pack_content_directory, relative_posix_path, walk_manifest_files,
     ManifestEntry, PackError, PackedArtifact,
 };
-pub use upload::{run_upload, UploadError, UploadOptions, UploadResult};
+pub use upload::{run_upload, validate_depot_id, UploadError, UploadOptions, UploadResult};
 
 /// Default public API origin when neither flag nor env is set.
 pub const DEFAULT_API_BASE: &str = "https://api.curated.games";
