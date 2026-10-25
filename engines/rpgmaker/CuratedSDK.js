@@ -4,7 +4,7 @@
 //=============================================================================
 /*:
  * @target MZ
- * @plugindesc v1.1.0 Curated launcher sign-in, ownership check, and achievements.
+ * @plugindesc v1.2.0 Curated launcher sign-in, ownership check, and achievements.
  * @author Fatum Games SL
  * @url https://github.com/CuratedGames/curated-sdk
  *
@@ -49,8 +49,13 @@
  * Script call (MZ and MV):  Curated.unlockAchievement("win_level_1");
  * MV plugin command:        Curated unlockAchievement win_level_1
  *
- * Results: Curated.session holds { userId, username, language,
+ * Results: Curated.session holds { userId, username, language, gameLanguage,
  * entitlement: { entitled, source, acquiredAt } } after a successful check.
+ *
+ * Game language: Curated.getCurrentGameLanguage() returns the language the
+ * player selected in the Curated launcher as a Curated code ("en", "es",
+ * "it", ...), or "en" outside the launcher. For a Steam API name ("english",
+ * "spanish", "italian", ...) use Curated.getCurrentGameLanguageSteamApiName().
  */
 
 (function (root) {
@@ -67,6 +72,71 @@
     NETWORK: "network_error",
     HUB: "hub_error",
   });
+
+  const DEFAULT_GAME_LANGUAGE = "en";
+  // Curated game languages: [code, English name, Steam API name, aliases]. Same table as
+  // contracts/fixtures/game-language.v1.json (Full Platform languages of the Curated catalog).
+  const GAME_LANGUAGES = Object.freeze([
+    ["ar", "Arabic", "arabic", []],
+    ["bg", "Bulgarian", "bulgarian", []],
+    ["zh-cn", "Chinese (Simplified)", "schinese", ["zh", "zh-hans"]],
+    ["zh-tw", "Chinese (Traditional)", "tchinese", ["zh-hant"]],
+    ["cs", "Czech", "czech", []],
+    ["da", "Danish", "danish", []],
+    ["nl", "Dutch", "dutch", []],
+    ["en", "English", "english", []],
+    ["fi", "Finnish", "finnish", []],
+    ["fr", "French", "french", []],
+    ["de", "German", "german", []],
+    ["el", "Greek", "greek", []],
+    ["hu", "Hungarian", "hungarian", []],
+    ["id", "Indonesian", "indonesian", []],
+    ["it", "Italian", "italian", []],
+    ["ja", "Japanese", "japanese", []],
+    ["ko", "Korean", "koreana", []],
+    ["ms", "Malay", "malay", []],
+    ["no", "Norwegian", "norwegian", ["nb"]],
+    ["pl", "Polish", "polish", []],
+    ["pt", "Portuguese", "portuguese", []],
+    ["pt-br", "Portuguese-Brazil", "brazilian", []],
+    ["ro", "Romanian", "romanian", []],
+    ["ru", "Russian", "russian", []],
+    ["es-419", "Spanish-Latin America", "latam", []],
+    ["es", "Spanish-Spain", "spanish", []],
+    ["sv", "Swedish", "swedish", []],
+    ["th", "Thai", "thai", []],
+    ["tr", "Turkish", "turkish", []],
+    ["uk", "Ukrainian", "ukrainian", []],
+    ["vi", "Vietnamese", "vietnamese", []],
+  ]);
+
+  /** Canonical Curated code for a code, alias, BCP-47 tag or Steam API name, or null. */
+  function normalizeGameLanguage(raw) {
+    if (typeof raw !== "string") return null;
+    const key = raw.trim().toLowerCase().replace(/_/g, "-");
+    if (!key) return null;
+    const byCode = (k) => GAME_LANGUAGES.find((l) => l[0] === k || l[3].includes(k));
+    const hit = byCode(key) || GAME_LANGUAGES.find((l) => l[2] === key);
+    if (hit) return hit[0];
+    const dash = key.indexOf("-");
+    const primary = dash > 0 ? byCode(key.slice(0, dash)) : null;
+    return primary ? primary[0] : null;
+  }
+
+  /** Steam API language name for a Curated code (or any accepted value), or null. */
+  function steamApiLanguageName(language) {
+    const code = normalizeGameLanguage(language);
+    const hit = GAME_LANGUAGES.find((l) => l[0] === code);
+    return hit ? hit[2] : null;
+  }
+
+  function gameLanguageFromEnv(env) {
+    return normalizeGameLanguage(readVar(env, "CURATED_LANGUAGE")) || DEFAULT_GAME_LANGUAGE;
+  }
+
+  function processEnv() {
+    return typeof process !== "undefined" && process.env ? process.env : {};
+  }
 
   function readVar(env, name) {
     const raw = env ? env[name] : undefined;
@@ -167,6 +237,10 @@
     DEFAULT_API_BASE,
     ERRORS,
     parseLaunchEnv,
+    DEFAULT_GAME_LANGUAGE,
+    GAME_LANGUAGES,
+    normalizeGameLanguage,
+    steamApiLanguageName,
     session: null,
     _context: null,
     _transport: defaultTransport,
@@ -176,7 +250,7 @@
      * Resolves { ok: true, session } or { ok: false, error } with a contract error code.
      */
     async initFromLauncher(appId, options = {}) {
-      const env = options.env || (typeof process !== "undefined" ? process.env : {});
+      const env = options.env || processEnv();
       const transport = options.transport || defaultTransport;
       this.session = null;
       this._context = null;
@@ -202,9 +276,26 @@
         userId: me.body.user_id,
         username: String(me.body.username || ""),
         language: context.language,
+        gameLanguage: normalizeGameLanguage(context.language) || DEFAULT_GAME_LANGUAGE,
         entitlement,
       };
       return { ok: true, session: this.session };
+    },
+
+    /**
+     * Game language the player selected in the Curated launcher, as a lowercase Curated code
+     * ("en", "es", "it", "pt-br", ...), like Steamworks GetCurrentGameLanguage. It is the
+     * launcher's client language, the same one used to pick language depots. Returns "en" when
+     * the game was not started by the launcher, no language was sent, or it is not a Curated
+     * game language. Works before initFromLauncher. `env` is for tests.
+     */
+    getCurrentGameLanguage(env) {
+      return gameLanguageFromEnv(env || processEnv());
+    },
+
+    /** getCurrentGameLanguage() as a Steam API language name ("english", "spanish", "italian", ...). */
+    getCurrentGameLanguageSteamApiName(env) {
+      return steamApiLanguageName(this.getCurrentGameLanguage(env));
     },
 
     /** Re-check ownership during a long session. Resolves { ok, entitlement } or { ok: false, error }. */

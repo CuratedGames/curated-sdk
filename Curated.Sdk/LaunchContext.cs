@@ -57,7 +57,10 @@ public sealed class LaunchContext
     /// <summary>Player display name hint from the launcher.</summary>
     public string? UsernameHint { get; }
 
-    /// <summary>Player's Curated main language (<c>en</c>, <c>es</c>, <c>it</c>), or null.</summary>
+    /// <summary>
+    /// Raw <c>CURATED_LANGUAGE</c> value: the launcher's client language (<c>en</c>, <c>es</c>, <c>it</c>), or null.
+    /// <see cref="CuratedClient.GetCurrentGameLanguage"/> normalizes it and falls back to <c>en</c>.
+    /// </summary>
     public string? Language { get; }
 
     internal string SessionToken { get; }

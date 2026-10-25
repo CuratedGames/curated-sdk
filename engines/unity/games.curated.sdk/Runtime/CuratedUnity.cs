@@ -26,5 +26,14 @@ namespace Curated.Unity
 
             return session;
         }
+
+        /// <summary>
+        /// Game language the player selected in the Curated launcher (<c>en</c>, <c>es</c>, <c>it</c>, ...),
+        /// or <c>en</c> outside the launcher. Same as <see cref="CuratedClient.GetCurrentGameLanguage"/>.
+        /// </summary>
+        public static string GetCurrentGameLanguage() => CuratedClient.GetCurrentGameLanguage();
+
+        /// <summary>Steam API language name for <see cref="GetCurrentGameLanguage"/> (<c>english</c>, <c>spanish</c>, ...).</summary>
+        public static string GetCurrentGameLanguageSteamApiName() => CuratedClient.GetCurrentGameLanguageSteamApiName();
     }
 }

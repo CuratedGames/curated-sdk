@@ -38,6 +38,7 @@ jobs:
         run: |
           dotnet test Curated.Sdk.sln --configuration Release
           node --test engines/rpgmaker/CuratedSDK.test.mjs
+          python3 scripts/check-game-languages.py
       - name: Pack assets
         id: pack
         run: |
@@ -58,6 +59,7 @@ jobs:
           bash scripts/pack-engines.sh "${RUNNER_TEMP}/sdk-unity/publish/Curated.Sdk.dll" \
             "${RUNNER_TEMP}/sdk-release"
           cp contracts/launch-contract.md contracts/fixtures/conformance.v1.json \
+            contracts/fixtures/game-language.v1.json \
             "${RUNNER_TEMP}/sdk-release/"
       - name: Upload SDK artifacts
         uses: actions/upload-artifact@v4
@@ -159,6 +161,7 @@ jobs:
             release-assets/CuratedSDK.js
             release-assets/launch-contract.md
             release-assets/conformance.v1.json
+            release-assets/game-language.v1.json
             release-assets/curated-content-builder-linux-x64
             release-assets/curated-content-builder-windows-x64.exe
           fail_on_unmatched_files: true

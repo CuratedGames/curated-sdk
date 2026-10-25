@@ -87,3 +87,57 @@ test("checkEntitlement and unlock fail before a successful launch", async () => 
   assert.deepEqual(await Curated.checkEntitlement(), { ok: false, error: "not_launched_by_curated" });
   assert.deepEqual(await Curated.unlockAchievement("x"), { ok: false, error: "not_launched_by_curated" });
 });
+
+const languageFixture = JSON.parse(
+  readFileSync(join(here, "..", "..", "contracts", "fixtures", "game-language.v1.json"), "utf8"),
+);
+
+test("game language table matches the fixture", () => {
+  assert.equal(Curated.DEFAULT_GAME_LANGUAGE, languageFixture.default_language);
+  assert.deepEqual(
+    Curated.GAME_LANGUAGES.map(([code, name, steam, aliases]) => ({ code, name, steam, aliases })),
+    languageFixture.languages,
+  );
+});
+
+for (const c of languageFixture.cases) {
+  test(`game language: ${c.name}`, () => {
+    assert.equal(Curated.getCurrentGameLanguage(c.env), c.expect.language);
+    assert.equal(Curated.getCurrentGameLanguageSteamApiName(c.env), c.expect.steam);
+  });
+}
+
+test("getCurrentGameLanguage reads the process environment by default", () => {
+  const saved = process.env.CURATED_LANGUAGE;
+  try {
+    process.env.CURATED_LANGUAGE = "es";
+    assert.equal(Curated.getCurrentGameLanguage(), "es");
+    assert.equal(Curated.getCurrentGameLanguageSteamApiName(), "spanish");
+    delete process.env.CURATED_LANGUAGE;
+    assert.equal(Curated.getCurrentGameLanguage(), "en");
+  } finally {
+    if (saved === undefined) delete process.env.CURATED_LANGUAGE;
+    else process.env.CURATED_LANGUAGE = saved;
+  }
+});
+
+test("session carries the normalized game language", async () => {
+  const transport = async (_method, url) => {
+    const path = new URL(url).pathname;
+    if (path === "/auth/me") return { status: 200, text: '{"user_id":"u","username":"p"}' };
+    return { status: 200, text: '[{"app_id":1002,"source":"grant"}]' };
+  };
+  const env = {
+    CURATED_LAUNCHER: "1",
+    CURATED_CONTRACT_VERSION: "1",
+    CURATED_APP_ID: "1002",
+    CURATED_SESSION_TOKEN: "tok",
+    CURATED_LANGUAGE: "it-IT",
+  };
+  const withLanguage = await Curated.initFromLauncher(1002, { env, transport });
+  assert.equal(withLanguage.session.language, "it-IT");
+  assert.equal(withLanguage.session.gameLanguage, "it");
+  delete env.CURATED_LANGUAGE;
+  const without = await Curated.initFromLauncher(1002, { env, transport });
+  assert.equal(without.session.gameLanguage, "en");
+});

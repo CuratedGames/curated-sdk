@@ -33,8 +33,28 @@ session and `GET /library` to confirm ownership, and returns a session or a stab
 | `network_error` | Curated unreachable | Retry or allow offline play |
 | `hub_error` | Unexpected server response | Retry later |
 
-Every binding is checked against the same fixture,
-[contracts/fixtures/conformance.v1.json](contracts/fixtures/conformance.v1.json).
+Every binding is checked against the same fixtures,
+[contracts/fixtures/conformance.v1.json](contracts/fixtures/conformance.v1.json) and
+[contracts/fixtures/game-language.v1.json](contracts/fixtures/game-language.v1.json).
+
+### Game language
+
+Like Steamworks `ISteamApps::GetCurrentGameLanguage`, every binding returns the game language the
+player selected in the Curated launcher. It is the launcher's client language, the same language
+the launcher uses to download language depots, as a lowercase Curated code (`en`, `es`, `it`, and
+any other catalog code such as `pt-br`). It returns `en` when the game runs outside the launcher.
+A second call returns the Steam API name (`english`, `spanish`, `italian`, ...) to ease porting.
+
+| Binding | Curated code | Steam API name |
+|---------|--------------|----------------|
+| .NET / Unity | `CuratedClient.GetCurrentGameLanguage()` | `CuratedClient.GetCurrentGameLanguageSteamApiName()` |
+| Godot | `Curated.get_current_game_language()` | `Curated.get_current_game_language_steam_api_name()` |
+| Unreal | `UCuratedSubsystem::GetCurrentGameLanguage()` | `UCuratedSubsystem::GetCurrentGameLanguageSteamApiName()` |
+| RPG Maker | `Curated.getCurrentGameLanguage()` | `Curated.getCurrentGameLanguageSteamApiName()` |
+
+`GameLanguages` (C#) converts between Curated codes and Steam API names
+(`GameLanguages.ToSteamApiName("pt-br")` is `brazilian`, `GameLanguages.FromSteamApiName("latam")`
+is `es-419`).
 
 ## Getting started
 
@@ -98,10 +118,12 @@ foreach (var friend in await Friends.GetFriendsAsync())
 await Presence.SetAsync("in_game", "Level 3");
 
 Entitlement current = await Entitlements.CheckAsync();
+
+string language = CuratedClient.GetCurrentGameLanguage(); // "en", "es", "it", ...
 ```
 
 Public types: `CuratedClient`, `CuratedSession`, `Entitlement`, `Entitlements`,
-`LaunchContext`, `CuratedLaunchException`, `CuratedLaunchError`, `Achievement`, `Achievements`,
+`LaunchContext`, `GameLanguages`, `GameLanguage`, `CuratedLaunchException`, `CuratedLaunchError`, `Achievement`, `Achievements`,
 `Cloud`, `CloudSyncResult`, `Friends`, `Friend`, `Presence`, `CuratedException`. Transport and
 wire models stay internal. `Curated.Sdk.dll` targets netstandard2.1 and net8.0 and has no
 third-party dependencies.
@@ -128,6 +150,7 @@ See [tooling/content-builder/README.md](tooling/content-builder/README.md) and [
 ```bash
 dotnet test Curated.Sdk.sln --configuration Release
 node --test engines/rpgmaker/CuratedSDK.test.mjs
+python3 scripts/check-game-languages.py
 bash scripts/pack-unity-zip.sh artifacts/sdk-unity
 bash scripts/pack-engines.sh artifacts/sdk-unity/publish/Curated.Sdk.dll artifacts/engines
 cd tooling/content-builder && cargo test && cargo build --release

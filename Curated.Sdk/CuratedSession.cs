@@ -22,8 +22,17 @@ public sealed class CuratedSession
     /// <summary>Player display name.</summary>
     public string Username { get; }
 
-    /// <summary>Player's Curated main language (<c>en</c>, <c>es</c>, <c>it</c>), or null when the launcher did not send one.</summary>
+    /// <summary>
+    /// Raw <c>CURATED_LANGUAGE</c> value from the launcher (<c>en</c>, <c>es</c>, <c>it</c>), or null when the
+    /// launcher did not send one. Prefer <see cref="CurrentGameLanguage"/>.
+    /// </summary>
     public string? Language { get; }
+
+    /// <summary>
+    /// Current game language as a Curated code, with the <c>en</c> fallback. Same value as
+    /// <see cref="CuratedClient.GetCurrentGameLanguage"/>.
+    /// </summary>
+    public string CurrentGameLanguage => CuratedClient.ResolveGameLanguage(Language);
 
     public Entitlement Entitlement { get; }
 }
