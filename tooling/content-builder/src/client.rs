@@ -57,8 +57,10 @@ pub struct OwnedGame {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct DepotRow {
-    pub id: Uuid,
-    pub depot_key: String,
+    /// Depot ID `<app_id>_<NN>`.
+    pub depot_id: String,
+    #[serde(default)]
+    pub depot_number: Option<i16>,
     pub name: String,
     #[serde(default)]
     pub os: Option<String>,
@@ -77,7 +79,7 @@ pub struct ChunkUrl {
 #[derive(Debug, Clone, Deserialize)]
 pub struct InitUploadResponse {
     pub upload_id: Uuid,
-    pub depot_id: Uuid,
+    pub depot_id: String,
     pub version: String,
     pub artifact_uri: String,
     pub artifact_sha256: String,
@@ -91,7 +93,7 @@ pub struct InitUploadResponse {
 pub struct CompleteUploadResponse {
     pub artifact_uri: String,
     pub artifact_sha256: String,
-    pub depot_id: Uuid,
+    pub depot_id: String,
     pub version: String,
     pub total_bytes: i64,
 }
@@ -105,9 +107,7 @@ pub struct RegisteredBuild {
     #[serde(default)]
     pub artifact_sha256: Option<String>,
     #[serde(default)]
-    pub depot_id: Option<Uuid>,
-    #[serde(default)]
-    pub depot_key: Option<String>,
+    pub depot_id: Option<String>,
     #[serde(default)]
     pub scan_status: Option<String>,
 }
@@ -124,7 +124,7 @@ struct InitBody<'a> {
     total_bytes: i64,
     artifact_sha256: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
-    depot_id: Option<Uuid>,
+    depot_id: Option<&'a str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     filename: Option<&'a str>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -145,7 +145,7 @@ struct CreateBuildBody<'a> {
     artifact_sha256: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
     changelog: Option<&'a str>,
-    depot_id: Uuid,
+    depot_id: &'a str,
     files: Vec<ManifestFileBody<'a>>,
 }
 
@@ -260,7 +260,7 @@ uploads and depot listing are limited to apps you own"
         version: &str,
         total_bytes: i64,
         artifact_sha256: &str,
-        depot_id: Option<Uuid>,
+        depot_id: Option<&str>,
         filename: Option<&str>,
         chunk_size: Option<i64>,
     ) -> Result<InitUploadResponse, ApiError> {
@@ -322,7 +322,7 @@ uploads and depot listing are limited to apps you own"
         version: &str,
         artifact_uri: &str,
         artifact_sha256: &str,
-        depot_id: Uuid,
+        depot_id: &str,
         changelog: Option<&str>,
         files: &[(String, String, u64)],
     ) -> Result<RegisteredBuild, ApiError> {
@@ -381,5 +381,26 @@ mod tests {
         assert!(owns_app(&owned, 1000));
         assert!(owns_app(&owned, 2000));
         assert!(!owns_app(&owned, 3000));
+    }
+
+    #[test]
+    fn api_depot_rows_use_depot_ids() {
+        let rows: Vec<DepotRow> = serde_json::from_str(
+            r#"[{"depot_id":"1000_00","depot_number":0,"name":"Base content","os":"any","arch":"any","language":"","game_id":"x"}]"#,
+        )
+        .unwrap();
+        assert_eq!(rows[0].depot_id, "1000_00");
+        assert_eq!(rows[0].depot_number, Some(0));
+        let body = serde_json::to_value(InitBody {
+            version: "1.0.0",
+            total_bytes: 1,
+            artifact_sha256: "ab",
+            depot_id: Some("1000_01"),
+            filename: None,
+            chunk_size: None,
+        })
+        .unwrap();
+        assert_eq!(body["depot_id"], "1000_01");
+        assert!(body.get("depot_key").is_none());
     }
 }

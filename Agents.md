@@ -193,10 +193,14 @@ curated-content-builder.exe list-depots --app-id 1000
 ```bat
 curated-content-builder.exe upload ^
   --app-id 1000 ^
-  --depot-key content ^
+  --depot-id 1000_00 ^
   --content C:\game\content ^
   --version 1.2.3
 ```
+
+`--depot-id` takes the depot ID `<app_id>_<NN>` from `list-depots` or admin Game Build > Builds and
+Depots (`1000_00` is the base depot, the default when the flag is omitted). The builder checks the
+format before uploading; depot keys such as `content` are rejected.
 
 Or use a script (see `tooling/content-builder/examples/simple_app_build.toml`):
 
