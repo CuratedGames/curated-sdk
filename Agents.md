@@ -28,11 +28,18 @@ The Curated launcher starts games with environment variables defined in
 | `CURATED_SESSION_TOKEN` | (secret) | Bearer token scoped to this game (12 h max). Never log, persist, or forward it |
 | `CURATED_API_BASE` | `https://api.curated.games` | Only destination for the token |
 | `CURATED_USER_ID`, `CURATED_USERNAME` | | Display hints; trust `/auth/me` instead |
-| `CURATED_LANGUAGE` | `en`, `es`, `it` | Player's Curated language |
+| `CURATED_LANGUAGE` | `en`, `es`, `it` | Launcher client language; read it with `GetCurrentGameLanguage` |
 
 Startup: `GET /auth/me` (session valid?) then `GET /library` (owns `app_id`?). Each binding
 returns a session or one error code: `not_launched_by_curated`, `unsupported_contract_version`,
 `app_mismatch`, `session_invalid`, `not_entitled`, `network_error`, `hub_error`.
+
+Game language (Steamworks `GetCurrentGameLanguage`): call the binding's `GetCurrentGameLanguage`
+(C# `CuratedClient.GetCurrentGameLanguage()`, Godot `Curated.get_current_game_language()`, Unreal
+`UCuratedSubsystem::GetCurrentGameLanguage()`, RPG Maker `Curated.getCurrentGameLanguage()`). It
+returns a lowercase Curated code (`en`, `es`, `it`, `pt-br`, ...) that matches depot languages, and
+`en` outside the launcher. Where a Steamworks port expects Steam API names (`english`, `italian`),
+use the `...SteamApiName` variant instead of keeping a private mapping table.
 
 Player launch options from the launcher (Properties > General > Launch options) arrive as
 ordinary command-line arguments. Credentials are never on the command line.
@@ -125,6 +132,9 @@ foreach (var friend in await Friends.GetFriendsAsync()) { /* friend.Name, friend
 await Presence.SetAsync("in_game", "Level 3");
 await Presence.HeartbeatAsync();
 
+string language = CuratedClient.GetCurrentGameLanguage(); // "en", "es", "it", ...
+string steamName = CuratedClient.GetCurrentGameLanguageSteamApiName(); // "english", ...
+
 CuratedClient.Shutdown(); // on quit
 ```
 
@@ -138,6 +148,7 @@ the Cloud Save tool before players sync (last write wins).
 - [ ] Start the exe directly: `not_launched_by_curated`
 - [ ] Account without the game: `not_entitled`
 - [ ] Launch options from Properties > General reach the game's arguments
+- [ ] Switch the launcher language (account main language) and relaunch: `GetCurrentGameLanguage` follows it; started directly it returns `en`
 - [ ] Unlock one test achievement
 - [ ] Dedicated server build contains no Curated code
 - [ ] Shutdown on quit without hanging

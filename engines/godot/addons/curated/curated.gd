@@ -58,9 +58,25 @@ func init_from_launcher(app_id: int, env = null, transport: Callable = Callable(
 		"user_id": me.body.user_id,
 		"username": str(me.body.get("username", "")),
 		"language": context.language,
+		"game_language": Contract.game_language_from_env({"CURATED_LANGUAGE": context.language}),
 		"entitlement": entitlement,
 	}
 	return _finish({"ok": true, "session": session})
+
+
+## Game language the player selected in the Curated launcher, as a lowercase Curated code
+## ("en", "es", "it", "pt-br", ...), like Steamworks GetCurrentGameLanguage. It is the launcher's
+## client language, the same one used to pick language depots. Returns "en" when the game was not
+## started by the launcher, no language was sent, or it is not a Curated game language. Works
+## before init_from_launcher. `env` is for tests.
+func get_current_game_language(env = null) -> String:
+	return Contract.game_language_from_env(Contract.environment_from_os() if env == null else env)
+
+
+## get_current_game_language() as a Steam API language name ("english", "spanish", "italian", ...),
+## for code ported from Steamworks.
+func get_current_game_language_steam_api_name(env = null) -> String:
+	return Contract.steam_api_language_name(get_current_game_language(env))
 
 
 ## Re-check ownership during a long session. Returns { ok, entitlement } or { ok = false, error }.

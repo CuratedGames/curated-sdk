@@ -26,8 +26,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Test RPG Maker plugin against the launch contract fixture
+      - name: Test RPG Maker plugin against the launch contract fixtures
         run: node --test engines/rpgmaker/CuratedSDK.test.mjs
+      - name: Check game language tables in every binding
+        run: python3 scripts/check-game-languages.py
       - name: Pack engine bindings
         run: |
           bash scripts/pack-unity-zip.sh "${RUNNER_TEMP}/sdk-unity"

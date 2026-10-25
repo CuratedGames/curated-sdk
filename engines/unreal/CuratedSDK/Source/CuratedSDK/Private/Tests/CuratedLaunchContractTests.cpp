@@ -78,4 +78,54 @@ bool FCuratedEntitlementTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCuratedGameLanguageTest, "Curated.LaunchContract.GameLanguage",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FCuratedGameLanguageTest::RunTest(const FString& Parameters)
+{
+	// Mirrors the cases in contracts/fixtures/game-language.v1.json.
+	struct FCase
+	{
+		const TCHAR* Raw;
+		bool bSet;
+		const TCHAR* Code;
+		const TCHAR* Steam;
+	};
+	const FCase Cases[] = {
+		{ TEXT(""), false, TEXT("en"), TEXT("english") },
+		{ TEXT("   "), true, TEXT("en"), TEXT("english") },
+		{ TEXT("en"), true, TEXT("en"), TEXT("english") },
+		{ TEXT("es"), true, TEXT("es"), TEXT("spanish") },
+		{ TEXT("it"), true, TEXT("it"), TEXT("italian") },
+		{ TEXT(" IT "), true, TEXT("it"), TEXT("italian") },
+		{ TEXT("pt-BR"), true, TEXT("pt-br"), TEXT("brazilian") },
+		{ TEXT("pt_br"), true, TEXT("pt-br"), TEXT("brazilian") },
+		{ TEXT("es-419"), true, TEXT("es-419"), TEXT("latam") },
+		{ TEXT("it-IT"), true, TEXT("it"), TEXT("italian") },
+		{ TEXT("es-ES"), true, TEXT("es"), TEXT("spanish") },
+		{ TEXT("zh"), true, TEXT("zh-cn"), TEXT("schinese") },
+		{ TEXT("zh-Hant"), true, TEXT("zh-tw"), TEXT("tchinese") },
+		{ TEXT("nb"), true, TEXT("no"), TEXT("norwegian") },
+		{ TEXT("ko"), true, TEXT("ko"), TEXT("koreana") },
+		{ TEXT("italian"), true, TEXT("it"), TEXT("italian") },
+		{ TEXT("brazilian"), true, TEXT("pt-br"), TEXT("brazilian") },
+		{ TEXT("klingon"), true, TEXT("en"), TEXT("english") },
+		{ TEXT("xx-yy"), true, TEXT("en"), TEXT("english") },
+	};
+	for (const FCase& Case : Cases)
+	{
+		TMap<FString, FString> Env;
+		if (Case.bSet)
+		{
+			Env.Add(TEXT("CURATED_LANGUAGE"), Case.Raw);
+		}
+		const FString Code = CuratedLaunchContract::GameLanguageFromEnvironment(Env);
+		TestEqual(FString::Printf(TEXT("code for '%s'"), Case.Raw), Code, FString(Case.Code));
+		TestEqual(FString::Printf(TEXT("steam for '%s'"), Case.Raw), CuratedLaunchContract::SteamApiLanguageName(Code), FString(Case.Steam));
+	}
+	TestEqual(TEXT("table size"), CuratedLaunchContract::GameLanguageCount(), 31);
+	TestTrue(TEXT("unknown normalizes to empty"), CuratedLaunchContract::NormalizeGameLanguage(TEXT("klingon")).IsEmpty());
+	return true;
+}
+
 #endif

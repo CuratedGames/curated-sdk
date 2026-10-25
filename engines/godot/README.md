@@ -27,7 +27,20 @@ func _on_boss_defeated() -> void:
 ```
 
 `Curated.check_entitlement()` re-checks ownership during long sessions. `Curated.session`
-holds `user_id`, `username`, `language`, and `entitlement` after a successful init.
+holds `user_id`, `username`, `language` (raw launcher value), `game_language`, and `entitlement`
+after a successful init.
+
+## Game language
+
+```gdscript
+var language := Curated.get_current_game_language()  # "en", "es", "it", "pt-br", ...
+TranslationServer.set_locale(language)
+var steam_name := Curated.get_current_game_language_steam_api_name()  # "english", "italian", ...
+```
+
+It returns the language the player selected in the Curated launcher (the language the launcher
+downloads depots for), or `"en"` when the game was not started by the launcher. It works before
+`init_from_launcher`.
 
 ## Dedicated servers
 
@@ -42,4 +55,5 @@ From a Godot 4 project containing the addon:
 
 ```bash
 godot --headless --script res://addons/curated/tests/run_conformance.gd -- /path/to/contracts/fixtures/conformance.v1.json
+godot --headless --script res://addons/curated/tests/run_game_language.gd -- /path/to/contracts/fixtures/game-language.v1.json
 ```
