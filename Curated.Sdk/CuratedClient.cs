@@ -149,6 +149,28 @@ public static class CuratedClient
         }
     }
 
+    /// <summary>
+    /// The game language the player selected in the Curated launcher, as a lowercase Curated code
+    /// (<c>en</c>, <c>es</c>, <c>it</c>, and any other code in <see cref="GameLanguages.All"/>), like
+    /// Steamworks <c>ISteamApps::GetCurrentGameLanguage</c>. It is the launcher's client language,
+    /// the same one the launcher uses to pick language depots. Returns <c>en</c> when the game was
+    /// not started by the launcher, the launcher did not send a language, or the language is not a
+    /// Curated game language. Works before and without <see cref="InitFromLauncherAsync(long, CancellationToken)"/>.
+    /// Use <see cref="GetCurrentGameLanguageSteamApiName"/> for the Steam API name.
+    /// </summary>
+    public static string GetCurrentGameLanguage() =>
+        ResolveGameLanguage(Environment.GetEnvironmentVariable(LaunchContext.LanguageVariable));
+
+    /// <summary>
+    /// <see cref="GetCurrentGameLanguage"/> as a Steam API language name (<c>english</c>, <c>spanish</c>,
+    /// <c>italian</c>, <c>brazilian</c>, ...), for code ported from Steamworks. Returns <c>english</c> as the fallback.
+    /// </summary>
+    public static string GetCurrentGameLanguageSteamApiName() =>
+        GameLanguages.ToSteamApiName(GetCurrentGameLanguage()) ?? "english";
+
+    internal static string ResolveGameLanguage(string? raw) =>
+        GameLanguages.Normalize(raw) ?? GameLanguages.DefaultLanguage;
+
     /// <summary>Shut down Curated and release network resources. Safe to call more than once.</summary>
     public static void Shutdown()
     {

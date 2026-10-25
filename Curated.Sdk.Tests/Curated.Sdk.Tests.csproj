@@ -16,6 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\contracts\fixtures\conformance.v1.json" Link="conformance.v1.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\contracts\fixtures\game-language.v1.json" Link="game-language.v1.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Curated.Sdk\Curated.Sdk.csproj" />

@@ -51,9 +51,13 @@ struct CURATEDSDK_API FCuratedSession
 	UPROPERTY(BlueprintReadOnly, Category = "Curated")
 	FString Username;
 
-	/** Player's Curated main language (en, es, it), or empty. */
+	/** Raw CURATED_LANGUAGE value from the launcher (en, es, it), or empty. Prefer CurrentGameLanguage. */
 	UPROPERTY(BlueprintReadOnly, Category = "Curated")
 	FString Language;
+
+	/** Current game language as a Curated code (en, es, it, pt-br, ...), "en" when unknown. */
+	UPROPERTY(BlueprintReadOnly, Category = "Curated")
+	FString CurrentGameLanguage;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Curated")
 	FCuratedEntitlement Entitlement;
@@ -88,6 +92,21 @@ namespace CuratedLaunchContract
 
 	/** None for 2xx, SessionInvalid for 401, HubError otherwise. */
 	CURATEDSDK_API ECuratedLaunchError ClassifyStatus(int32 StatusCode);
+
+	/** Returned by GameLanguageFromEnvironment when the language is missing or unknown. */
+	CURATEDSDK_API FString DefaultGameLanguage();
+
+	/** Canonical Curated code for a code, alias, BCP-47 tag or Steam API name; empty when unsupported. */
+	CURATEDSDK_API FString NormalizeGameLanguage(const FString& Raw);
+
+	/** Steam API language name (english, brazilian, ...) for a Curated code; empty when unsupported. */
+	CURATEDSDK_API FString SteamApiLanguageName(const FString& Language);
+
+	/** Current game language from launch variables: Curated code, "en" when missing or unknown. */
+	CURATEDSDK_API FString GameLanguageFromEnvironment(const TMap<FString, FString>& Environment);
+
+	/** Number of rows in the game language table (Full Platform languages of the Curated catalog). */
+	CURATEDSDK_API int32 GameLanguageCount();
 
 	/** Reads a /library response. Returns false when the body is not a JSON array. */
 	CURATEDSDK_API bool FindEntitlement(const FString& LibraryJson, int64 AppId, FCuratedEntitlement& OutEntitlement);

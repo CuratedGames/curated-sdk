@@ -17,8 +17,15 @@ the check.
   achievement's API name.
 - Script call: `Curated.unlockAchievement("BOSS_1");`
 
-`Curated.session` holds `userId`, `username`, `language`, and `entitlement` once the check
-succeeds. `Curated.checkEntitlement()` re-checks ownership.
+`Curated.session` holds `userId`, `username`, `language` (raw launcher value), `gameLanguage`,
+and `entitlement` once the check succeeds. `Curated.checkEntitlement()` re-checks ownership.
+
+## Game language
+
+`Curated.getCurrentGameLanguage()` returns the language the player selected in the Curated
+launcher (`"en"`, `"es"`, `"it"`, ...), the language the launcher downloads depots for, or `"en"`
+outside the launcher. `Curated.getCurrentGameLanguageSteamApiName()` returns the Steam API name
+(`"english"`, `"italian"`, ...). Both work before the ownership check finishes.
 
 ## Tests
 

@@ -13,6 +13,7 @@ can integrate with Curated.
 | Default API base | `https://api.curated.games` |
 | Machine-readable API | [`openapi/game-sdk.v1.yaml`](openapi/game-sdk.v1.yaml) |
 | Conformance cases | [`fixtures/conformance.v1.json`](fixtures/conformance.v1.json) |
+| Game language cases | [`fixtures/game-language.v1.json`](fixtures/game-language.v1.json) |
 
 ## 1. Launcher to game: environment variables
 
@@ -29,7 +30,7 @@ launcher.
 | `CURATED_API_BASE` | no | `https://api.curated.games` | API origin. Use the default when unset or blank. |
 | `CURATED_USER_ID` | no | `0b4c...-uuid` | Player id hint. Authoritative value comes from the session call. |
 | `CURATED_USERNAME` | no | `player1` | Player display name hint. |
-| `CURATED_LANGUAGE` | no | `it` | Player's Curated main language (`en`, `es`, `it`). Use it for the first-run game language. |
+| `CURATED_LANGUAGE` | no | `it` | Game language the player selected in the launcher: the launcher's client language (`en`, `es`, `it` today). The launcher downloads language depots for this same language. See [Game language](#game-language). |
 
 Rules for bindings:
 
@@ -46,6 +47,30 @@ Rules for bindings:
    trailing slash. Any other value is `not_launched_by_curated`.
 6. Only send the token to `CURATED_API_BASE` (or the default). Never log it, never persist it,
    never pass it to third-party services or child processes.
+
+### Game language
+
+Bindings expose the current game language like Steamworks `ISteamApps::GetCurrentGameLanguage`
+(for example `CuratedClient.GetCurrentGameLanguage()` in C#, `Curated.get_current_game_language()`
+in Godot). It is read from `CURATED_LANGUAGE`, needs no network call, and works before the
+startup sequence below.
+
+- Value: a lowercase Curated language code, the same codes depots and the Curated language catalog
+  use: `en`, `es`, `it`, and any other code in
+  [`fixtures/game-language.v1.json`](fixtures/game-language.v1.json) (`pt-br`, `zh-cn`, `es-419`, ...).
+- Source: the launcher's client language, which follows the player's account main language. It is
+  the language the launcher uses to pick which language depots to download, so the game always
+  asks for content that is installed. The launcher sends `en`, `es` or `it` today; bindings accept
+  every catalog language so games keep working when the launcher adds more.
+- Normalization: trim, lowercase, `_` becomes `-`; match a code, then an alias (`zh` is `zh-cn`,
+  `nb` is `no`), then a Steam API name (`italian`), then the primary subtag (`it-IT` is `it`).
+- Fallback: `en` when the variable is missing or blank (game started outside the launcher, older
+  launcher) or the value is not a Curated game language.
+- Steam API names: bindings also return the Steam API language name (`english`, `spanish`,
+  `italian`, `brazilian`, `koreana`, ...) for code ported from Steamworks, with `english` as the
+  fallback.
+
+Bindings check themselves against every case in `fixtures/game-language.v1.json`.
 
 ### Token scope
 

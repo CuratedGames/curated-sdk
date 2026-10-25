@@ -34,6 +34,19 @@ void UMyGameInstance::Init()
 
 `CheckEntitlement` re-checks ownership; `UnlockAchievement` unlocks by API name.
 
+## Game language
+
+`UCuratedSubsystem::GetCurrentGameLanguage()` (Blueprint: **Get Current Game Language**) returns
+the language the player selected in the Curated launcher as a Curated code (`en`, `es`, `it`,
+`pt-br`, ...), the language the launcher downloads depots for, or `en` outside the launcher. It
+is static and works before `InitFromLauncher`. **Get Current Game Language Steam Api Name**
+returns the Steam API name (`english`, `italian`, ...). After a successful launch,
+`FCuratedSession::CurrentGameLanguage` holds the same value.
+
+```cpp
+FInternationalization::Get().SetCurrentCulture(UCuratedSubsystem::GetCurrentGameLanguage());
+```
+
 ## Dedicated servers
 
 The module has `"TargetDenyList": ["Server"]`, so it is never built into server targets. Add

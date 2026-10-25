@@ -24,6 +24,82 @@ const VARIABLES := [
 ]
 
 
+## GetCurrentGameLanguage: default when the language is missing or unknown.
+const DEFAULT_GAME_LANGUAGE := "en"
+
+## Curated game languages: [code, English name, Steam API name, aliases]. Same table as
+## contracts/fixtures/game-language.v1.json (Full Platform languages of the Curated catalog).
+const GAME_LANGUAGES := [
+	["ar", "Arabic", "arabic", []],
+	["bg", "Bulgarian", "bulgarian", []],
+	["zh-cn", "Chinese (Simplified)", "schinese", ["zh", "zh-hans"]],
+	["zh-tw", "Chinese (Traditional)", "tchinese", ["zh-hant"]],
+	["cs", "Czech", "czech", []],
+	["da", "Danish", "danish", []],
+	["nl", "Dutch", "dutch", []],
+	["en", "English", "english", []],
+	["fi", "Finnish", "finnish", []],
+	["fr", "French", "french", []],
+	["de", "German", "german", []],
+	["el", "Greek", "greek", []],
+	["hu", "Hungarian", "hungarian", []],
+	["id", "Indonesian", "indonesian", []],
+	["it", "Italian", "italian", []],
+	["ja", "Japanese", "japanese", []],
+	["ko", "Korean", "koreana", []],
+	["ms", "Malay", "malay", []],
+	["no", "Norwegian", "norwegian", ["nb"]],
+	["pl", "Polish", "polish", []],
+	["pt", "Portuguese", "portuguese", []],
+	["pt-br", "Portuguese-Brazil", "brazilian", []],
+	["ro", "Romanian", "romanian", []],
+	["ru", "Russian", "russian", []],
+	["es-419", "Spanish-Latin America", "latam", []],
+	["es", "Spanish-Spain", "spanish", []],
+	["sv", "Swedish", "swedish", []],
+	["th", "Thai", "thai", []],
+	["tr", "Turkish", "turkish", []],
+	["uk", "Ukrainian", "ukrainian", []],
+	["vi", "Vietnamese", "vietnamese", []],
+]
+
+
+## Canonical Curated code for a code, alias, BCP-47 tag or Steam API name, or "" when unsupported.
+static func normalize_game_language(raw) -> String:
+	if typeof(raw) != TYPE_STRING:
+		return ""
+	var key := String(raw).strip_edges().to_lower().replace("_", "-")
+	if key.is_empty():
+		return ""
+	for entry in GAME_LANGUAGES:
+		if entry[0] == key or key in entry[3]:
+			return entry[0]
+	for entry in GAME_LANGUAGES:
+		if entry[2] == key:
+			return entry[0]
+	var dash := key.find("-")
+	if dash > 0:
+		var primary := key.substr(0, dash)
+		for entry in GAME_LANGUAGES:
+			if entry[0] == primary or primary in entry[3]:
+				return entry[0]
+	return ""
+
+
+## Current game language from launch variables: Curated code, "en" when missing or unknown.
+static func game_language_from_env(env: Dictionary) -> String:
+	var code := normalize_game_language(read_var(env, "CURATED_LANGUAGE"))
+	return DEFAULT_GAME_LANGUAGE if code.is_empty() else code
+
+
+## Steam API language name for a Curated code (or any accepted value), or "" when unsupported.
+static func steam_api_language_name(language) -> String:
+	var code := normalize_game_language(language)
+	for entry in GAME_LANGUAGES:
+		if entry[0] == code:
+			return entry[2]
+	return ""
+
 ## Launch variables of the current process.
 static func environment_from_os() -> Dictionary:
 	var env := {}

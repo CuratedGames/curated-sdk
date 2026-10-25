@@ -82,6 +82,8 @@ void UCuratedSubsystem::FinishLaunch(ECuratedLaunchError Error)
 		Context = PendingContext;
 		Session.AppId = Context.AppId;
 		Session.Language = Context.Language;
+		const FString Normalized = CuratedLaunchContract::NormalizeGameLanguage(Context.Language);
+		Session.CurrentGameLanguage = Normalized.IsEmpty() ? CuratedLaunchContract::DefaultGameLanguage() : Normalized;
 		bReady = true;
 	}
 	else
@@ -90,6 +92,16 @@ void UCuratedSubsystem::FinishLaunch(ECuratedLaunchError Error)
 	}
 	PendingContext = FCuratedLaunchContext();
 	OnLaunchCompleted.Broadcast(Error, Session);
+}
+
+FString UCuratedSubsystem::GetCurrentGameLanguage()
+{
+	return CuratedLaunchContract::GameLanguageFromEnvironment(CuratedLaunchContract::ReadProcessEnvironment());
+}
+
+FString UCuratedSubsystem::GetCurrentGameLanguageSteamApiName()
+{
+	return CuratedLaunchContract::SteamApiLanguageName(GetCurrentGameLanguage());
 }
 
 void UCuratedSubsystem::CheckEntitlement(FCuratedEntitlementChecked OnChecked)

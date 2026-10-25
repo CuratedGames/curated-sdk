@@ -8,7 +8,7 @@ dependencies) plus a small `Curated.Unity` helper assembly.
 1. Download `games.curated.sdk-<version>.tgz` from the curated-sdk Releases.
 2. Unity: **Window > Package Manager > + > Add package from tarball...** and pick the file.
    Or reference it from `Packages/manifest.json`:
-   `"games.curated.sdk": "file:../Packages-local/games.curated.sdk-1.1.0.tgz"`.
+   `"games.curated.sdk": "file:../Packages-local/games.curated.sdk-1.2.0.tgz"`.
 
 ## Use
 
@@ -32,6 +32,17 @@ catch (CuratedLaunchException e)
 }
 #endif
 ```
+
+Game language (like Steamworks `GetCurrentGameLanguage`):
+
+```csharp
+string language = CuratedUnity.GetCurrentGameLanguage(); // "en", "es", "it", "pt-br", ...
+string steamName = CuratedUnity.GetCurrentGameLanguageSteamApiName(); // "english", "italian", ...
+```
+
+It is the language the player selected in the Curated launcher (the language the launcher
+downloads depots for), or `en` outside the launcher and in the Editor. It works before
+`InitFromLauncherAsync`. With Unity Localization, pick the `Locale` whose code matches it.
 
 `CuratedUnity.InitFromLauncherAsync` shuts Curated down on `Application.quitting`. Achievements,
 Cloud Save, friends, and presence are on the `Curated.Sdk` API (`Achievements`, `Cloud`, `Friends`,

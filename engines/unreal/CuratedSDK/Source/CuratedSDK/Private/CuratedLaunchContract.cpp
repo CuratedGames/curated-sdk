@@ -18,6 +18,72 @@ namespace
 		TEXT("CURATED_LANGUAGE"),
 	};
 
+	struct FGameLanguageRow
+	{
+		const TCHAR* Code;
+		const TCHAR* Name;
+		const TCHAR* Steam;
+		TArray<const TCHAR*> Aliases;
+	};
+
+	// Same table as contracts/fixtures/game-language.v1.json (Full Platform languages of the Curated catalog).
+	const TArray<FGameLanguageRow>& GameLanguageTable()
+	{
+		static const TArray<FGameLanguageRow> Table = {
+			{ TEXT("ar"), TEXT("Arabic"), TEXT("arabic"), {} },
+			{ TEXT("bg"), TEXT("Bulgarian"), TEXT("bulgarian"), {} },
+			{ TEXT("zh-cn"), TEXT("Chinese (Simplified)"), TEXT("schinese"), { TEXT("zh"), TEXT("zh-hans") } },
+			{ TEXT("zh-tw"), TEXT("Chinese (Traditional)"), TEXT("tchinese"), { TEXT("zh-hant") } },
+			{ TEXT("cs"), TEXT("Czech"), TEXT("czech"), {} },
+			{ TEXT("da"), TEXT("Danish"), TEXT("danish"), {} },
+			{ TEXT("nl"), TEXT("Dutch"), TEXT("dutch"), {} },
+			{ TEXT("en"), TEXT("English"), TEXT("english"), {} },
+			{ TEXT("fi"), TEXT("Finnish"), TEXT("finnish"), {} },
+			{ TEXT("fr"), TEXT("French"), TEXT("french"), {} },
+			{ TEXT("de"), TEXT("German"), TEXT("german"), {} },
+			{ TEXT("el"), TEXT("Greek"), TEXT("greek"), {} },
+			{ TEXT("hu"), TEXT("Hungarian"), TEXT("hungarian"), {} },
+			{ TEXT("id"), TEXT("Indonesian"), TEXT("indonesian"), {} },
+			{ TEXT("it"), TEXT("Italian"), TEXT("italian"), {} },
+			{ TEXT("ja"), TEXT("Japanese"), TEXT("japanese"), {} },
+			{ TEXT("ko"), TEXT("Korean"), TEXT("koreana"), {} },
+			{ TEXT("ms"), TEXT("Malay"), TEXT("malay"), {} },
+			{ TEXT("no"), TEXT("Norwegian"), TEXT("norwegian"), { TEXT("nb") } },
+			{ TEXT("pl"), TEXT("Polish"), TEXT("polish"), {} },
+			{ TEXT("pt"), TEXT("Portuguese"), TEXT("portuguese"), {} },
+			{ TEXT("pt-br"), TEXT("Portuguese-Brazil"), TEXT("brazilian"), {} },
+			{ TEXT("ro"), TEXT("Romanian"), TEXT("romanian"), {} },
+			{ TEXT("ru"), TEXT("Russian"), TEXT("russian"), {} },
+			{ TEXT("es-419"), TEXT("Spanish-Latin America"), TEXT("latam"), {} },
+			{ TEXT("es"), TEXT("Spanish-Spain"), TEXT("spanish"), {} },
+			{ TEXT("sv"), TEXT("Swedish"), TEXT("swedish"), {} },
+			{ TEXT("th"), TEXT("Thai"), TEXT("thai"), {} },
+			{ TEXT("tr"), TEXT("Turkish"), TEXT("turkish"), {} },
+			{ TEXT("uk"), TEXT("Ukrainian"), TEXT("ukrainian"), {} },
+			{ TEXT("vi"), TEXT("Vietnamese"), TEXT("vietnamese"), {} },
+		};
+		return Table;
+	}
+
+	const FGameLanguageRow* FindByCodeOrAlias(const FString& Key)
+	{
+		for (const FGameLanguageRow& Row : GameLanguageTable())
+		{
+			if (Key == Row.Code)
+			{
+				return &Row;
+			}
+			for (const TCHAR* Alias : Row.Aliases)
+			{
+				if (Key == Alias)
+				{
+					return &Row;
+				}
+			}
+		}
+		return nullptr;
+	}
+
 	FString ReadVar(const TMap<FString, FString>& Environment, const TCHAR* Name)
 	{
 		const FString* Value = Environment.Find(Name);
@@ -126,6 +192,64 @@ namespace CuratedLaunchContract
 		OutContext.UsernameHint = ReadVar(Environment, TEXT("CURATED_USERNAME"));
 		OutContext.Language = ReadVar(Environment, TEXT("CURATED_LANGUAGE"));
 		return ECuratedLaunchError::None;
+	}
+
+	FString DefaultGameLanguage()
+	{
+		return TEXT("en");
+	}
+
+	FString NormalizeGameLanguage(const FString& Raw)
+	{
+		const FString Key = Raw.TrimStartAndEnd().ToLower().Replace(TEXT("_"), TEXT("-"));
+		if (Key.IsEmpty())
+		{
+			return FString();
+		}
+		if (const FGameLanguageRow* Row = FindByCodeOrAlias(Key))
+		{
+			return Row->Code;
+		}
+		for (const FGameLanguageRow& Row : GameLanguageTable())
+		{
+			if (Key == Row.Steam)
+			{
+				return Row.Code;
+			}
+		}
+		int32 Dash = INDEX_NONE;
+		if (Key.FindChar(TEXT('-'), Dash) && Dash > 0)
+		{
+			if (const FGameLanguageRow* Row = FindByCodeOrAlias(Key.Left(Dash)))
+			{
+				return Row->Code;
+			}
+		}
+		return FString();
+	}
+
+	FString SteamApiLanguageName(const FString& Language)
+	{
+		const FString Code = NormalizeGameLanguage(Language);
+		for (const FGameLanguageRow& Row : GameLanguageTable())
+		{
+			if (Code == Row.Code)
+			{
+				return Row.Steam;
+			}
+		}
+		return FString();
+	}
+
+	FString GameLanguageFromEnvironment(const TMap<FString, FString>& Environment)
+	{
+		const FString Code = NormalizeGameLanguage(ReadVar(Environment, TEXT("CURATED_LANGUAGE")));
+		return Code.IsEmpty() ? DefaultGameLanguage() : Code;
+	}
+
+	int32 GameLanguageCount()
+	{
+		return GameLanguageTable().Num();
 	}
 
 	ECuratedLaunchError ClassifyStatus(int32 StatusCode)
