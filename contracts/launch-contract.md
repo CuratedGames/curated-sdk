@@ -114,12 +114,13 @@ Authorization: Bearer {CURATED_SESSION_TOKEN}
 
 | Status | Binding result |
 |--------|----------------|
-| `200` | Authenticated. Read `user_id` (uuid) and `username` from the body. |
+| `200` | Authenticated. Read `user_id` (uuid), `username`, and `curated_id` (public 17-digit player id) from the body. |
 | `401` | `session_invalid`. The session expired or the player signed out. Ask the player to relaunch from Curated. |
 | other | `hub_error` (5xx) or `network_error` (no response). Retry with backoff. |
 
 The response also contains account fields (for example `email`, which is empty for game-scoped
-tokens) that games must ignore. Bindings expose only `user_id` and `username`.
+tokens) that games must ignore. Bindings expose `user_id`, `username`, and `curated_id`.
+`curated_id` is the public player id. `user_id` is the private account uuid.
 
 ### Optional: OpenID Connect ID token
 
@@ -140,7 +141,7 @@ must own that app.
 
 | Status | Binding result |
 |--------|----------------|
-| `200` | Read `id_token` (JWT string). `expires_in` is 600 seconds. Pass `id_token` only to the game's OpenID Connect caller. |
+| `200` | Read `id_token` (JWT string). `expires_in` is 600 seconds. `sub` is the public `curated_id`. Pass `id_token` only to the game's OpenID Connect caller. |
 | `401` | `session_invalid`. |
 | empty or missing `id_token` | `hub_error`. |
 | other | `hub_error` (or `network_error` with no response). |

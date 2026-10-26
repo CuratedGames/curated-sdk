@@ -78,4 +78,13 @@ public class JsonTests
         Assert.Throws<FormatException>(() => Json.Deserialize<SessionUserWire>("[]"));
         Assert.Throws<FormatException>(() => Json.Deserialize<SessionUserWire>("{\"user_id\": 5}"));
     }
+
+    [Fact]
+    public void Deserialize_session_user_reads_public_curated_id()
+    {
+        var user = Json.Deserialize<SessionUserWire>(
+            "{\"user_id\":\"0b4c6f8e-6f2a-4f3d-9a51-2f0e8f6a1c11\",\"username\":\"player1\",\"curated_id\":\"72057598332895237\"}");
+        Assert.Equal("72057598332895237", user.CuratedId);
+        Assert.Equal("player1", user.Username);
+    }
 }

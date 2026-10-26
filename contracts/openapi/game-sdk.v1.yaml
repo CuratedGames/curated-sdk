@@ -45,8 +45,8 @@ paths:
       tags: [auth]
       summary: Mint a short-lived OpenID Connect ID token for this session
       description: |
-        Optional step after `GET /auth/me`. Returns an RS256 JWT whose `sub` matches
-        `/auth/me` `user_id` and whose `aud` is `curated-app-{app_id}` for this session's
+        Optional step after `GET /auth/me`. Returns an RS256 JWT whose `sub` is
+        `/auth/me` `curated_id` and whose `aud` is `curated-app-{app_id}` for this session's
         app. Games may pass `id_token` only to their own OpenID Connect caller (for example
         Unity Authentication provider `oidc-curated`). Never log it. Do not send
         `CURATED_SESSION_TOKEN` to Unity or any other third party.
@@ -265,13 +265,16 @@ components:
           type: string
     SessionUser:
       type: object
-      required: [user_id, username]
+      required: [user_id, username, curated_id]
       properties:
         user_id:
           type: string
           format: uuid
         username:
           type: string
+        curated_id:
+          type: string
+          description: Public immutable Curated player id (17-digit decimal string).
     OpenIdIdTokenRequest:
       type: object
       properties:

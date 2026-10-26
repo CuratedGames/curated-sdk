@@ -17,14 +17,48 @@ namespace Curated.Unity
         /// <exception cref="CuratedLaunchException">Contract error code in <see cref="CuratedLaunchException.Code"/>.</exception>
         public static async Task<CuratedSession> InitFromLauncherAsync(long appId, CancellationToken cancellationToken = default)
         {
-            var session = await CuratedClient.InitFromLauncherAsync(appId, cancellationToken);
+            try
+            {
+                var session = await CuratedClient.InitFromLauncherAsync(appId, cancellationToken);
+                RegisterQuitHook();
+                return session;
+            }
+            catch (CuratedLaunchException exception) when (exception.Error == CuratedLaunchError.NotLaunchedByCurated)
+            {
+#if UNITY_EDITOR
+                var token = LocalAccountSession.TryReadToken();
+                if (!string.IsNullOrEmpty(token))
+                {
+                    var session = await CuratedClient.InitWithAccountSessionAsync(appId, token, cancellationToken);
+                    RegisterQuitHook();
+                    return session;
+                }
+#endif
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Same checks as <see cref="InitFromLauncherAsync(long, CancellationToken)"/> for an account
+        /// session read by the Editor. The token is sent only to the Curated API.
+        /// </summary>
+        public static async Task<CuratedSession> InitWithAccountSessionAsync(
+            long appId,
+            string sessionToken,
+            CancellationToken cancellationToken = default)
+        {
+            var session = await CuratedClient.InitWithAccountSessionAsync(appId, sessionToken, cancellationToken);
+            RegisterQuitHook();
+            return session;
+        }
+
+        static void RegisterQuitHook()
+        {
             if (!quitHookRegistered)
             {
                 quitHookRegistered = true;
                 Application.quitting += CuratedClient.Shutdown;
             }
-
-            return session;
         }
 
         /// <summary>

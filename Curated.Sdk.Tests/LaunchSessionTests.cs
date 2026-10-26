@@ -110,7 +110,7 @@ public class LaunchSessionTests : IDisposable
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var body = request.RequestUri!.AbsolutePath == "/auth/me"
-                ? "{\"user_id\":\"0b4c6f8e-6f2a-4f3d-9a51-2f0e8f6a1c11\",\"username\":\"p\"}"
+                ? "{\"user_id\":\"0b4c6f8e-6f2a-4f3d-9a51-2f0e8f6a1c11\",\"username\":\"p\",\"curated_id\":\"72057598332895237\"}"
                 : "[{\"app_id\":1002,\"source\":\"grant\",\"acquired_at\":\"2026-10-20T08:30:00Z\"}]";
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {

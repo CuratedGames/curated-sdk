@@ -44,6 +44,11 @@ It is the language the player selected in the Curated launcher (the language the
 downloads depots for), or `en` outside the launcher and in the Editor. It works before
 `InitFromLauncherAsync`. With Unity Localization, pick the `Locale` whose code matches it.
 
+In the Unity Editor, `InitFromLauncherAsync` uses the account signed in to a running Curated
+launcher (`Config/session.json` beside `Curated.exe`) when this process was not started by
+Curated. Player builds still return `not_launched_by_curated` in that case. The session token
+is sent only to the Curated API.
+
 `CuratedUnity.InitFromLauncherAsync` shuts Curated down on `Application.quitting`. Achievements,
 Cloud Save, friends, and presence are on the `Curated.Sdk` API (`Achievements`, `Cloud`, `Friends`,
 `Presence`). For Unity Authentication OpenID Connect, call

@@ -15,7 +15,7 @@ internal static class SessionService
         CancellationToken cancellationToken)
     {
         var user = await SendAsync<SessionUserWire>(state, "/auth/me", cancellationToken).ConfigureAwait(false);
-        if (user.UserId == Guid.Empty)
+        if (user.UserId == Guid.Empty || string.IsNullOrWhiteSpace(user.CuratedId))
         {
             throw new CuratedLaunchException(CuratedLaunchError.HubError, "Curated returned an incomplete player profile.");
         }
@@ -26,7 +26,7 @@ internal static class SessionService
             throw new CuratedLaunchException(CuratedLaunchError.NotEntitled, "This Curated account does not own the game.");
         }
 
-        return new CuratedSession(state.AppId, user.UserId, user.Username, context.Language, entitlement);
+        return new CuratedSession(state.AppId, user.UserId, user.CuratedId.Trim(), user.Username, context.Language, entitlement);
     }
 
     public static async Task<Entitlement> CheckEntitlementAsync(

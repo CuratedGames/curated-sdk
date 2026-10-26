@@ -65,6 +65,42 @@ public sealed class LaunchContext
 
     internal string SessionToken { get; }
 
+    /// <summary>
+    /// Account session used by the Editor when this process was not started by the launcher.
+    /// The token is still sent only to <paramref name="apiBase"/>.
+    /// </summary>
+    internal static LaunchContext ForAccountSession(long appId, string sessionToken, Uri apiBase)
+    {
+        if (appId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(appId), "app id must be positive");
+        }
+
+        if (string.IsNullOrWhiteSpace(sessionToken))
+        {
+            throw new CuratedLaunchException(
+                CuratedLaunchError.NotLaunchedByCurated,
+                "The game was not started by the Curated launcher.");
+        }
+
+        if (apiBase is null
+            || (apiBase.Scheme != Uri.UriSchemeHttps && apiBase.Scheme != Uri.UriSchemeHttp))
+        {
+            throw new CuratedLaunchException(
+                CuratedLaunchError.NotLaunchedByCurated,
+                "The Curated launcher passed an invalid API address.");
+        }
+
+        return new LaunchContext(
+            SupportedContractVersion,
+            appId,
+            sessionToken.Trim(),
+            apiBase,
+            null,
+            null,
+            null);
+    }
+
     /// <summary>True when the process looks like it was started by the Curated launcher.</summary>
     public static bool IsLaunchedByCurated() =>
         Read(Environment.GetEnvironmentVariables(), LauncherVariable) == "1";

@@ -27,7 +27,8 @@
             "roles": 1,
             "is_player": true,
             "is_developer": false,
-            "is_staff": false
+            "is_staff": false,
+            "curated_id": "72057598332895237"
           }
         },
         "/library": {
@@ -79,7 +80,7 @@
       "responses": {
         "/auth/me": {
           "status": 200,
-          "body": { "user_id": "7a0f3a52-1b1e-4f7a-8d3c-0c6f5a9e2b22", "username": "trimmed" }
+          "body": { "user_id": "7a0f3a52-1b1e-4f7a-8d3c-0c6f5a9e2b22", "username": "trimmed", "curated_id": "72057598332895237" }
         },
         "/library": {
           "status": 200,
@@ -115,7 +116,7 @@
         "CURATED_API_BASE": "https://api.example.test/"
       },
       "responses": {
-        "/auth/me": { "status": 200, "body": { "user_id": "1c9a3c4b-7c58-4b0e-a7f3-111111111111", "username": "slash" } },
+        "/auth/me": { "status": 200, "body": { "user_id": "1c9a3c4b-7c58-4b0e-a7f3-111111111111", "username": "slash", "curated_id": "72057598332895237" } },
         "/library": { "status": 200, "body": [ { "app_id": 1002, "source": "grant", "acquired_at": "2026-10-02T00:00:00Z" } ] }
       },
       "expect": {
@@ -270,7 +271,7 @@
         "CURATED_SESSION_TOKEN": "tok"
       },
       "responses": {
-        "/auth/me": { "status": 200, "body": { "user_id": "2b2b2b2b-1111-4222-8333-444444444444", "username": "no_copy" } },
+        "/auth/me": { "status": 200, "body": { "user_id": "2b2b2b2b-1111-4222-8333-444444444444", "username": "no_copy", "curated_id": "72057598332895237" } },
         "/library": {
           "status": 200,
           "body": [ { "app_id": 1001, "source": "primary", "acquired_at": "2026-10-01T10:00:00Z" } ]
@@ -294,7 +295,7 @@
         "CURATED_SESSION_TOKEN": "tok"
       },
       "responses": {
-        "/auth/me": { "status": 200, "body": { "user_id": "3c3c3c3c-1111-4222-8333-444444444444", "username": "new_player" } },
+        "/auth/me": { "status": 200, "body": { "user_id": "3c3c3c3c-1111-4222-8333-444444444444", "username": "new_player", "curated_id": "72057598332895237" } },
         "/library": { "status": 200, "body": [] }
       },
       "expect": {
@@ -315,7 +316,7 @@
         "CURATED_SESSION_TOKEN": "tok"
       },
       "responses": {
-        "/auth/me": { "status": 200, "body": { "user_id": "4d4d4d4d-1111-4222-8333-444444444444", "username": "flaky" } },
+        "/auth/me": { "status": 200, "body": { "user_id": "4d4d4d4d-1111-4222-8333-444444444444", "username": "flaky", "curated_id": "72057598332895237" } },
         "/library": { "status": 503, "body": { "error": "unavailable" } }
       },
       "expect": {

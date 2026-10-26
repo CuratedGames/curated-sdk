@@ -99,6 +99,21 @@ public static class CuratedClient
     public static Task<CuratedSession> InitFromLauncherAsync(long appId, CancellationToken cancellationToken = default) =>
         InitFromLauncherAsync(appId, LaunchContext.FromEnvironment(appId), null, cancellationToken);
 
+    /// <summary>
+    /// Verify an account session that was not injected as launch variables, then confirm the
+    /// player owns <paramref name="appId"/>. Used by the Unity Editor when Curated is already
+    /// signed in on this machine. The token is sent only to <see cref="DefaultHubUrl"/>.
+    /// </summary>
+    public static Task<CuratedSession> InitWithAccountSessionAsync(
+        long appId,
+        string sessionToken,
+        CancellationToken cancellationToken = default) =>
+        InitFromLauncherAsync(
+            appId,
+            LaunchContext.ForAccountSession(appId, sessionToken, DefaultHubUrl),
+            null,
+            cancellationToken);
+
     internal static Task<CuratedSession> InitFromLauncherAsync(
         long appId,
         IReadOnlyDictionary<string, string?> environment,

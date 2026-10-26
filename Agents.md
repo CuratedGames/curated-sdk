@@ -89,6 +89,10 @@ catch (CuratedLaunchException e)
 #endif
 ```
 
+In the Unity Editor, `InitFromLauncherAsync` falls back to the account signed in to a running
+Curated launcher when the launch variables are missing. Player builds still return
+`not_launched_by_curated`. Do not reimplement that fallback in the game.
+
 Dedicated server and WebGL: `Curated.Sdk.dll` and the `Curated.Unity` assembly carry the define
 constraint `!UNITY_SERVER` and exclude WebGL. Reference `Curated.Unity` only from assemblies with
 the same constraints, or wrap calls in `#if !UNITY_SERVER && !UNITY_WEBGL`.

@@ -8,6 +8,9 @@ internal sealed class SessionUserWire
     public Guid UserId { get; set; }
 
     public string Username { get; set; } = "";
+
+    /// <summary>Public 17-digit Curated player id. Empty when the hub omits it.</summary>
+    public string CuratedId { get; set; } = "";
 }
 
 internal sealed class EntitlementWire
