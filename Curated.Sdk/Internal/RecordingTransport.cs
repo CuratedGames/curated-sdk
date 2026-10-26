@@ -153,6 +153,17 @@ internal sealed class RecordingTransport : ITransport
                 });
         }
 
+        if (path.Equals("/auth/openid/id-token", StringComparison.Ordinal)
+            && method.Equals("POST", StringComparison.OrdinalIgnoreCase))
+        {
+            return Json.Serialize(
+                new OpenIdIdTokenWire
+                {
+                    IdToken = "header.payload.signature",
+                    ExpiresIn = 600
+                });
+        }
+
         return Json.Serialize(new { ok = true });
     }
 }

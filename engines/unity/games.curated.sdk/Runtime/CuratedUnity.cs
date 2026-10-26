@@ -28,6 +28,16 @@ namespace Curated.Unity
         }
 
         /// <summary>
+        /// Mint a short-lived OpenID Connect ID token for the initialized session. Pass it only to
+        /// Unity Authentication (<c>SignInWithOpenIdConnectAsync</c> /
+        /// <c>LinkWithOpenIdConnectAsync</c> with provider <c>oidc-curated</c>). Never log it.
+        /// Same as <see cref="CuratedClient.GetOpenIdIdTokenAsync"/>.
+        /// </summary>
+        /// <exception cref="CuratedLaunchException">Contract error code in <see cref="CuratedLaunchException.Code"/>.</exception>
+        public static Task<string> GetOpenIdIdTokenAsync(CancellationToken cancellationToken = default) =>
+            CuratedClient.GetOpenIdIdTokenAsync(cancellationToken);
+
+        /// <summary>
         /// Game language the player selected in the Curated launcher (<c>en</c>, <c>es</c>, <c>it</c>, ...),
         /// or <c>en</c> outside the launcher. Same as <see cref="CuratedClient.GetCurrentGameLanguage"/>.
         /// </summary>

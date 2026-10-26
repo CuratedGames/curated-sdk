@@ -39,6 +39,44 @@ paths:
                 $ref: "#/components/schemas/SessionUser"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /auth/openid/id-token:
+    post:
+      operationId: mintOpenIdIdToken
+      tags: [auth]
+      summary: Mint a short-lived OpenID Connect ID token for this session
+      description: |
+        Optional step after `GET /auth/me`. Returns an RS256 JWT whose `sub` matches
+        `/auth/me` `user_id` and whose `aud` is `curated-app-{app_id}` for this session's
+        app. Games may pass `id_token` only to their own OpenID Connect caller (for example
+        Unity Authentication provider `oidc-curated`). Never log it. Do not send
+        `CURATED_SESSION_TOKEN` to Unity or any other third party.
+
+        With a game-scoped token the app id comes from the session; a body `app_id` that
+        disagrees returns 403. With a development account token the body must include a
+        positive `app_id` the account owns.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenIdIdTokenRequest"
+      responses:
+        "200":
+          description: Signed ID token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenIdIdTokenResponse"
+        "400":
+          description: Account session without a positive `app_id`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotEntitled"
   /library:
     get:
       operationId: listEntitlements
@@ -234,6 +272,26 @@ components:
           format: uuid
         username:
           type: string
+    OpenIdIdTokenRequest:
+      type: object
+      properties:
+        app_id:
+          type: integer
+          format: int64
+          description: |
+            Required for account (development) sessions. Ignored when it matches a
+            game-scoped session's app; a mismatch is 403.
+    OpenIdIdTokenResponse:
+      type: object
+      required: [id_token, expires_in]
+      properties:
+        id_token:
+          type: string
+          description: RS256 JWT. Secret; pass only to the game's OpenID Connect provider.
+        expires_in:
+          type: integer
+          description: Lifetime in seconds (600).
+          example: 600
     Entitlement:
       type: object
       required: [app_id, source, acquired_at]

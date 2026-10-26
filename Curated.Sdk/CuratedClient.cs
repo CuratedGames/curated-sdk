@@ -150,6 +150,22 @@ public static class CuratedClient
     }
 
     /// <summary>
+    /// Mint a short-lived OpenID Connect ID token for the initialized session
+    /// (<c>POST /auth/openid/id-token</c>). Pass the returned string only to the game's own
+    /// OpenID Connect provider (for example Unity Authentication with provider
+    /// <c>oidc-curated</c>). Never log it. Requires a prior <see cref="Init(long,string)"/> or
+    /// <see cref="InitFromLauncherAsync(long, CancellationToken)"/>.
+    /// </summary>
+    /// <exception cref="CuratedLaunchException">
+    /// <see cref="CuratedLaunchError.SessionInvalid"/> on HTTP 401;
+    /// <see cref="CuratedLaunchError.HubError"/> when the response has no usable <c>id_token</c>
+    /// or another unexpected hub failure;
+    /// <see cref="CuratedLaunchError.NetworkError"/> when Curated cannot be reached.
+    /// </exception>
+    public static Task<string> GetOpenIdIdTokenAsync(CancellationToken cancellationToken = default) =>
+        OpenIdService.MintIdTokenAsync(State, cancellationToken);
+
+    /// <summary>
     /// The game language the player selected in the Curated launcher, as a lowercase Curated code
     /// (<c>en</c>, <c>es</c>, <c>it</c>, and any other code in <see cref="GameLanguages.All"/>), like
     /// Steamworks <c>ISteamApps::GetCurrentGameLanguage</c>. It is the launcher's client language,
