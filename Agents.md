@@ -34,6 +34,13 @@ Startup: `GET /auth/me` (session valid?) then `GET /library` (owns `app_id`?). E
 returns a session or one error code: `not_launched_by_curated`, `unsupported_contract_version`,
 `app_mismatch`, `session_invalid`, `not_entitled`, `network_error`, `hub_error`.
 
+Optional after `/auth/me`: `POST /auth/openid/id-token` mints a short-lived RS256 ID token
+(`id_token`) for the game's own OpenID Connect provider (Unity provider name `oidc-curated`,
+audience `curated-app-{app_id}`). C# / Unity: `CuratedClient.GetOpenIdIdTokenAsync()` /
+`CuratedUnity.GetOpenIdIdTokenAsync()`. HTTP 401 is `session_invalid`; empty or missing
+`id_token` is `hub_error`. Keep `CURATED_SESSION_TOKEN` on `CURATED_API_BASE` only; the ID token
+may go to Unity Authentication and nowhere else. Never log either secret.
+
 Game language (Steamworks `GetCurrentGameLanguage`): call the binding's `GetCurrentGameLanguage`
 (C# `CuratedClient.GetCurrentGameLanguage()`, Godot `Curated.get_current_game_language()`, Unreal
 `UCuratedSubsystem::GetCurrentGameLanguage()`, RPG Maker `Curated.getCurrentGameLanguage()`). It
@@ -49,6 +56,9 @@ ordinary command-line arguments. Credentials are never on the command line.
 - Use the official binding for the game's engine. Only implement the contract by hand for
   engines without one, and run every case in `contracts/fixtures/conformance.v1.json`.
 - Never print, log, persist, or send `CURATED_SESSION_TOKEN` anywhere except `CURATED_API_BASE`.
+- An OpenID `id_token` from `GetOpenIdIdTokenAsync` may be passed only to the game's OpenID
+  Connect caller (for example Unity `SignInWithOpenIdConnectAsync` / `LinkWithOpenIdConnectAsync`
+  with provider `oidc-curated`). Never log it; never put it in the environment.
 - Keep Curated out of dedicated server builds (see each engine below).
 - If the game also ships on other storefronts, keep their code behind existing compile flags
   and add Curated in parallel.
@@ -116,7 +126,7 @@ Copy `CuratedSDK.js` into `js/plugins/`, add it in the Plugin Manager, and set *
 The title screen waits for the ownership check. Unlock achievements with the
 **Unlock achievement** plugin command or `Curated.unlockAchievement("BOSS_1")`.
 
-## 6. C# features (Achievements, Cloud Save, friends, presence)
+## 6. C# features (Achievements, Cloud Save, friends, presence, OpenID)
 
 After `InitFromLauncherAsync` (or `CuratedClient.Init(appId, token)` when you already have a
 session):
@@ -131,6 +141,10 @@ await Cloud.SyncOnQuitAsync(saveFolder, "saves/slot1.sav");
 foreach (var friend in await Friends.GetFriendsAsync()) { /* friend.Name, friend.IsOnline */ }
 await Presence.SetAsync("in_game", "Level 3");
 await Presence.HeartbeatAsync();
+
+// Optional: Unity Authentication (or another OIDC consumer). Never log the token.
+string idToken = await CuratedClient.GetOpenIdIdTokenAsync();
+// AuthenticationService.Instance.SignInWithOpenIdConnectAsync("oidc-curated", idToken);
 
 string language = CuratedClient.GetCurrentGameLanguage(); // "en", "es", "it", ...
 string steamName = CuratedClient.GetCurrentGameLanguageSteamApiName(); // "english", ...

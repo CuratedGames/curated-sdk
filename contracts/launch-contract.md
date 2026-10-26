@@ -85,6 +85,11 @@ scoped to the launched app. That token:
 
 Bindings need no special handling: the same variable, endpoints, and error codes apply.
 
+`POST /auth/openid/id-token` is one of those game-facing operations. The opaque
+`CURATED_SESSION_TOKEN` still goes only to `CURATED_API_BASE`. The response `id_token` is the
+one value a game may pass to its own OpenID Connect provider (for example Unity Authentication
+with provider name `oidc-curated`). Never log the ID token; never put it in the environment.
+
 ### Command-line arguments
 
 Players can add their own launch options per game in the launcher (Library, game, Properties,
@@ -115,6 +120,33 @@ Authorization: Bearer {CURATED_SESSION_TOKEN}
 
 The response also contains account fields (for example `email`, which is empty for game-scoped
 tokens) that games must ignore. Bindings expose only `user_id` and `username`.
+
+### Optional: OpenID Connect ID token
+
+After a successful `/auth/me`, a game that needs a signed player identity for its own auth
+provider (Unity OpenID Connect, and similar) may mint a short-lived ID token:
+
+```
+POST {api_base}/auth/openid/id-token
+Authorization: Bearer {CURATED_SESSION_TOKEN}
+Content-Type: application/json
+
+{ "app_id": <this game's app id> }
+```
+
+With a game-scoped token the app id comes from the session; send the same app id the game was
+initialized with. With a development account token the body `app_id` is required and the account
+must own that app.
+
+| Status | Binding result |
+|--------|----------------|
+| `200` | Read `id_token` (JWT string). `expires_in` is 600 seconds. Pass `id_token` only to the game's OpenID Connect caller. |
+| `401` | `session_invalid`. |
+| empty or missing `id_token` | `hub_error`. |
+| other | `hub_error` (or `network_error` with no response). |
+
+This call is outside the required startup sequence. It does not replace `/auth/me` or `/library`,
+and it does not bump the contract version.
 
 ## 3. Game to Curated: entitlement
 
@@ -162,10 +194,10 @@ All bindings use these exact strings so support logs read the same across engine
 
 ## 6. Other features
 
-Achievements, Cloud Save, friends, and presence use the same bearer token and are listed in the
-OpenAPI file. They all require an active entitlement for the app on the server side, so a binding
-that skips the entitlement check still cannot unlock achievements for players who do not own the
-game. A game-scoped token gets `403` on another app's routes.
+Achievements, Cloud Save, friends, presence, and OpenID ID token minting use the same bearer
+token and are listed in the OpenAPI file. They all require an active entitlement for the app on
+the server side, so a binding that skips the entitlement check still cannot unlock achievements
+for players who do not own the game. A game-scoped token gets `403` on another app's routes.
 
 ## 7. Dedicated servers
 

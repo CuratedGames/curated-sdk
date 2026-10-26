@@ -19,6 +19,18 @@ internal sealed class EntitlementWire
     public DateTimeOffset? AcquiredAt { get; set; }
 }
 
+internal sealed class OpenIdIdTokenRequest
+{
+    public long AppId { get; set; }
+}
+
+internal sealed class OpenIdIdTokenWire
+{
+    public string IdToken { get; set; } = "";
+
+    public int ExpiresIn { get; set; }
+}
+
 internal sealed class UnlockResult
 {
     public long AppId { get; set; }

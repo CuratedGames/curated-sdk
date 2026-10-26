@@ -46,7 +46,10 @@ downloads depots for), or `en` outside the launcher and in the Editor. It works 
 
 `CuratedUnity.InitFromLauncherAsync` shuts Curated down on `Application.quitting`. Achievements,
 Cloud Save, friends, and presence are on the `Curated.Sdk` API (`Achievements`, `Cloud`, `Friends`,
-`Presence`).
+`Presence`). For Unity Authentication OpenID Connect, call
+`CuratedUnity.GetOpenIdIdTokenAsync()` after init and pass the string to
+`SignInWithOpenIdConnectAsync` / `LinkWithOpenIdConnectAsync` with provider `oidc-curated`. Never
+log the ID token; never send `CURATED_SESSION_TOKEN` to Unity.
 
 ## Dedicated server and WebGL builds
 
