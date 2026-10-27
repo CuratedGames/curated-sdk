@@ -11,15 +11,15 @@ Add the package from this public repository with Unity Package Manager. In
 ```json
 {
   "dependencies": {
-    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.4.0"
+    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.5.0"
   }
 }
 ```
 
-Replace `v1.4.0` with a release tag, branch name, or commit SHA. Examples:
+Replace `v1.5.0` with a release tag, branch name, or commit SHA. Examples:
 
 ```text
-https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.4.0
+https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.5.0
 https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#main
 ```
 
