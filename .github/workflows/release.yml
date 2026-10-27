@@ -118,6 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -148,14 +149,25 @@ jobs:
           python3 scripts/release_changelog.py \
             --version "${{ needs.sdk.outputs.version }}" \
             --write-notes "${RUNNER_TEMP}/release-notes.md"
-      - name: Commit CHANGELOG.md when updated
+      - name: Open changelog pull request when updated
         if: steps.changelog.outputs.changed == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="changelog-${{ needs.sdk.outputs.version }}"
+          git checkout -B "$branch"
           git add CHANGELOG.md
-          git commit -m "docs: CHANGELOG for ${{ needs.sdk.outputs.version }} [skip ci]"
-          git push origin HEAD:main
+          git commit -m "docs: CHANGELOG for ${{ needs.sdk.outputs.version }}"
+          git push --force-with-lease -u origin "$branch"
+          existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$branch" --base main --json number --jq '.[0].number // empty')
+          if [ -z "$existing" ]; then
+            gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" \
+              --title "docs: CHANGELOG for ${{ needs.sdk.outputs.version }}" \
+              --body "main is protected, so this changelog update is opened as a pull request. The GitHub Release is published without waiting on it."
+          fi
       - name: Resolve tag commit
         id: tag_commit
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
