@@ -70,10 +70,31 @@ public sealed class Achievement
         var result = await AchievementsService
             .UnlockAsync(CuratedClient.GameState, Name, cancellationToken)
             .ConfigureAwait(false);
+        if (!string.IsNullOrEmpty(result.DisplayName))
+        {
+            _displayName = result.DisplayName;
+        }
+
+        if (!string.IsNullOrEmpty(result.Description))
+        {
+            _description = result.Description;
+        }
+
         if (result.NewlyUnlocked || result.Unlocked)
         {
             _state = true;
             _unlockedAt ??= DateTimeOffset.UtcNow;
+        }
+
+        if (result.NewlyUnlocked)
+        {
+            OverlayNotifier.NotifyAchievementUnlocked(
+                result.AppId != 0 ? result.AppId : CuratedClient.GameState.AppId,
+                string.IsNullOrEmpty(result.ApiName) ? Name : result.ApiName,
+                string.IsNullOrEmpty(result.DisplayName) ? _displayName : result.DisplayName,
+                string.IsNullOrEmpty(result.Description) ? _description : result.Description,
+                result.IconAchievedUri,
+                result.GlobalUnlockPercent);
         }
 
         return result.NewlyUnlocked;

@@ -491,6 +491,37 @@ components:
           type: boolean
         source:
           type: string
+        display_name:
+          type: string
+          description: Player-facing title for overlay toasts
+        description:
+          type: string
+          description: Player-facing description for overlay toasts
+        icon_achieved_uri:
+          type: [string, "null"]
+          description: Achieved icon URL when configured
+        global_unlock_percent:
+          type: [number, "null"]
+          description: >
+            Percent of players with an active entitlement for this game who have
+            unlocked this achievement (one decimal). Null when no entitled players.
+    AchievementToast:
+      type: object
+      required: [api_name, display_name, newly_unlocked]
+      properties:
+        api_name:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        icon_achieved_uri:
+          type: [string, "null"]
+        global_unlock_percent:
+          type: [number, "null"]
+        newly_unlocked:
+          type: boolean
+          description: Always true when returned from a stats write unlock list
     PlayerStatProgress:
       type: object
       required:
@@ -564,6 +595,11 @@ components:
           items:
             type: string
           description: Newly unlocked achievement api_names (may be empty)
+        unlocked_achievement_toasts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AchievementToast"
+          description: Toast payloads for newly unlocked achievements (same order as unlocked_achievements when present)
     IncrementStatRequest:
       type: object
       properties:
@@ -591,6 +627,10 @@ components:
           type: array
           items:
             type: string
+        unlocked_achievement_toasts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AchievementToast"
     StoreStatEntry:
       type: object
       required: [api_name]
@@ -641,6 +681,11 @@ components:
           items:
             type: string
           description: Deduped newly unlocked achievement api_names across the batch
+        unlocked_achievement_toasts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AchievementToast"
+          description: Toast payloads for newly unlocked achievements
     CloudSaveSyncRequest:
       type: object
       required: [direction, files]

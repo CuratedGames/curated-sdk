@@ -34,6 +34,8 @@ public sealed class LaunchContext
     public const string UserIdVariable = "CURATED_USER_ID";
     public const string UsernameVariable = "CURATED_USERNAME";
     public const string LanguageVariable = "CURATED_LANGUAGE";
+    public const string OverlayEndpointVariable = "CURATED_OVERLAY_ENDPOINT";
+    public const string OverlayTokenVariable = "CURATED_OVERLAY_TOKEN";
 
     private LaunchContext(
         int contractVersion,

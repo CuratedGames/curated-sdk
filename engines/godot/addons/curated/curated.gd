@@ -109,7 +109,55 @@ func unlock_achievement(api_name: String) -> Dictionary:
 	var newly := false
 	if typeof(res.body) == TYPE_DICTIONARY:
 		newly = bool(res.body.get("newly_unlocked", false))
+		if newly:
+			_notify_overlay_achievement(res.body)
 	return {"ok": true, "newly_unlocked": newly}
+
+
+## Fire-and-forget toast notify to the Curated launcher overlay (optional launch env).
+func _notify_overlay_achievement(body: Dictionary) -> void:
+	var endpoint := OS.get_environment("CURATED_OVERLAY_ENDPOINT").strip_edges()
+	var token := OS.get_environment("CURATED_OVERLAY_TOKEN").strip_edges()
+	if endpoint.is_empty() or token.is_empty():
+		return
+	var colon := endpoint.rfind(":")
+	if colon <= 0:
+		return
+	var host := endpoint.substr(0, colon).strip_edges()
+	var port := int(endpoint.substr(colon + 1).strip_edges())
+	if host.is_empty() or port <= 0:
+		return
+	var api_name := str(body.get("api_name", "")).strip_edges()
+	var display_name := str(body.get("display_name", api_name))
+	var description := str(body.get("description", ""))
+	var icon_url := str(body.get("icon_achieved_uri", "")).strip_edges()
+	var app_id := int(body.get("app_id", _context.app_id))
+	var payload := {
+		"v": 1,
+		"token": token,
+		"type": "achievement_unlocked",
+		"app_id": app_id,
+		"api_name": api_name,
+		"display_name": display_name,
+		"description": description,
+	}
+	if not icon_url.is_empty():
+		payload["icon_url"] = icon_url
+	if body.has("global_unlock_percent") and body["global_unlock_percent"] != null:
+		payload["global_unlock_percent"] = body["global_unlock_percent"]
+	var peer := StreamPeerTCP.new()
+	if peer.connect_to_host(host, port) != OK:
+		return
+	var deadline := Time.get_ticks_msec() + 750
+	while peer.get_status() == StreamPeerTCP.STATUS_CONNECTING and Time.get_ticks_msec() < deadline:
+		peer.poll()
+		OS.delay_msec(5)
+	if peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+		peer.disconnect_from_host()
+		return
+	var json := JSON.stringify(payload) + "\n"
+	peer.put_data(json.to_utf8_buffer())
+	peer.disconnect_from_host()
 
 
 ## Load stat definitions and current player values. Returns { ok, stats } or { ok = false, error }.

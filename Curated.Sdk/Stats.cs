@@ -185,6 +185,10 @@ public static class Stats
             Pending.Remove(trimmed);
         }
 
+        OverlayNotifier.NotifyAchievementToasts(
+            CuratedClient.GameState.AppId,
+            response.UnlockedAchievementToasts,
+            response.UnlockedAchievements);
         return new StatWriteResult(stat, response.PreviousValue, null, response.UnlockedAchievements);
     }
 
@@ -216,6 +220,10 @@ public static class Stats
             Pending.Remove(trimmed);
         }
 
+        OverlayNotifier.NotifyAchievementToasts(
+            CuratedClient.GameState.AppId,
+            response.UnlockedAchievementToasts,
+            response.UnlockedAchievements);
         return new StatWriteResult(
             stat,
             response.PreviousValue,
@@ -285,6 +293,10 @@ public static class Stats
             }
         }
 
+        OverlayNotifier.NotifyAchievementToasts(
+            CuratedClient.GameState.AppId,
+            response.UnlockedAchievementToasts,
+            response.UnlockedAchievements);
         return new StatStoreResult(updated, response.UnlockedAchievements);
     }
 

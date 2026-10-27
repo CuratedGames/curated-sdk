@@ -32,6 +32,7 @@ The Curated launcher starts games with environment variables defined in
 | `CURATED_API_BASE` | `https://api.curated.games` | Only destination for the token |
 | `CURATED_USER_ID`, `CURATED_USERNAME` | | Display hints; trust `/auth/me` instead |
 | `CURATED_LANGUAGE` | `en`, `es`, `it` | Launcher client language; read it with `GetCurrentGameLanguage` |
+| `CURATED_OVERLAY_ENDPOINT` / `CURATED_OVERLAY_TOKEN` | `127.0.0.1:<port>` + secret | Optional overlay toast IPC; official bindings notify on newly unlocked achievements |
 
 Startup: `GET /auth/me` (session valid?) then `GET /library` (owns `app_id`?). Each binding
 returns a session or one error code: `not_launched_by_curated`, `unsupported_contract_version`,
@@ -73,10 +74,10 @@ ordinary command-line arguments. Credentials are never on the command line.
 1. Add the package from this repository with a Git URL. In `Packages/manifest.json`:
 
 ```json
-"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.1"
+"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.5.0"
 ```
 
-Replace `v1.3.1` with a release tag, `main`, or a commit SHA. Or use
+Replace `v1.5.0` with a release tag, `main`, or a commit SHA. Or use
 **Window > Package Manager > + > Add package from git URL…** with the same URL.
 Use **v1.3.1 or newer** (or `main`). Older tags such as `v1.3.0` still have the previous
 folder name `games.curated.sdk` and fail with a pathspec error.
@@ -152,6 +153,8 @@ session). Every init path verifies ownership; game-scoped APIs require `CuratedC
 ```csharp
 await Achievements.RefreshAsync();
 await new Achievement("win_level_1").TriggerAsync();
+// Newly unlocked achievements notify the Curated launcher overlay (CURATED_OVERLAY_*);
+// do not build a separate in-game Curated toast.
 
 await Stats.RefreshAsync();
 Stats.SetStat("CardsCreated", 10);   // local (Steam-style)

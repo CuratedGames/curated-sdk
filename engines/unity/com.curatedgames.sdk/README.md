@@ -39,7 +39,7 @@ If you prefer an offline install, download `com.curatedgames.sdk-<version>.tgz` 
 **Window > Package Manager > + > Add package from tarball…**, or:
 
 ```json
-"com.curatedgames.sdk": "file:../Packages-local/com.curatedgames.sdk-1.4.0.tgz"
+"com.curatedgames.sdk": "file:../Packages-local/com.curatedgames.sdk-1.5.0.tgz"
 ```
 
 ## Use

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-27
+
+### Added
+
+- Overlay toast notify on newly unlocked achievements (`CURATED_OVERLAY_ENDPOINT` / `CURATED_OVERLAY_TOKEN`): C# SDK, Godot, Unreal, and RPG Maker. Unlock API toast fields (`display_name`, `description`, `icon_achieved_uri`, `global_unlock_percent`).
+
 ## [1.4.2] - 2026-10-27
 
 ### Fixed
@@ -87,7 +93,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial Curated.Sdk public API: launcher auth, entitlements, achievements, Cloud Save, friends and presence
 
-[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/CuratedGames/curated-sdk/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/CuratedGames/curated-sdk/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.3.1...v1.4.0
