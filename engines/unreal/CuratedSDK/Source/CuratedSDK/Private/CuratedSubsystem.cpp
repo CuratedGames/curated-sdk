@@ -5,8 +5,95 @@
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
+#include "IPAddress.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
+#include "SocketSubsystem.h"
+#include "Sockets.h"
+
+namespace
+{
+	void NotifyOverlayAchievement(const TSharedPtr<FJsonObject>& Body, int64 FallbackAppId)
+	{
+		const FString Endpoint = FPlatformMisc::GetEnvironmentVariable(TEXT("CURATED_OVERLAY_ENDPOINT")).TrimStartAndEnd();
+		const FString Token = FPlatformMisc::GetEnvironmentVariable(TEXT("CURATED_OVERLAY_TOKEN")).TrimStartAndEnd();
+		if (Endpoint.IsEmpty() || Token.IsEmpty() || !Body.IsValid())
+		{
+			return;
+		}
+		int32 Colon = INDEX_NONE;
+		if (!Endpoint.FindLastChar(TEXT(':'), Colon) || Colon <= 0)
+		{
+			return;
+		}
+		const FString Host = Endpoint.Left(Colon).TrimStartAndEnd();
+		const int32 Port = FCString::Atoi(*Endpoint.Mid(Colon + 1).TrimStartAndEnd());
+		if (Host.IsEmpty() || Port <= 0)
+		{
+			return;
+		}
+
+		TSharedRef<FJsonObject> Payload = MakeShared<FJsonObject>();
+		Payload->SetNumberField(TEXT("v"), 1);
+		Payload->SetStringField(TEXT("token"), Token);
+		Payload->SetStringField(TEXT("type"), TEXT("achievement_unlocked"));
+		double AppId = static_cast<double>(FallbackAppId);
+		Body->TryGetNumberField(TEXT("app_id"), AppId);
+		Payload->SetNumberField(TEXT("app_id"), AppId);
+		FString ApiName;
+		Body->TryGetStringField(TEXT("api_name"), ApiName);
+		Payload->SetStringField(TEXT("api_name"), ApiName);
+		FString DisplayName = ApiName;
+		Body->TryGetStringField(TEXT("display_name"), DisplayName);
+		Payload->SetStringField(TEXT("display_name"), DisplayName);
+		FString Description;
+		Body->TryGetStringField(TEXT("description"), Description);
+		Payload->SetStringField(TEXT("description"), Description);
+		FString IconUrl;
+		if (Body->TryGetStringField(TEXT("icon_achieved_uri"), IconUrl) && !IconUrl.IsEmpty())
+		{
+			Payload->SetStringField(TEXT("icon_url"), IconUrl);
+		}
+		double GlobalPct = 0;
+		if (Body->TryGetNumberField(TEXT("global_unlock_percent"), GlobalPct))
+		{
+			Payload->SetNumberField(TEXT("global_unlock_percent"), GlobalPct);
+		}
+
+		FString Json;
+		const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Json);
+		FJsonSerializer::Serialize(Payload, Writer);
+		Json += TEXT("\n");
+
+		ISocketSubsystem* Sockets = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
+		if (!Sockets)
+		{
+			return;
+		}
+		TSharedRef<FInternetAddr> Addr = Sockets->CreateInternetAddr();
+		bool bValid = false;
+		Addr->SetIp(*Host, bValid);
+		Addr->SetPort(Port);
+		if (!bValid)
+		{
+			return;
+		}
+		FSocket* Socket = Sockets->CreateSocket(NAME_Stream, TEXT("CuratedOverlay"), false);
+		if (!Socket)
+		{
+			return;
+		}
+		Socket->SetNonBlocking(false);
+		if (Socket->Connect(*Addr))
+		{
+			int32 Sent = 0;
+			const FTCHARToUTF8 Utf8(*Json);
+			Socket->Send(reinterpret_cast<const uint8*>(Utf8.Get()), Utf8.Length(), Sent);
+		}
+		Sockets->DestroySocket(Socket);
+	}
+}
 
 void UCuratedSubsystem::InitFromLauncher(int64 AppId)
 {
@@ -149,7 +236,8 @@ void UCuratedSubsystem::UnlockAchievement(const FString& ApiName, FCuratedAchiev
 		return;
 	}
 	const FString Path = FString::Printf(TEXT("/games/app/%lld/achievements/%s/unlock"), Context.AppId, *FGenericPlatformHttp::UrlEncode(Trimmed));
-	SendRequest(Context, TEXT("POST"), Path, [OnUnlocked](ECuratedLaunchError Error, const FString& Body)
+	const int64 AppId = Context.AppId;
+	SendRequest(Context, TEXT("POST"), Path, [OnUnlocked, AppId](ECuratedLaunchError Error, const FString& Body)
 	{
 		bool bNewlyUnlocked = false;
 		TSharedPtr<FJsonObject> Result;
@@ -157,6 +245,10 @@ void UCuratedSubsystem::UnlockAchievement(const FString& ApiName, FCuratedAchiev
 		if (Error == ECuratedLaunchError::None && FJsonSerializer::Deserialize(Reader, Result) && Result.IsValid())
 		{
 			Result->TryGetBoolField(TEXT("newly_unlocked"), bNewlyUnlocked);
+			if (bNewlyUnlocked)
+			{
+				NotifyOverlayAchievement(Result, AppId);
+			}
 		}
 		OnUnlocked.ExecuteIfBound(Error, bNewlyUnlocked);
 	});

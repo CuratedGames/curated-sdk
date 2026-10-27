@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 5,
-	"VersionName": "1.3.0",
+	"Version": 6,
+	"VersionName": "1.5.0",
 	"FriendlyName": "Curated SDK",
 	"Description": "Curated launcher sign-in, ownership check, and achievements (launch contract v1).",
 	"Category": "Online Platform",

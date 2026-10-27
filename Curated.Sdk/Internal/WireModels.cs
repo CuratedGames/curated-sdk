@@ -46,7 +46,31 @@ internal sealed class UnlockResult
 
     public string Source { get; set; } = "native";
 
+    public string DisplayName { get; set; } = "";
+
+    public string Description { get; set; } = "";
+
+    public string? IconAchievedUri { get; set; }
+
+    public double? GlobalUnlockPercent { get; set; }
+
     public bool Unlocked => NewlyUnlocked || !string.IsNullOrEmpty(ApiName);
+}
+
+/// Toast payload for an achievement unlocked via stats or explicit unlock.
+internal sealed class AchievementToastWire
+{
+    public string ApiName { get; set; } = "";
+
+    public string DisplayName { get; set; } = "";
+
+    public string Description { get; set; } = "";
+
+    public string? IconAchievedUri { get; set; }
+
+    public double? GlobalUnlockPercent { get; set; }
+
+    public bool NewlyUnlocked { get; set; } = true;
 }
 
 internal sealed class AchievementProgressItem
@@ -198,6 +222,9 @@ internal sealed class SetStatResponseWire
     public double PreviousValue { get; set; }
 
     public IReadOnlyList<string> UnlockedAchievements { get; set; } = Array.Empty<string>();
+
+    public IReadOnlyList<AchievementToastWire> UnlockedAchievementToasts { get; set; } =
+        Array.Empty<AchievementToastWire>();
 }
 
 internal sealed class IncrementStatRequestWire
@@ -216,6 +243,9 @@ internal sealed class IncrementStatResponseWire
     public double Delta { get; set; }
 
     public IReadOnlyList<string> UnlockedAchievements { get; set; } = Array.Empty<string>();
+
+    public IReadOnlyList<AchievementToastWire> UnlockedAchievementToasts { get; set; } =
+        Array.Empty<AchievementToastWire>();
 }
 
 internal sealed class StoreStatEntryWire
@@ -248,4 +278,7 @@ internal sealed class StoreStatsResponseWire
         Array.Empty<StoreStatsUpdatedItemWire>();
 
     public IReadOnlyList<string> UnlockedAchievements { get; set; } = Array.Empty<string>();
+
+    public IReadOnlyList<AchievementToastWire> UnlockedAchievementToasts { get; set; } =
+        Array.Empty<AchievementToastWire>();
 }

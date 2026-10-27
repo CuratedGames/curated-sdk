@@ -4,7 +4,7 @@
 //=============================================================================
 /*:
  * @target MZ
- * @plugindesc v1.4.0 Curated launcher sign-in, ownership check, achievements, and stats.
+ * @plugindesc v1.5.0 Curated launcher sign-in, ownership check, achievements, and stats.
  * @author Fatum Games SL
  * @url https://github.com/CuratedGames/curated-sdk
  *
@@ -239,6 +239,51 @@
     return { entitled: true, source: hit.source || null, acquiredAt: hit.acquired_at || null };
   }
 
+  /** Notify the Curated launcher overlay (NW.js / Node only; no-op in browser). */
+  function notifyOverlayAchievement(body, fallbackAppId) {
+    try {
+      const env = processEnv();
+      const endpoint = String((env && env.CURATED_OVERLAY_ENDPOINT) || "").trim();
+      const token = String((env && env.CURATED_OVERLAY_TOKEN) || "").trim();
+      if (!endpoint || !token || typeof require !== "function") return;
+      const colon = endpoint.lastIndexOf(":");
+      if (colon <= 0) return;
+      const host = endpoint.slice(0, colon).trim() || "127.0.0.1";
+      const port = Number(endpoint.slice(colon + 1));
+      if (!port) return;
+      const net = require("net");
+      const payload = {
+        v: 1,
+        token,
+        type: "achievement_unlocked",
+        app_id: Number((body && body.app_id) || fallbackAppId) || 0,
+        api_name: String((body && body.api_name) || ""),
+        display_name: String((body && body.display_name) || (body && body.api_name) || ""),
+        description: String((body && body.description) || ""),
+      };
+      if (body && body.icon_achieved_uri) payload.icon_url = String(body.icon_achieved_uri);
+      if (body && body.global_unlock_percent != null) {
+        payload.global_unlock_percent = Number(body.global_unlock_percent);
+      }
+      const socket = net.connect({ host, port }, () => {
+        socket.end(JSON.stringify(payload) + "\n");
+      });
+      socket.setTimeout(750);
+      socket.on("error", () => {
+        try {
+          socket.destroy();
+        } catch (_) {}
+      });
+      socket.on("timeout", () => {
+        try {
+          socket.destroy();
+        } catch (_) {}
+      });
+    } catch (_) {
+      /* overlay optional */
+    }
+  }
+
   const Curated = {
     CONTRACT_VERSION,
     MIN_COMPATIBLE_CONTRACT_VERSION,
@@ -326,7 +371,9 @@
       const path = `/games/app/${this._context.appId}/achievements/${encodeURIComponent(apiName)}/unlock`;
       const res = await callApi(this._context, this._transport, "POST", path, {});
       if (!res.ok) return res;
-      return { ok: true, newlyUnlocked: Boolean(res.body && res.body.newly_unlocked) };
+      const newlyUnlocked = Boolean(res.body && res.body.newly_unlocked);
+      if (newlyUnlocked) notifyOverlayAchievement(res.body, this._context.appId);
+      return { ok: true, newlyUnlocked };
     },
 
     /** Load stat definitions and current player values. Resolves { ok, stats } or { ok: false, error }. */

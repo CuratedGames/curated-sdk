@@ -31,6 +31,8 @@ launcher.
 | `CURATED_USER_ID` | no | `0b4c...-uuid` | Player id hint. Authoritative value comes from the session call. |
 | `CURATED_USERNAME` | no | `player1` | Player display name hint. |
 | `CURATED_LANGUAGE` | no | `it` | Game language the player selected in the launcher: the launcher's client language (`en`, `es`, `it` today). The launcher downloads language depots for this same language. See [Game language](#game-language). |
+| `CURATED_OVERLAY_ENDPOINT` | no | `127.0.0.1:4050` | Loopback TCP endpoint of the Curated launcher overlay toast host. Present when the launcher started the game and the overlay is running. |
+| `CURATED_OVERLAY_TOKEN` | no | (opaque) | Per-launch secret required on overlay notify messages. Never log or persist it. |
 
 Rules for bindings:
 
@@ -50,6 +52,31 @@ Rules for bindings:
    trailing slash. Any other value is `not_launched_by_curated`.
 6. Only send the token to `CURATED_API_BASE` (or the default). Never log it, never persist it,
    never pass it to third-party services or child processes.
+
+### Overlay toast IPC (optional)
+
+When the launcher overlay is running, curated launches also receive `CURATED_OVERLAY_ENDPOINT`
+(`127.0.0.1:<port>`) and `CURATED_OVERLAY_TOKEN`. After a **newly unlocked** achievement (explicit
+unlock or stats-gated unlock), official bindings send one JSON object over a short-lived TCP
+connection to that endpoint, then close. Example:
+
+```json
+{
+  "v": 1,
+  "token": "<CURATED_OVERLAY_TOKEN>",
+  "type": "achievement_unlocked",
+  "app_id": 1002,
+  "api_name": "as_it_comes",
+  "display_name": "As it Comes",
+  "description": "Complete mission 7…",
+  "icon_url": "https://cdn.example/achieved.jpg",
+  "global_unlock_percent": 4.9
+}
+```
+
+Rules: never fail the unlock if the overlay is down; never log the overlay token; ignore missing
+overlay variables (older launchers / editor). Download-complete toasts are launcher-only and do not
+use this channel.
 
 ### Game language
 
