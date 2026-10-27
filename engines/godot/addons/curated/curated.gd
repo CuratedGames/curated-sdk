@@ -112,18 +112,110 @@ func unlock_achievement(api_name: String) -> Dictionary:
 	return {"ok": true, "newly_unlocked": newly}
 
 
+## Load stat definitions and current player values. Returns { ok, stats } or { ok = false, error }.
+func refresh_stats() -> Dictionary:
+	if _context.is_empty():
+		return {"ok": false, "error": Contract.ERR_NOT_LAUNCHED}
+	var path := "/games/app/%d/stats/progress" % _context.app_id
+	var res := await _call(_context, HTTPClient.METHOD_GET, path)
+	if not res.ok:
+		return res
+	var stats: Array = []
+	if typeof(res.body) == TYPE_DICTIONARY and typeof(res.body.get("stats", null)) == TYPE_ARRAY:
+		stats = res.body.stats
+	return {"ok": true, "stats": stats}
+
+
+## SetStat absolute value. Returns { ok, stat, previous_value } or { ok = false, error }.
+func set_stat(api_name: String, value: float) -> Dictionary:
+	if _context.is_empty():
+		return {"ok": false, "error": Contract.ERR_NOT_LAUNCHED}
+	var trimmed := api_name.strip_edges()
+	if trimmed.is_empty():
+		return {"ok": false, "error": Contract.ERR_HUB}
+	var path := "/games/app/%d/stats/%s" % [_context.app_id, trimmed.uri_encode()]
+	var res := await _call(_context, HTTPClient.METHOD_PUT, path, {"value": value})
+	if not res.ok:
+		return res
+	return {
+		"ok": true,
+		"stat": res.body.get("stat", {}) if typeof(res.body) == TYPE_DICTIONARY else {},
+		"previous_value": res.body.get("previous_value", null) if typeof(res.body) == TYPE_DICTIONARY else null,
+	}
+
+
+## Increment a player stat. Returns { ok, stat, previous_value } or { ok = false, error }.
+func increment_stat(api_name: String, delta: float = 1.0) -> Dictionary:
+	if _context.is_empty():
+		return {"ok": false, "error": Contract.ERR_NOT_LAUNCHED}
+	var trimmed := api_name.strip_edges()
+	if trimmed.is_empty():
+		return {"ok": false, "error": Contract.ERR_HUB}
+	var path := "/games/app/%d/stats/%s/increment" % [_context.app_id, trimmed.uri_encode()]
+	var res := await _call(_context, HTTPClient.METHOD_POST, path, {"delta": delta})
+	if not res.ok:
+		return res
+	return {
+		"ok": true,
+		"stat": res.body.get("stat", {}) if typeof(res.body) == TYPE_DICTIONARY else {},
+		"previous_value": res.body.get("previous_value", null) if typeof(res.body) == TYPE_DICTIONARY else null,
+	}
+
+
+## Batch StoreStats. `updates` is an array of { api_name, value } and/or { api_name, delta }.
+func store_stats(updates: Array) -> Dictionary:
+	if _context.is_empty():
+		return {"ok": false, "error": Contract.ERR_NOT_LAUNCHED}
+	if updates.is_empty():
+		return {"ok": false, "error": Contract.ERR_HUB}
+	var path := "/games/app/%d/stats/store" % _context.app_id
+	var res := await _call(_context, HTTPClient.METHOD_POST, path, {"stats": updates})
+	if not res.ok:
+		return res
+	return {"ok": true, "body": res.body}
+
+
+## Mint a short-lived OpenID Connect ID token. Never log it. Returns { ok, id_token } or { ok = false, error }.
+func get_openid_id_token() -> Dictionary:
+	if _context.is_empty():
+		return {"ok": false, "error": Contract.ERR_NOT_LAUNCHED}
+	var res := await _call(_context, HTTPClient.METHOD_POST, "/auth/openid/id-token", {"app_id": _context.app_id})
+	if not res.ok:
+		return res
+	var token := ""
+	if typeof(res.body) == TYPE_DICTIONARY:
+		token = str(res.body.get("id_token", "")).strip_edges()
+	if token.is_empty():
+		return {"ok": false, "error": Contract.ERR_HUB}
+	return {"ok": true, "id_token": token}
+
+
 func _finish(result: Dictionary) -> Dictionary:
 	launch_completed.emit(result)
 	return result
 
 
-func _call(context: Dictionary, method: int, path: String) -> Dictionary:
+func _verb(method: int) -> String:
+	match method:
+		HTTPClient.METHOD_GET:
+			return "GET"
+		HTTPClient.METHOD_PUT:
+			return "PUT"
+		_:
+			return "POST"
+
+
+func _call(context: Dictionary, method: int, path: String, json_body = null) -> Dictionary:
 	var url: String = context.api_base + path
+	var verb := _verb(method)
+	var body_text := ""
+	if method != HTTPClient.METHOD_GET:
+		body_text = "{}" if json_body == null else JSON.stringify(json_body)
 	var response: Dictionary
 	if _transport.is_valid():
-		response = await _transport.call("GET" if method == HTTPClient.METHOD_GET else "POST", url, context.token)
+		response = await _transport.call(verb, url, context.token, body_text)
 	else:
-		response = await _http(method, url, context.token)
+		response = await _http(method, url, context.token, body_text)
 	if response.get("network_error", false):
 		return {"ok": false, "error": Contract.ERR_NETWORK}
 	var error := Contract.classify_status(int(response.get("status", 0)))
@@ -138,15 +230,16 @@ func _call(context: Dictionary, method: int, path: String) -> Dictionary:
 	return {"ok": true, "body": json.data}
 
 
-func _http(method: int, url: String, token: String) -> Dictionary:
+func _http(method: int, url: String, token: String, body_text: String = "") -> Dictionary:
 	var http := HTTPRequest.new()
 	http.timeout = 15.0
 	add_child(http)
 	var headers := PackedStringArray(["Authorization: Bearer %s" % token, "Accept: application/json"])
-	var body := "{}" if method == HTTPClient.METHOD_POST else ""
-	if method == HTTPClient.METHOD_POST:
+	if method != HTTPClient.METHOD_GET:
 		headers.append("Content-Type: application/json")
-	if http.request(url, headers, method, body) != OK:
+		if body_text.is_empty():
+			body_text = "{}"
+	if http.request(url, headers, method, body_text) != OK:
 		http.queue_free()
 		return {"network_error": true}
 	var completed: Array = await http.request_completed

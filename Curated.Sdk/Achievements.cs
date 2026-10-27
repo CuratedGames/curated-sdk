@@ -18,7 +18,7 @@ public static class Achievements
     /// <summary>Load achievement defs and unlock state from Curated.</summary>
     public static async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        var state = CuratedClient.State;
+        var state = CuratedClient.GameState;
         var progress = await AchievementsService
             .ProgressAsync(state, cancellationToken)
             .ConfigureAwait(false);

@@ -46,7 +46,7 @@ func _run() -> void:
 	quit(1 if failures > 0 else 0)
 
 
-func _fake_transport(method: String, url: String, token: String) -> Dictionary:
+func _fake_transport(method: String, url: String, token: String, _body = null) -> Dictionary:
 	_requests.append("%s %s" % [method, url])
 	_authorizations.append("Bearer %s" % token)
 	var path := url.substr(url.find("/", url.find("://") + 3))

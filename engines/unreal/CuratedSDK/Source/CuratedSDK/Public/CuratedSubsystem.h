@@ -8,6 +8,9 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCuratedLaunchCompleted, ECuratedLaunchError, Error, const FCuratedSession&, Session);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FCuratedEntitlementChecked, ECuratedLaunchError, Error, const FCuratedEntitlement&, Entitlement);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FCuratedAchievementUnlocked, ECuratedLaunchError, Error, bool, bNewlyUnlocked);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FCuratedStatsRefreshed, ECuratedLaunchError, Error, const FString&, ProgressJson);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FCuratedStatWritten, ECuratedLaunchError, Error, const FString&, ResponseJson);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FCuratedOpenIdIdToken, ECuratedLaunchError, Error, const FString&, IdToken);
 
 /**
  * Curated launcher integration (launch contract v1).
@@ -34,6 +37,25 @@ public:
 	/** Unlocks an achievement by API name. Safe to call more than once. */
 	UFUNCTION(BlueprintCallable, Category = "Curated")
 	void UnlockAchievement(const FString& ApiName, FCuratedAchievementUnlocked OnUnlocked);
+
+	/** Loads stat definitions and current player values (GET .../stats/progress). ProgressJson is the raw response body. */
+	UFUNCTION(BlueprintCallable, Category = "Curated")
+	void RefreshStats(FCuratedStatsRefreshed OnRefreshed);
+
+	/** SetStat absolute value (PUT .../stats/{api_name}). */
+	UFUNCTION(BlueprintCallable, Category = "Curated")
+	void SetStat(const FString& ApiName, float Value, FCuratedStatWritten OnWritten);
+
+	/** Increment a player stat (POST .../stats/{api_name}/increment). */
+	UFUNCTION(BlueprintCallable, Category = "Curated")
+	void IncrementStat(const FString& ApiName, float Delta, FCuratedStatWritten OnWritten);
+
+	/**
+	 * Mint a short-lived OpenID Connect ID token for this session. Pass it only to the game's
+	 * own OIDC consumer. Never log it.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Curated")
+	void GetOpenIdIdToken(FCuratedOpenIdIdToken OnDone);
 
 	UFUNCTION(BlueprintPure, Category = "Curated")
 	bool IsReady() const { return bReady; }
@@ -63,8 +85,14 @@ public:
 private:
 	using FResponseHandler = TFunction<void(ECuratedLaunchError Error, const FString& Body)>;
 
-	void SendRequest(const FCuratedLaunchContext& RequestContext, const FString& Verb, const FString& Path, FResponseHandler OnDone);
+	void SendRequest(
+		const FCuratedLaunchContext& RequestContext,
+		const FString& Verb,
+		const FString& Path,
+		FResponseHandler OnDone,
+		const FString& JsonBody = FString());
 	void FinishLaunch(ECuratedLaunchError Error);
+	bool RequireReady(ECuratedLaunchError& OutError) const;
 
 	FCuratedLaunchContext Context;
 	FCuratedLaunchContext PendingContext;

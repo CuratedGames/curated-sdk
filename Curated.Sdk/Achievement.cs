@@ -68,7 +68,7 @@ public sealed class Achievement
     public async Task<bool> TriggerAsync(CancellationToken cancellationToken = default)
     {
         var result = await AchievementsService
-            .UnlockAsync(CuratedClient.State, Name, cancellationToken)
+            .UnlockAsync(CuratedClient.GameState, Name, cancellationToken)
             .ConfigureAwait(false);
         if (result.NewlyUnlocked || result.Unlocked)
         {

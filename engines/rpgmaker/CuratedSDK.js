@@ -4,7 +4,7 @@
 //=============================================================================
 /*:
  * @target MZ
- * @plugindesc v1.3.0 Curated launcher sign-in, ownership check, and achievements.
+ * @plugindesc v1.4.0 Curated launcher sign-in, ownership check, achievements, and stats.
  * @author Fatum Games SL
  * @url https://github.com/CuratedGames/curated-sdk
  *
@@ -47,6 +47,8 @@
  *
  * Plugin command (MZ): Unlock achievement.
  * Script call (MZ and MV):  Curated.unlockAchievement("win_level_1");
+ *                           Curated.setStat("CardsCreated", 10);
+ *                           Curated.incrementStat("CardsCreated", 1);
  * MV plugin command:        Curated unlockAchievement win_level_1
  *
  * Results: Curated.session holds { userId, curatedId, username, language, gameLanguage,
@@ -186,9 +188,11 @@
     };
   }
 
-  /** HTTP GET/POST via Node https (NW.js) when available, else fetch. Resolves { status, text }. */
-  function defaultTransport(method, url, token) {
+  /** HTTP GET/POST/PUT via Node https (NW.js) when available, else fetch. Resolves { status, text }. */
+  function defaultTransport(method, url, token, body) {
     const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" };
+    const payload = method === "GET" || body == null ? null : typeof body === "string" ? body : JSON.stringify(body);
+    if (payload != null) headers["Content-Type"] = "application/json";
     if (typeof require === "function") {
       const https = url.startsWith("https:") ? require("https") : require("http");
       return new Promise((resolve, reject) => {
@@ -200,19 +204,20 @@
         });
         req.on("error", reject);
         req.setTimeout(15000, () => req.destroy(new Error("timeout")));
+        if (payload != null) req.write(payload);
         req.end();
       });
     }
-    return fetch(url, { method, headers }).then(async (res) => ({
+    return fetch(url, { method, headers, body: payload == null ? undefined : payload }).then(async (res) => ({
       status: res.status,
       text: await res.text(),
     }));
   }
 
-  async function callApi(context, transport, method, path) {
+  async function callApi(context, transport, method, path, body) {
     let res;
     try {
-      res = await transport(method, `${context.apiBase}${path}`, context.token);
+      res = await transport(method, `${context.apiBase}${path}`, context.token, body);
     } catch (_) {
       return { ok: false, error: ERRORS.NETWORK };
     }
@@ -316,9 +321,64 @@
       const apiName = String(name || "").trim();
       if (!apiName) return { ok: false, error: ERRORS.HUB };
       const path = `/games/app/${this._context.appId}/achievements/${encodeURIComponent(apiName)}/unlock`;
-      const res = await callApi(this._context, this._transport, "POST", path);
+      const res = await callApi(this._context, this._transport, "POST", path, {});
       if (!res.ok) return res;
       return { ok: true, newlyUnlocked: Boolean(res.body && res.body.newly_unlocked) };
+    },
+
+    /** Load stat definitions and current player values. Resolves { ok, stats } or { ok: false, error }. */
+    async refreshStats() {
+      if (!this._context) return { ok: false, error: ERRORS.NOT_LAUNCHED };
+      const path = `/games/app/${this._context.appId}/stats/progress`;
+      const res = await callApi(this._context, this._transport, "GET", path);
+      if (!res.ok) return res;
+      const stats = res.body && Array.isArray(res.body.stats) ? res.body.stats : [];
+      return { ok: true, stats };
+    },
+
+    /** SetStat absolute value. Resolves { ok, stat, previousValue } or { ok: false, error }. */
+    async setStat(name, value) {
+      if (!this._context) return { ok: false, error: ERRORS.NOT_LAUNCHED };
+      const apiName = String(name || "").trim();
+      if (!apiName) return { ok: false, error: ERRORS.HUB };
+      const path = `/games/app/${this._context.appId}/stats/${encodeURIComponent(apiName)}`;
+      const res = await callApi(this._context, this._transport, "PUT", path, { value: Number(value) });
+      if (!res.ok) return res;
+      return {
+        ok: true,
+        stat: (res.body && res.body.stat) || null,
+        previousValue: res.body ? res.body.previous_value : null,
+      };
+    },
+
+    /** Increment a player stat. Resolves { ok, stat, previousValue } or { ok: false, error }. */
+    async incrementStat(name, delta = 1) {
+      if (!this._context) return { ok: false, error: ERRORS.NOT_LAUNCHED };
+      const apiName = String(name || "").trim();
+      if (!apiName) return { ok: false, error: ERRORS.HUB };
+      const path = `/games/app/${this._context.appId}/stats/${encodeURIComponent(apiName)}/increment`;
+      const res = await callApi(this._context, this._transport, "POST", path, { delta: Number(delta) });
+      if (!res.ok) return res;
+      return {
+        ok: true,
+        stat: (res.body && res.body.stat) || null,
+        previousValue: res.body ? res.body.previous_value : null,
+      };
+    },
+
+    /**
+     * Mint a short-lived OpenID Connect ID token. Never log it.
+     * Resolves { ok, idToken } or { ok: false, error }.
+     */
+    async getOpenIdIdToken() {
+      if (!this._context) return { ok: false, error: ERRORS.NOT_LAUNCHED };
+      const res = await callApi(this._context, this._transport, "POST", "/auth/openid/id-token", {
+        app_id: this._context.appId,
+      });
+      if (!res.ok) return res;
+      const idToken = res.body && typeof res.body.id_token === "string" ? res.body.id_token.trim() : "";
+      if (!idToken) return { ok: false, error: ERRORS.HUB };
+      return { ok: true, idToken };
     },
   };
 

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-27
+
+### Added
+
+- Player Stats client (`Stats.GetStat` / `SetStat` / `StoreStatsAsync`, plus immediate set/increment) matching the game-session stats API ([#10](https://github.com/CuratedGames/curated-sdk/pull/10))
+- `CuratedClient.InitAsync` and `CuratedClient.IsEntitled`; every Init path verifies session ownership
+- Stats and OpenID helpers on Godot, Unreal, and RPG Maker bindings (fail closed until `init_from_launcher` / `InitFromLauncher` succeeds)
+- Unit tests for the entitlement fail-closed gate
+
+### Changed
+
+- `CuratedClient.Init(appId, token)` now verifies ownership (same as `InitFromLauncherAsync`) and leaves Curated shut down with `not_entitled` / `session_invalid` on failure (previously it only stored the token)
+- Game-scoped APIs (achievements, stats, Cloud Save, friends, presence, OpenID) require a successful ownership check
+- Rebuilt Unity `Plugins/Curated.Sdk.dll` for 1.4.0 (includes Stats)
+
 ## [1.3.1] - 2026-10-27
 
 ### Added
@@ -60,7 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial Curated.Sdk public API: launcher auth, entitlements, achievements, Cloud Save, friends and presence
 
-[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/CuratedGames/curated-sdk/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.1.0...v1.2.0

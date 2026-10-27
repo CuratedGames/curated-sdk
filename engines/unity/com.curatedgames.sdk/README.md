@@ -11,15 +11,15 @@ Add the package from this public repository with Unity Package Manager. In
 ```json
 {
   "dependencies": {
-    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.1"
+    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.4.0"
   }
 }
 ```
 
-Replace `v1.3.1` with a release tag, branch name, or commit SHA. Examples:
+Replace `v1.4.0` with a release tag, branch name, or commit SHA. Examples:
 
 ```text
-https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.1
+https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.4.0
 https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#main
 ```
 
@@ -39,7 +39,7 @@ If you prefer an offline install, download `com.curatedgames.sdk-<version>.tgz` 
 **Window > Package Manager > + > Add package from tarball…**, or:
 
 ```json
-"com.curatedgames.sdk": "file:../Packages-local/com.curatedgames.sdk-1.3.1.tgz"
+"com.curatedgames.sdk": "file:../Packages-local/com.curatedgames.sdk-1.4.0.tgz"
 ```
 
 ## Use

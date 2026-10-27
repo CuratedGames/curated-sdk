@@ -146,8 +146,8 @@ The title screen waits for the ownership check. Unlock achievements with the
 
 ## 6. C# features (Achievements, stats, Cloud Save, friends, presence, OpenID)
 
-After `InitFromLauncherAsync` (or `CuratedClient.Init(appId, token)` when you already have a
-session):
+After `InitFromLauncherAsync` (or `CuratedClient.Init` / `InitAsync` when you already have a
+session). Every init path verifies ownership; game-scoped APIs require `CuratedClient.IsEntitled`:
 
 ```csharp
 await Achievements.RefreshAsync();
