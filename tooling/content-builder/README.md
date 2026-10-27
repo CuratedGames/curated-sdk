@@ -22,7 +22,8 @@ cargo build --release
 
 Binary: `target\release\curated-content-builder.exe`
 
-Prebuilt Windows binaries ship on this repository's Releases when CI publishes them.
+Prebuilt Windows and Linux binaries ship on this repository's
+[Releases](https://github.com/CuratedGames/curated-sdk/releases) when CI publishes them.
 
 Cross-compile from Linux/macOS (optional):
 

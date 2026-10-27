@@ -6,7 +6,8 @@ for Cloud Save, friends, and presence.
 
 ## Install
 
-1. Download `curated-godot-<version>.zip` from the curated-sdk Releases.
+1. Download `curated-godot-<version>.zip` from this repository's
+   [Releases](https://github.com/CuratedGames/curated-sdk/releases).
 2. Unzip it into the project root so the files land in `res://addons/curated/`.
 3. **Project > Project Settings > Plugins**: enable **Curated SDK**. This registers the
    `Curated` autoload.
@@ -27,20 +28,21 @@ func _on_boss_defeated() -> void:
 ```
 
 `Curated.check_entitlement()` re-checks ownership during long sessions. `Curated.session`
-holds `user_id`, `username`, `language` (raw launcher value), `game_language`, and `entitlement`
-after a successful init.
+holds `user_id`, `curated_id`, `username`, `language` (raw launcher value), `game_language`, and
+`entitlement` after a successful init.
 
 ## Game language
 
 ```gdscript
 var language := Curated.get_current_game_language()  # "en", "es", "it", "pt-br", ...
 TranslationServer.set_locale(language)
-var steam_name := Curated.get_current_game_language_steam_api_name()  # "english", "italian", ...
 ```
 
 It returns the language the player selected in the Curated launcher (the language the launcher
 downloads depots for), or `"en"` when the game was not started by the launcher. It works before
 `init_from_launcher`.
+
+If you are porting from Steam, see [Migrating from Steam](#migrating-from-steam).
 
 ## Dedicated servers
 
@@ -48,6 +50,14 @@ downloads depots for), or `"en"` when the game was not started by the launcher. 
 build has the `dedicated_server` feature (Godot's **Dedicated Server** export preset adds it),
 so server exports can keep the addon: it stays inert and never reads launch variables. Skip
 your own Curated calls there with `if not OS.has_feature("dedicated_server")`.
+
+## Migrating from Steam
+
+```gdscript
+var steam_name := Curated.get_current_game_language_steam_api_name()  # "english", "italian", ...
+```
+
+Use this when existing code expects Steam client language names.
 
 ## Tests
 

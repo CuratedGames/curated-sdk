@@ -48,6 +48,10 @@ struct CURATEDSDK_API FCuratedSession
 	UPROPERTY(BlueprintReadOnly, Category = "Curated")
 	FString UserId;
 
+	/** Public Curated player id (curated_id, 17-digit decimal string). */
+	UPROPERTY(BlueprintReadOnly, Category = "Curated")
+	FString CuratedId;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Curated")
 	FString Username;
 
@@ -96,10 +100,10 @@ namespace CuratedLaunchContract
 	/** Returned by GameLanguageFromEnvironment when the language is missing or unknown. */
 	CURATEDSDK_API FString DefaultGameLanguage();
 
-	/** Canonical Curated code for a code, alias, BCP-47 tag or Steam API name; empty when unsupported. */
+	/** Canonical Curated code for a code, alias, BCP-47 tag or Steam client API name; empty when unsupported. */
 	CURATEDSDK_API FString NormalizeGameLanguage(const FString& Raw);
 
-	/** Steam API language name (english, brazilian, ...) for a Curated code; empty when unsupported. */
+	/** Migrating from Steam: Steam client API language name (english, brazilian, ...) for a Curated code; empty when unsupported. */
 	CURATEDSDK_API FString SteamApiLanguageName(const FString& Language);
 
 	/** Current game language from launch variables: Curated code, "en" when missing or unknown. */

@@ -49,13 +49,13 @@
  * Script call (MZ and MV):  Curated.unlockAchievement("win_level_1");
  * MV plugin command:        Curated unlockAchievement win_level_1
  *
- * Results: Curated.session holds { userId, username, language, gameLanguage,
+ * Results: Curated.session holds { userId, curatedId, username, language, gameLanguage,
  * entitlement: { entitled, source, acquiredAt } } after a successful check.
  *
  * Game language: Curated.getCurrentGameLanguage() returns the language the
  * player selected in the Curated launcher as a Curated code ("en", "es",
- * "it", ...), or "en" outside the launcher. For a Steam API name ("english",
- * "spanish", "italian", ...) use Curated.getCurrentGameLanguageSteamApiName().
+ * "it", ...), or "en" outside the launcher. Migrating from Steam: use
+ * Curated.getCurrentGameLanguageSteamApiName() for Steam client language names.
  */
 
 (function (root) {
@@ -74,8 +74,8 @@
   });
 
   const DEFAULT_GAME_LANGUAGE = "en";
-  // Curated game languages: [code, English name, Steam API name, aliases]. Same table as
-  // contracts/fixtures/game-language.v1.json (Full Platform languages of the Curated catalog).
+  // Curated game languages: [code, English name, Steam client API name (Migrating from Steam), aliases].
+  // Same table as contracts/fixtures/game-language.v1.json.
   const GAME_LANGUAGES = Object.freeze([
     ["ar", "Arabic", "arabic", []],
     ["bg", "Bulgarian", "bulgarian", []],
@@ -110,7 +110,7 @@
     ["vi", "Vietnamese", "vietnamese", []],
   ]);
 
-  /** Canonical Curated code for a code, alias, BCP-47 tag or Steam API name, or null. */
+  /** Canonical Curated code for a code, alias, BCP-47 tag or Steam client API name, or null. */
   function normalizeGameLanguage(raw) {
     if (typeof raw !== "string") return null;
     const key = raw.trim().toLowerCase().replace(/_/g, "-");
@@ -123,7 +123,7 @@
     return primary ? primary[0] : null;
   }
 
-  /** Steam API language name for a Curated code (or any accepted value), or null. */
+  /** Migrating from Steam: Steam client API language name for a Curated code (or any accepted value), or null. */
   function steamApiLanguageName(language) {
     const code = normalizeGameLanguage(language);
     const hit = GAME_LANGUAGES.find((l) => l[0] === code);
@@ -261,6 +261,8 @@
       const me = await callApi(context, transport, "GET", "/auth/me");
       if (!me.ok) return me;
       if (!me.body || typeof me.body.user_id !== "string") return { ok: false, error: ERRORS.HUB };
+      const curatedId = String(me.body.curated_id || "").trim();
+      if (!curatedId) return { ok: false, error: ERRORS.HUB };
 
       const lib = await callApi(context, transport, "GET", "/library");
       if (!lib.ok) return lib;
@@ -274,6 +276,7 @@
         appId: context.appId,
         apiBase: context.apiBase,
         userId: me.body.user_id,
+        curatedId,
         username: String(me.body.username || ""),
         language: context.language,
         gameLanguage: normalizeGameLanguage(context.language) || DEFAULT_GAME_LANGUAGE,
@@ -284,16 +287,16 @@
 
     /**
      * Game language the player selected in the Curated launcher, as a lowercase Curated code
-     * ("en", "es", "it", "pt-br", ...), like Steamworks GetCurrentGameLanguage. It is the
-     * launcher's client language, the same one used to pick language depots. Returns "en" when
-     * the game was not started by the launcher, no language was sent, or it is not a Curated
-     * game language. Works before initFromLauncher. `env` is for tests.
+     * ("en", "es", "it", "pt-br", ...). It is the launcher's client language, the same one used
+     * to pick language depots. Returns "en" when the game was not started by the launcher, no
+     * language was sent, or it is not a Curated game language. Works before initFromLauncher.
+     * `env` is for tests.
      */
     getCurrentGameLanguage(env) {
       return gameLanguageFromEnv(env || processEnv());
     },
 
-    /** getCurrentGameLanguage() as a Steam API language name ("english", "spanish", "italian", ...). */
+    /** Migrating from Steam: getCurrentGameLanguage() as a Steam client language API name ("english", "spanish", "italian", ...). */
     getCurrentGameLanguageSteamApiName(env) {
       return steamApiLanguageName(this.getCurrentGameLanguage(env));
     },

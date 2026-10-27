@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Curated.Sdk;
 
-/// <summary>A Curated game language: canonical code and its Steam API language name.</summary>
+/// <summary>A Curated game language: canonical code and optional Steam client API name (for Migrating from Steam).</summary>
 public sealed class GameLanguage
 {
     internal GameLanguage(string code, string englishName, string steamApiName, params string[] aliases)
@@ -20,7 +20,7 @@ public sealed class GameLanguage
     /// <summary>English name, for example <c>Portuguese-Brazil</c>.</summary>
     public string EnglishName { get; }
 
-    /// <summary>Steam API language name, for example <c>english</c>, <c>brazilian</c>, <c>koreana</c>.</summary>
+    /// <summary>Migrating from Steam: Steam client API language name (<c>english</c>, <c>brazilian</c>, <c>koreana</c>).</summary>
     public string SteamApiName { get; }
 
     /// <summary>Other codes accepted for this language (for example <c>zh</c> for <c>zh-cn</c>).</summary>
@@ -29,8 +29,8 @@ public sealed class GameLanguage
 
 /// <summary>
 /// The languages <see cref="CuratedClient.GetCurrentGameLanguage"/> can return: the Full Platform
-/// languages of the Curated language catalog, the same codes depots use. Helpers convert between
-/// Curated codes and Steam API language names to ease porting from Steamworks.
+/// languages of the Curated language catalog, the same codes depots use. <see cref="ToSteamApiName"/>
+/// / <see cref="FromSteamApiName"/> help when migrating from Steam.
 /// </summary>
 public static class GameLanguages
 {
@@ -80,7 +80,7 @@ public static class GameLanguages
 
     /// <summary>
     /// Canonical Curated code for <paramref name="language"/>, which may be a Curated code, an alias,
-    /// a BCP-47 tag (<c>pt-BR</c>, <c>it_IT</c>) or a Steam API name (<c>italian</c>).
+    /// a BCP-47 tag (<c>pt-BR</c>, <c>it_IT</c>) or a Steam client API name (<c>italian</c>).
     /// Returns null when it is not a supported game language.
     /// </summary>
     public static string? Normalize(string? language)
@@ -106,8 +106,9 @@ public static class GameLanguages
     }
 
     /// <summary>
-    /// Steam API language name (for example <c>english</c>, <c>brazilian</c>) for a Curated code or any
-    /// value <see cref="Normalize"/> accepts. Returns null when the language is not supported.
+    /// Migrating from Steam: Steam client API language name (for example <c>english</c>,
+    /// <c>brazilian</c>) for a Curated code or any value <see cref="Normalize"/> accepts. Returns
+    /// null when the language is not supported.
     /// </summary>
     public static string? ToSteamApiName(string? language)
     {
@@ -115,7 +116,7 @@ public static class GameLanguages
         return code is null ? null : ByCode[code].SteamApiName;
     }
 
-    /// <summary>Curated code for a Steam API language name (for example <c>latam</c> to <c>es-419</c>), or null.</summary>
+    /// <summary>Migrating from Steam: Curated code for a Steam client API language name (for example <c>latam</c> to <c>es-419</c>), or null.</summary>
     public static string? FromSteamApiName(string? steamApiName)
     {
         var key = Clean(steamApiName);

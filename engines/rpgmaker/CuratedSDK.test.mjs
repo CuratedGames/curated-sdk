@@ -66,7 +66,7 @@ test("unlockAchievement posts to the app achievement and reports newly unlocked"
   const transport = async (method, url) => {
     log.push(`${method} ${url}`);
     const path = new URL(url).pathname;
-    if (path === "/auth/me") return { status: 200, text: '{"user_id":"u","username":"p"}' };
+    if (path === "/auth/me") return { status: 200, text: '{"user_id":"u","username":"p","curated_id":"10000000000000001"}' };
     if (path === "/library") return { status: 200, text: '[{"app_id":1002,"source":"grant"}]' };
     return { status: 200, text: '{"newly_unlocked":true}' };
   };
@@ -124,7 +124,7 @@ test("getCurrentGameLanguage reads the process environment by default", () => {
 test("session carries the normalized game language", async () => {
   const transport = async (_method, url) => {
     const path = new URL(url).pathname;
-    if (path === "/auth/me") return { status: 200, text: '{"user_id":"u","username":"p"}' };
+    if (path === "/auth/me") return { status: 200, text: '{"user_id":"u","username":"p","curated_id":"10000000000000001"}' };
     return { status: 200, text: '[{"app_id":1002,"source":"grant"}]' };
   };
   const env = {

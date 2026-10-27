@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "GetCurrentGameLanguage cases. `languages` is the table every binding embeds: the Full Platform languages of the Curated language catalog (curated repo, packages/shared-ts/src/language-catalog.json) with their Steam API language names. For each case, read CURATED_LANGUAGE from `env` and compare the Curated code with `expect.language` and the Steam API name with `expect.steam`. Rules: trim, lowercase, `_` becomes `-`; match a code, then an alias, then a Steam API name, then the primary subtag (text before the first `-`) as a code or alias; anything else, or a missing value, is the default language. Append only.",
+  "description": "GetCurrentGameLanguage cases. `languages` is the table every binding embeds: the Full Platform languages of the Curated language catalog, each with a Curated code and the matching Steam client API language name (for Migrating from Steam helpers). For each case, read CURATED_LANGUAGE from `env` and compare the Curated code with `expect.language` and the Steam API name with `expect.steam`. Rules: trim, lowercase, `_` becomes `-`; match a code, then an alias, then a Steam API name, then the primary subtag (text before the first `-`) as a code or alias; anything else, or a missing value, is the default language. Append only.",
   "default_language": "en",
   "languages": [
     {

@@ -5,7 +5,8 @@ dependencies) plus a small `Curated.Unity` helper assembly.
 
 ## Install
 
-1. Download `games.curated.sdk-<version>.tgz` from the curated-sdk Releases.
+1. Download `games.curated.sdk-<version>.tgz` from this repository's
+   [Releases](https://github.com/CuratedGames/curated-sdk/releases) (not nuget.org).
 2. Unity: **Window > Package Manager > + > Add package from tarball...** and pick the file.
    Or reference it from `Packages/manifest.json`:
    `"games.curated.sdk": "file:../Packages-local/games.curated.sdk-1.3.0.tgz"`.
@@ -23,7 +24,7 @@ using Curated.Unity;
 try
 {
     CuratedSession session = await CuratedUnity.InitFromLauncherAsync(1002);
-    Debug.Log($"Signed in as {session.Username}, owned via {session.Entitlement.Source}");
+    Debug.Log($"Signed in as {session.Username} ({session.CuratedId}), owned via {session.Entitlement.Source}");
 }
 catch (CuratedLaunchException e)
 {
@@ -33,16 +34,18 @@ catch (CuratedLaunchException e)
 #endif
 ```
 
-Game language (like Steamworks `GetCurrentGameLanguage`):
+### Game language
 
 ```csharp
 string language = CuratedUnity.GetCurrentGameLanguage(); // "en", "es", "it", "pt-br", ...
-string steamName = CuratedUnity.GetCurrentGameLanguageSteamApiName(); // "english", "italian", ...
 ```
 
 It is the language the player selected in the Curated launcher (the language the launcher
 downloads depots for), or `en` outside the launcher and in the Editor. It works before
 `InitFromLauncherAsync`. With Unity Localization, pick the `Locale` whose code matches it.
+
+If you are porting from Steam and need Steam language API names (`english`, `italian`, …), see
+[Migrating from Steam](#migrating-from-steam).
 
 In the Unity Editor, `InitFromLauncherAsync` uses the account signed in to a running Curated
 launcher (`Config/session.json` beside `Curated.exe`) when this process was not started by
@@ -67,3 +70,12 @@ assembly with the same constraints) so server builds still compile.
 
 The bootstrap component skips the check in the Editor by default. To test the real flow, set the
 launch variables from `contracts/launch-contract.md` in the environment of a development build.
+
+## Migrating from Steam
+
+```csharp
+string steamName = CuratedUnity.GetCurrentGameLanguageSteamApiName(); // "english", "italian", ...
+```
+
+Use this when existing code expects Steam client language names. Prefer
+`GetCurrentGameLanguage()` for new Curated-first code.

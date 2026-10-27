@@ -77,7 +77,7 @@ namespace Curated.Unity
         /// </summary>
         public static string GetCurrentGameLanguage() => CuratedClient.GetCurrentGameLanguage();
 
-        /// <summary>Steam API language name for <see cref="GetCurrentGameLanguage"/> (<c>english</c>, <c>spanish</c>, ...).</summary>
+        /// <summary>Migrating from Steam: Steam client language API name for <see cref="GetCurrentGameLanguage"/> (<c>english</c>, <c>spanish</c>, ...).</summary>
         public static string GetCurrentGameLanguageSteamApiName() => CuratedClient.GetCurrentGameLanguageSteamApiName();
     }
 }
