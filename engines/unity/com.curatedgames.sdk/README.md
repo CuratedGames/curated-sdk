@@ -1,14 +1,44 @@
-# Curated SDK for Unity (`games.curated.sdk`)
+# Curated SDK for Unity (`com.curatedgames.sdk`)
 
 Unity package wrapping the official `Curated.Sdk.dll` (netstandard2.1, no third-party
 dependencies) plus a small `Curated.Unity` helper assembly.
 
-## Install
+## Install from GitHub (recommended)
 
-1. Download `games.curated.sdk-<version>.tgz` from the curated-sdk Releases.
-2. Unity: **Window > Package Manager > + > Add package from tarball...** and pick the file.
-   Or reference it from `Packages/manifest.json`:
-   `"games.curated.sdk": "file:../Packages-local/games.curated.sdk-1.3.0.tgz"`.
+Add the package from this public repository with Unity Package Manager. In
+`Packages/manifest.json`:
+
+```json
+{
+  "dependencies": {
+    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.0"
+  }
+}
+```
+
+Replace `v1.3.0` with a release tag, branch name, or commit SHA. Examples:
+
+```text
+https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.0
+https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#main
+https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#8c6da5d
+```
+
+Or in the Editor: **Window > Package Manager > + > Add package from git URL…** and paste the
+same URL (including `?path=/engines/unity/com.curatedgames.sdk#…`).
+
+Unity resolves the package from the `engines/unity/com.curatedgames.sdk` folder in this repo.
+You do **not** need a tarball for normal installs.
+
+### Optional: Releases tarball
+
+If you prefer an offline install, download `com.curatedgames.sdk-<version>.tgz` from
+[Releases](https://github.com/CuratedGames/curated-sdk/releases), then
+**Window > Package Manager > + > Add package from tarball…**, or:
+
+```json
+"com.curatedgames.sdk": "file:../Packages-local/com.curatedgames.sdk-1.3.0.tgz"
+```
 
 ## Use
 
@@ -23,7 +53,7 @@ using Curated.Unity;
 try
 {
     CuratedSession session = await CuratedUnity.InitFromLauncherAsync(1002);
-    Debug.Log($"Signed in as {session.Username}, owned via {session.Entitlement.Source}");
+    Debug.Log($"Signed in as {session.Username} ({session.CuratedId}), owned via {session.Entitlement.Source}");
 }
 catch (CuratedLaunchException e)
 {
@@ -33,16 +63,18 @@ catch (CuratedLaunchException e)
 #endif
 ```
 
-Game language (like Steamworks `GetCurrentGameLanguage`):
+### Game language
 
 ```csharp
 string language = CuratedUnity.GetCurrentGameLanguage(); // "en", "es", "it", "pt-br", ...
-string steamName = CuratedUnity.GetCurrentGameLanguageSteamApiName(); // "english", "italian", ...
 ```
 
 It is the language the player selected in the Curated launcher (the language the launcher
 downloads depots for), or `en` outside the launcher and in the Editor. It works before
 `InitFromLauncherAsync`. With Unity Localization, pick the `Locale` whose code matches it.
+
+If you are porting from Steam and need Steam language API names (`english`, `italian`, …), see
+[Migrating from Steam](#migrating-from-steam).
 
 In the Unity Editor, `InitFromLauncherAsync` uses the account signed in to a running Curated
 launcher (`Config/session.json` beside `Curated.exe`) when this process was not started by
@@ -67,3 +99,12 @@ assembly with the same constraints) so server builds still compile.
 
 The bootstrap component skips the check in the Editor by default. To test the real flow, set the
 launch variables from `contracts/launch-contract.md` in the environment of a development build.
+
+## Migrating from Steam
+
+```csharp
+string steamName = CuratedUnity.GetCurrentGameLanguageSteamApiName(); // "english", "italian", ...
+```
+
+Use this when existing code expects Steam client language names. Prefer
+`GetCurrentGameLanguage()` for new Curated-first code.

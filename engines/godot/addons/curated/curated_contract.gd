@@ -27,8 +27,8 @@ const VARIABLES := [
 ## GetCurrentGameLanguage: default when the language is missing or unknown.
 const DEFAULT_GAME_LANGUAGE := "en"
 
-## Curated game languages: [code, English name, Steam API name, aliases]. Same table as
-## contracts/fixtures/game-language.v1.json (Full Platform languages of the Curated catalog).
+## Curated game languages: [code, English name, Steam client API name (Migrating from Steam), aliases].
+## Same table as contracts/fixtures/game-language.v1.json (Full Platform languages of the Curated catalog).
 const GAME_LANGUAGES := [
 	["ar", "Arabic", "arabic", []],
 	["bg", "Bulgarian", "bulgarian", []],
@@ -64,7 +64,7 @@ const GAME_LANGUAGES := [
 ]
 
 
-## Canonical Curated code for a code, alias, BCP-47 tag or Steam API name, or "" when unsupported.
+## Canonical Curated code for a code, alias, BCP-47 tag or Steam client API name, or "" when unsupported.
 static func normalize_game_language(raw) -> String:
 	if typeof(raw) != TYPE_STRING:
 		return ""
@@ -92,7 +92,7 @@ static func game_language_from_env(env: Dictionary) -> String:
 	return DEFAULT_GAME_LANGUAGE if code.is_empty() else code
 
 
-## Steam API language name for a Curated code (or any accepted value), or "" when unsupported.
+## Migrating from Steam: Steam client API language name for a Curated code (or any accepted value), or "" when unsupported.
 static func steam_api_language_name(language) -> String:
 	var code := normalize_game_language(language)
 	for entry in GAME_LANGUAGES:

@@ -43,15 +43,14 @@ public:
 
 	/**
 	 * Game language the player selected in the Curated launcher, as a lowercase Curated code
-	 * (en, es, it, pt-br, ...), like Steamworks GetCurrentGameLanguage. It is the launcher's client
-	 * language, the same one used to pick language depots. Returns "en" when the game was not
-	 * started by the launcher, no language was sent, or it is not a Curated game language.
-	 * Works before InitFromLauncher.
+	 * (en, es, it, pt-br, ...). It is the launcher's client language, the same one used to pick
+	 * language depots. Returns "en" when the game was not started by the launcher, no language
+	 * was sent, or it is not a Curated game language. Works before InitFromLauncher.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Curated")
 	static FString GetCurrentGameLanguage();
 
-	/** GetCurrentGameLanguage as a Steam API language name (english, spanish, italian, ...). */
+	/** Migrating from Steam: GetCurrentGameLanguage as a Steam client language API name (english, spanish, italian, ...). */
 	UFUNCTION(BlueprintPure, Category = "Curated")
 	static FString GetCurrentGameLanguageSteamApiName();
 

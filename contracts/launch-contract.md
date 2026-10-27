@@ -50,10 +50,9 @@ Rules for bindings:
 
 ### Game language
 
-Bindings expose the current game language like Steamworks `ISteamApps::GetCurrentGameLanguage`
-(for example `CuratedClient.GetCurrentGameLanguage()` in C#, `Curated.get_current_game_language()`
-in Godot). It is read from `CURATED_LANGUAGE`, needs no network call, and works before the
-startup sequence below.
+Bindings expose the current game language (for example `CuratedClient.GetCurrentGameLanguage()` in
+C#, `Curated.get_current_game_language()` in Godot). It is read from `CURATED_LANGUAGE`, needs no
+network call, and works before the startup sequence below.
 
 - Value: a lowercase Curated language code, the same codes depots and the Curated language catalog
   use: `en`, `es`, `it`, and any other code in
@@ -63,14 +62,15 @@ startup sequence below.
   asks for content that is installed. The launcher sends `en`, `es` or `it` today; bindings accept
   every catalog language so games keep working when the launcher adds more.
 - Normalization: trim, lowercase, `_` becomes `-`; match a code, then an alias (`zh` is `zh-cn`,
-  `nb` is `no`), then a Steam API name (`italian`), then the primary subtag (`it-IT` is `it`).
+  `nb` is `no`), then a known alternate language name from the fixture table, then the primary
+  subtag (`it-IT` is `it`).
 - Fallback: `en` when the variable is missing or blank (game started outside the launcher, older
   launcher) or the value is not a Curated game language.
-- Steam API names: bindings also return the Steam API language name (`english`, `spanish`,
-  `italian`, `brazilian`, `koreana`, ...) for code ported from Steamworks, with `english` as the
-  fallback.
 
 Bindings check themselves against every case in `fixtures/game-language.v1.json`.
+
+For games ported from Steam that expect Steam language API names (`english`, `italian`, …), see
+[Migrating from Steam](#migrating-from-steam).
 
 ### Token scope
 
@@ -210,3 +210,13 @@ it excludes itself (Unity define constraints, Unreal target deny list, and so on
 - Breaking changes create contract `v2` with its own spec file. The launcher keeps setting the
   v1 variables until v1 is formally retired, so shipped games keep working.
 - The conformance file is append-only for a given version.
+
+## Migrating from Steam
+
+Curated language codes are short tags (`en`, `es`, `it`, `pt-br`). Steam's client API uses
+different names (`english`, `spanish`, `italian`, `brazilian`, `koreana`, …). Bindings that
+implement this contract also expose a Steam-name helper (for example
+`GetCurrentGameLanguageSteamApiName`) that returns those names, with `english` as the fallback,
+so ported games do not need a private mapping table. Normalization may accept a Steam API name
+as input when resolving `CURATED_LANGUAGE`. Keep other storefront SDKs behind existing compile
+flags and add Curated in parallel.

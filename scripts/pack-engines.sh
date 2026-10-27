@@ -22,11 +22,11 @@ def files_under(root):
     return sorted(p for p in root.rglob("*") if p.is_file())
 
 # Unity: UPM tarball (package/ prefix), DLL injected next to its committed .meta.
-unity = engines / "unity" / "games.curated.sdk"
+unity = engines / "unity" / "com.curatedgames.sdk"
 manifest = json.loads((unity / "package.json").read_text(encoding="utf-8"))
 if manifest["version"] != version:
     sys.exit(f"engines/unity package.json version {manifest['version']} != Curated.Sdk {version}")
-tgz = out / f"games.curated.sdk-{version}.tgz"
+tgz = out / f"com.curatedgames.sdk-{version}.tgz"
 with tarfile.open(tgz, "w:gz") as tar:
     for path in files_under(unity):
         if path.name in ("Curated.Sdk.dll", "LICENSE.md"):

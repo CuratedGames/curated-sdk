@@ -2,14 +2,17 @@
 
 Guide for coding agents and developers integrating a game with Curated.
 
+This repository is source-available under the [Curated SDK License](LICENSE.md) (not open source).
+Download packages from this repository's **Releases** (not nuget.org).
+
 | Piece | Path / download |
 |-------|-----------------|
 | Launch contract v1 (all engines) | [`contracts/`](contracts): spec, OpenAPI subset, conformance fixture |
-| Unity package | [`engines/unity/games.curated.sdk`](engines/unity/games.curated.sdk): Releases ship `games.curated.sdk-<version>.tgz` |
+| Unity package | [`engines/unity/com.curatedgames.sdk`](engines/unity/com.curatedgames.sdk): add via Git URL (see below); Releases also ship `com.curatedgames.sdk-<version>.tgz` |
 | Godot 4 addon | [`engines/godot`](engines/godot): Releases ship `curated-godot-<version>.zip` |
 | Unreal Engine 5 plugin | [`engines/unreal`](engines/unreal): Releases ship `curated-unreal-<version>.zip` |
 | RPG Maker MZ / MV plugin | [`engines/rpgmaker`](engines/rpgmaker): Releases ship `CuratedSDK.js` |
-| C# SDK (.NET, Unity, Godot C#) | [`Curated.Sdk/`](Curated.Sdk): Releases ship DLL, Unity zip, and NuGet |
+| C# SDK (.NET, Unity, Godot C#) | [`Curated.Sdk/`](Curated.Sdk): Releases ship DLL, Unity zip, and `.nupkg` |
 | Content Builder CLI | [`tooling/content-builder/`](tooling/content-builder): Windows-first depot upload tool |
 | License | [LICENSE.md](LICENSE.md) (Curated SDK License) |
 
@@ -41,12 +44,12 @@ audience `curated-app-{app_id}`). C# / Unity: `CuratedClient.GetOpenIdIdTokenAsy
 `id_token` is `hub_error`. Keep `CURATED_SESSION_TOKEN` on `CURATED_API_BASE` only; the ID token
 may go to Unity Authentication and nowhere else. Never log either secret.
 
-Game language (Steamworks `GetCurrentGameLanguage`): call the binding's `GetCurrentGameLanguage`
-(C# `CuratedClient.GetCurrentGameLanguage()`, Godot `Curated.get_current_game_language()`, Unreal
+Game language: call the binding's `GetCurrentGameLanguage` (C#
+`CuratedClient.GetCurrentGameLanguage()`, Godot `Curated.get_current_game_language()`, Unreal
 `UCuratedSubsystem::GetCurrentGameLanguage()`, RPG Maker `Curated.getCurrentGameLanguage()`). It
 returns a lowercase Curated code (`en`, `es`, `it`, `pt-br`, ...) that matches depot languages, and
-`en` outside the launcher. Where a Steamworks port expects Steam API names (`english`, `italian`),
-use the `...SteamApiName` variant instead of keeping a private mapping table.
+`en` outside the launcher. For Steam language API names when porting, see
+[Migrating from Steam](#migrating-from-steam).
 
 Player launch options from the launcher (Properties > General > Launch options) arrive as
 ordinary command-line arguments. Credentials are never on the command line.
@@ -67,10 +70,19 @@ ordinary command-line arguments. Credentials are never on the command line.
 
 ## 2. Unity
 
-1. Download `games.curated.sdk-<version>.tgz` from Releases.
-2. **Window > Package Manager > + > Add package from tarball...**, or add
-   `"games.curated.sdk": "file:<path>.tgz"` to `Packages/manifest.json`.
-3. Add **Curated Launcher Bootstrap** to the first scene (set app id), or call:
+1. Add the package from this repository with a Git URL. In `Packages/manifest.json`:
+
+```json
+"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.0"
+```
+
+Replace `v1.3.0` with a release tag, `main`, or a commit SHA. Or use
+**Window > Package Manager > + > Add package from git URL…** with the same URL.
+
+Optional offline install: download `com.curatedgames.sdk-<version>.tgz` from Releases, then
+**Add package from tarball…**, or `"com.curatedgames.sdk": "file:<path>.tgz"`.
+
+2. Add **Curated Launcher Bootstrap** to the first scene (set app id), or call:
 
 ```csharp
 #if !UNITY_SERVER && !UNITY_WEBGL
@@ -151,13 +163,13 @@ string idToken = await CuratedClient.GetOpenIdIdTokenAsync();
 // AuthenticationService.Instance.SignInWithOpenIdConnectAsync("oidc-curated", idToken);
 
 string language = CuratedClient.GetCurrentGameLanguage(); // "en", "es", "it", ...
-string steamName = CuratedClient.GetCurrentGameLanguageSteamApiName(); // "english", ...
 
 CuratedClient.Shutdown(); // on quit
 ```
 
-Define achievement names in the admin Achievements tool. Configure Cloud Save path patterns in
-the Cloud Save tool before players sync (last write wins).
+`CuratedSession` exposes `UserId`, `CuratedId` (public 17-digit player id), `Username`, and
+`Entitlement`. Define achievement names in the admin Achievements tool. Configure Cloud Save path
+patterns in the Cloud Save tool before players sync (last write wins).
 
 ### Smoke checklist
 
@@ -233,3 +245,21 @@ Ownership is checked via the API before upload. Non-owned apps are rejected. Aft
 ```bat
 curated-content-builder.exe logout
 ```
+
+---
+
+## Migrating from Steam
+
+Curated language codes are short tags (`en`, `es`, `it`, `pt-br`). Steam's client API uses
+different names (`english`, `spanish`, `italian`, `brazilian`, …). When porting code that expects
+Steam language names, use the Steam-name helpers instead of a private mapping table:
+
+| Binding | Method |
+|---------|--------|
+| .NET / Unity | `CuratedClient.GetCurrentGameLanguageSteamApiName()` |
+| Godot | `Curated.get_current_game_language_steam_api_name()` |
+| Unreal | `UCuratedSubsystem::GetCurrentGameLanguageSteamApiName()` |
+| RPG Maker | `Curated.getCurrentGameLanguageSteamApiName()` |
+
+C# helpers: `GameLanguages.ToSteamApiName` / `GameLanguages.FromSteamApiName`. Keep Steam (or other
+storefront) code behind existing compile flags and add Curated in parallel.

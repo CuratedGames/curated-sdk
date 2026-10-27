@@ -38,13 +38,18 @@ void UCuratedSubsystem::InitFromLauncher(int64 AppId)
 
 		TSharedPtr<FJsonObject> Me;
 		FString UserId;
+		FString CuratedId;
 		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(MeBody);
-		if (!FJsonSerializer::Deserialize(Reader, Me) || !Me.IsValid() || !Me->TryGetStringField(TEXT("user_id"), UserId))
+		if (!FJsonSerializer::Deserialize(Reader, Me) || !Me.IsValid()
+			|| !Me->TryGetStringField(TEXT("user_id"), UserId)
+			|| !Me->TryGetStringField(TEXT("curated_id"), CuratedId)
+			|| CuratedId.TrimStartAndEnd().IsEmpty())
 		{
 			FinishLaunch(ECuratedLaunchError::HubError);
 			return;
 		}
 		Session.UserId = UserId;
+		Session.CuratedId = CuratedId.TrimStartAndEnd();
 		Me->TryGetStringField(TEXT("username"), Session.Username);
 
 		SendRequest(PendingContext, TEXT("GET"), TEXT("/library"), [this, Generation](ECuratedLaunchError LibraryError, const FString& LibraryBody)

@@ -6,7 +6,8 @@ Runtime plugin implementing launch contract v1 (`contracts/launch-contract.md`) 
 
 ## Install
 
-1. Download `curated-unreal-<version>.zip` from the curated-sdk Releases.
+1. Download `curated-unreal-<version>.zip` from this repository's
+   [Releases](https://github.com/CuratedGames/curated-sdk/releases).
 2. Unzip it into `<Project>/Plugins/` so you get `Plugins/CuratedSDK/CuratedSDK.uplugin`.
 3. Enable **Curated SDK** in **Edit > Plugins** and rebuild.
 
@@ -39,13 +40,14 @@ void UMyGameInstance::Init()
 `UCuratedSubsystem::GetCurrentGameLanguage()` (Blueprint: **Get Current Game Language**) returns
 the language the player selected in the Curated launcher as a Curated code (`en`, `es`, `it`,
 `pt-br`, ...), the language the launcher downloads depots for, or `en` outside the launcher. It
-is static and works before `InitFromLauncher`. **Get Current Game Language Steam Api Name**
-returns the Steam API name (`english`, `italian`, ...). After a successful launch,
+is static and works before `InitFromLauncher`. After a successful launch,
 `FCuratedSession::CurrentGameLanguage` holds the same value.
 
 ```cpp
 FInternationalization::Get().SetCurrentCulture(UCuratedSubsystem::GetCurrentGameLanguage());
 ```
+
+If you are porting from Steam, see [Migrating from Steam](#migrating-from-steam).
 
 ## Dedicated servers
 
@@ -63,6 +65,12 @@ else
 	PublicDefinitions.Add("WITH_CURATED=0");
 }
 ```
+
+## Migrating from Steam
+
+**Get Current Game Language Steam Api Name** /
+`UCuratedSubsystem::GetCurrentGameLanguageSteamApiName()` returns Steam client language names
+(`english`, `italian`, ...) for code that already expects those strings.
 
 ## Tests
 
