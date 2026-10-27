@@ -200,12 +200,35 @@ existing compile flags and add Curated in parallel.
 dotnet test Curated.Sdk.sln --configuration Release
 node --test engines/rpgmaker/CuratedSDK.test.mjs
 python3 scripts/check-game-languages.py
+python3 -m unittest discover -s scripts -p 'test_*.py'
 bash scripts/pack-unity-zip.sh artifacts/sdk-unity
 bash scripts/pack-engines.sh artifacts/sdk-unity/publish/Curated.Sdk.dll artifacts/engines
 cd tooling/content-builder && cargo test && cargo build --release
 ```
 
 Godot and Unreal tests run inside the engine (see their READMEs).
+
+## Changelog
+
+Releases follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) in
+[CHANGELOG.md](CHANGELOG.md). When you bump `<Version>` in `Curated.Sdk.csproj` (and the
+matching Unity `package.json`) and merge to `main`, the Release workflow:
+
+1. Promotes any bullets under `[Unreleased]`, or if that section is empty, generates entries
+   from commits since the previous `v*` tag with [git-cliff](https://github.com/orhun/git-cliff)
+   (`cliff.toml`).
+2. Writes the version section into `CHANGELOG.md` and attaches those notes to the GitHub
+   Release for `v<version>`.
+
+**How to add notes for the next release**
+
+- Preferred for features and fixes: put a Keep a Changelog bullet under `## [Unreleased]` in
+  `CHANGELOG.md` (use `### Added` / `### Changed` / `### Fixed` / …).
+- Or name the PR / commit with a prefix the cliff parsers understand: `[Feature]`,
+  `[Bugfix]`, `[Docs]`, `[Chore]`, or conventional `feat:` / `fix:` / `docs:` / `chore:`.
+
+Do not hand-edit past released sections unless you are correcting a mistake. Version tags stay
+`vMAJOR.MINOR.PATCH` (Unity Git URL installs use that fragment).
 
 ## License
 

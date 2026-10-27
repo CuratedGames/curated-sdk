@@ -5,4 +5,4 @@ artifacts/
 *.user
 .vs/
 tooling/**/target/
-**/*.rs.bk
+**/*.rs.bk__pycache__/
