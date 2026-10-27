@@ -37,8 +37,14 @@ cargo build --release --target x86_64-pc-windows-gnu
 Email or username + password. The session token is cached locally and reused by later commands.
 
 ```bat
-curated-content-builder.exe login --login you@studio.com --password "…" --api-base https://api.curated.games
+curated-content-builder.exe login --login you@studio.com
 curated-content-builder.exe login --username studio_dev --password "…"
+```
+
+Omit `--password` to type it at a prompt. Bash history-expands `!` inside double quotes before this program starts (`event not found`). Pass a password that contains `!` in single quotes, or use the prompt:
+
+```bash
+curated-content-builder.exe login --username Someone --password 'EeBrBu1sTU8!ASADSFDSFS'
 ```
 
 `--email` is accepted as an alias of `--login`.

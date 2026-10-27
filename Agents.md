@@ -203,10 +203,12 @@ Or take the Windows artifact from this repository's Releases.
 Caches a session token under `%USERPROFILE%\.curated\credentials.json` (Unix: `~/.curated/credentials.json`). Later commands auto-authenticate from that file.
 
 ```bat
-curated-content-builder.exe login --login you@studio.com --password "..."
+curated-content-builder.exe login --login you@studio.com
 curated-content-builder.exe login --username studio_dev --password "..."
 curated-content-builder.exe whoami
 ```
+
+Omit `--password` to type it at a prompt. In bash, `!` inside double quotes is history expansion and never reaches the program. Single-quote that password, or use the prompt.
 
 `--email` works as an alias of `--login`. Override API origin with `--api-base` / `CURATED_API_BASE`.
 

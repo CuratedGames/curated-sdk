@@ -5,6 +5,7 @@ use curated_content_builder::{
     clear_credentials, credentials_path, load_build_script, load_credentials, login_and_store,
     run_upload, validate_depot_id, ApiClient, UploadOptions, DEFAULT_API_BASE,
 };
+use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -32,8 +33,10 @@ enum Commands {
         email: Option<String>,
         #[arg(long, env = "CURATED_USERNAME")]
         username: Option<String>,
+        /// Account password. Omit this flag to type it at a prompt.
+        /// Bash history-expands ! inside double quotes before this program starts; single quotes pass ! through.
         #[arg(long, env = "CURATED_PASSWORD")]
-        password: String,
+        password: Option<String>,
         #[arg(long, env = "CURATED_API_BASE", default_value = DEFAULT_API_BASE)]
         api_base: String,
     },
@@ -94,6 +97,23 @@ fn resolve_login_identity(
         })
 }
 
+fn resolve_password(password: Option<String>) -> Result<String, String> {
+    if let Some(password) = password {
+        if password.is_empty() {
+            return Err("password is required".into());
+        }
+        return Ok(password);
+    }
+    if !std::io::stdin().is_terminal() {
+        return Err("password is required: pass --password or set CURATED_PASSWORD".into());
+    }
+    let password = rpassword::prompt_password("Password: ").map_err(|e| e.to_string())?;
+    if password.is_empty() {
+        return Err("password is required".into());
+    }
+    Ok(password)
+}
+
 fn resolve_client(
     api_base_flag: Option<String>,
     token_flag: Option<String>,
@@ -136,6 +156,7 @@ fn run(cli: Cli) -> Result<(), String> {
             api_base,
         } => {
             let identity = resolve_login_identity(login, email, username)?;
+            let password = resolve_password(password)?;
             let creds =
                 login_and_store(&api_base, &identity, &password).map_err(|e| e.to_string())?;
             println!(
@@ -269,6 +290,25 @@ mod tests {
             "studio"
         );
         assert!(resolve_login_identity(None, None, None).is_err());
+    }
+
+    #[test]
+    fn password_with_exclamation_mark_is_kept() {
+        let cli = Cli::try_parse_from([
+            "curated-content-builder",
+            "login",
+            "--username",
+            "Someone",
+            "--password",
+            "BLA123BLA!ASADSFDSFS",
+        ])
+        .unwrap();
+        match cli.command {
+            Commands::Login { password, .. } => {
+                assert_eq!(password.as_deref(), Some("BLA123BLA!ASADSFDSFS"));
+            }
+            _ => panic!("expected login"),
+        }
     }
 
     #[test]
