@@ -1,4 +1,9 @@
 using System;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Curated.Sdk.Internal;
 using Xunit;
 
@@ -34,14 +39,46 @@ public class CuratedClientTests : IDisposable
         CuratedClient.InitForTests(42, new RecordingTransport());
         Assert.True(CuratedClient.IsValid);
         Assert.Equal(42, CuratedClient.AppId);
+        Assert.True(CuratedClient.IsEntitled);
     }
 
     [Fact]
-    public void Init_twice_throws()
+    public async Task Init_twice_throws()
     {
-        CuratedClient.Init(1, "session-token");
-        Assert.Throws<InvalidOperationException>(() =>
-            CuratedClient.Init(2, "session-token"));
+        await CuratedClient.InitAsync(
+            1,
+            "session-token",
+            CuratedClient.DefaultHubUrl,
+            new OwnedHandler(1),
+            CancellationToken.None);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CuratedClient.InitAsync(
+                2,
+                "session-token",
+                CuratedClient.DefaultHubUrl,
+                new OwnedHandler(2),
+                CancellationToken.None));
+        Assert.Equal(1, CuratedClient.AppId);
+    }
+
+    private sealed class OwnedHandler : HttpMessageHandler
+    {
+        private readonly long _appId;
+
+        public OwnedHandler(long appId) => _appId = appId;
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var body = request.RequestUri!.AbsolutePath == "/auth/me"
+                ? "{\"user_id\":\"0b4c6f8e-6f2a-4f3d-9a51-2f0e8f6a1c11\",\"username\":\"p\",\"curated_id\":\"10000000000000001\"}"
+                : $"[{{ \"app_id\":{_appId},\"source\":\"grant\",\"acquired_at\":\"2026-10-20T08:30:00Z\"}}]";
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json"),
+            });
+        }
     }
 
     [Fact]

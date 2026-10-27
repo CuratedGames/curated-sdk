@@ -35,7 +35,7 @@ public static class Stats
     /// <summary>Load stat definitions and current player values from Curated.</summary>
     public static async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        var state = CuratedClient.State;
+        var state = CuratedClient.GameState;
         var progress = await StatsService
             .ProgressAsync(state, cancellationToken)
             .ConfigureAwait(false);
@@ -64,6 +64,7 @@ public static class Stats
     /// <summary>Steam-style GetStat for an int-backed value from the local cache.</summary>
     public static bool GetStat(string name, out int value)
     {
+        EnsureEntitled();
         if (!TryGetCached(name, out var raw))
         {
             value = 0;
@@ -77,6 +78,7 @@ public static class Stats
     /// <summary>Steam-style GetStat for a float-backed value from the local cache.</summary>
     public static bool GetStat(string name, out float value)
     {
+        EnsureEntitled();
         if (!TryGetCached(name, out var raw))
         {
             value = 0f;
@@ -88,7 +90,11 @@ public static class Stats
     }
 
     /// <summary>Read the cached numeric value, or false when the name is unknown locally.</summary>
-    public static bool TryGetStat(string name, out double value) => TryGetCached(name, out value);
+    public static bool TryGetStat(string name, out double value)
+    {
+        EnsureEntitled();
+        return TryGetCached(name, out value);
+    }
 
     /// <summary>
     /// Steam-style SetStat: update the local cache and mark the value dirty.
@@ -108,6 +114,7 @@ public static class Stats
     /// </summary>
     public static void SetStat(string name, double value)
     {
+        EnsureEntitled();
         var trimmed = RequireName(name);
         lock (Gate)
         {
@@ -170,7 +177,7 @@ public static class Stats
     {
         var trimmed = RequireName(name);
         var response = await StatsService
-            .SetAsync(CuratedClient.State, trimmed, value, cancellationToken)
+            .SetAsync(CuratedClient.GameState, trimmed, value, cancellationToken)
             .ConfigureAwait(false);
         var stat = UpsertFromWire(response.Stat);
         lock (Gate)
@@ -201,7 +208,7 @@ public static class Stats
     {
         var trimmed = RequireName(name);
         var response = await StatsService
-            .IncrementAsync(CuratedClient.State, trimmed, delta, cancellationToken)
+            .IncrementAsync(CuratedClient.GameState, trimmed, delta, cancellationToken)
             .ConfigureAwait(false);
         var stat = UpsertFromWire(response.Stat);
         lock (Gate)
@@ -260,7 +267,7 @@ public static class Stats
         }
 
         var response = await StatsService
-            .StoreAsync(CuratedClient.State, list, cancellationToken)
+            .StoreAsync(CuratedClient.GameState, list, cancellationToken)
             .ConfigureAwait(false);
         var updated = new List<StatWriteResult>(response.Updated.Count);
         lock (Gate)
@@ -353,6 +360,8 @@ public static class Stats
             item.SetBy,
             item.Stored);
     }
+
+    private static void EnsureEntitled() => _ = CuratedClient.GameState;
 
     private static string RequireName(string name)
     {

@@ -15,7 +15,7 @@ public static class Cloud
         string localFolder,
         CancellationToken cancellationToken = default)
     {
-        var state = CuratedClient.State;
+        var state = CuratedClient.GameState;
         return CloudSaveService.SyncOnLaunchAsync(state, localFolder, state.Blobs, cancellationToken);
     }
 
@@ -27,7 +27,7 @@ public static class Cloud
         IEnumerable<string> relativePaths,
         CancellationToken cancellationToken = default)
     {
-        var state = CuratedClient.State;
+        var state = CuratedClient.GameState;
         return CloudSaveService.SyncOnQuitAsync(
             state,
             localFolder,
