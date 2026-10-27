@@ -29,7 +29,7 @@ In `Packages/manifest.json` (replace the `#` fragment with a tag, branch, or com
 ```json
 {
   "dependencies": {
-    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.0"
+    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.1"
   }
 }
 ```
