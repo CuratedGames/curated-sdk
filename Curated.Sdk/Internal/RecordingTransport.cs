@@ -164,6 +164,118 @@ internal sealed class RecordingTransport : ITransport
                 });
         }
 
+        if (path.EndsWith("/stats/progress", StringComparison.Ordinal)
+            && method.Equals("GET", StringComparison.OrdinalIgnoreCase))
+        {
+            return Json.Serialize(
+                new StatsProgressResponseWire
+                {
+                    AppId = 0,
+                    Stats = Array.Empty<PlayerStatProgressWire>()
+                });
+        }
+
+        if (path.Contains("/stats/", StringComparison.Ordinal)
+            && path.EndsWith("/increment", StringComparison.Ordinal)
+            && method.Equals("POST", StringComparison.OrdinalIgnoreCase))
+        {
+            var apiName = Uri.UnescapeDataString(path.Split('/')[^2]);
+            var delta = 1d;
+            if (body is IncrementStatRequestWire incr && incr.Delta is double d)
+            {
+                delta = d;
+            }
+
+            return Json.Serialize(
+                new IncrementStatResponseWire
+                {
+                    AppId = 0,
+                    PreviousValue = 0,
+                    Delta = delta,
+                    UnlockedAchievements = Array.Empty<string>(),
+                    Stat = new PlayerStatProgressWire
+                    {
+                        ApiName = apiName,
+                        DisplayName = apiName,
+                        ValueType = "int",
+                        Value = delta,
+                        DefaultValue = 0,
+                        IncrementOnly = false,
+                        SetBy = "client",
+                        Stored = true
+                    }
+                });
+        }
+
+        if (path.EndsWith("/stats/store", StringComparison.Ordinal)
+            && method.Equals("POST", StringComparison.OrdinalIgnoreCase))
+        {
+            var updated = new List<StoreStatsUpdatedItemWire>();
+            if (body is StoreStatsRequestWire req)
+            {
+                foreach (var entry in req.Stats)
+                {
+                    var value = entry.Value ?? entry.Delta ?? 0;
+                    updated.Add(
+                        new StoreStatsUpdatedItemWire
+                        {
+                            PreviousValue = 0,
+                            Stat = new PlayerStatProgressWire
+                            {
+                                ApiName = entry.ApiName,
+                                DisplayName = entry.ApiName,
+                                ValueType = "int",
+                                Value = value,
+                                DefaultValue = 0,
+                                IncrementOnly = false,
+                                SetBy = "client",
+                                Stored = true
+                            }
+                        });
+                }
+            }
+
+            return Json.Serialize(
+                new StoreStatsResponseWire
+                {
+                    AppId = 0,
+                    Updated = updated,
+                    UnlockedAchievements = Array.Empty<string>()
+                });
+        }
+
+        if (path.Contains("/stats/", StringComparison.Ordinal)
+            && method.Equals("PUT", StringComparison.OrdinalIgnoreCase)
+            && !path.EndsWith("/store", StringComparison.Ordinal)
+            && !path.EndsWith("/progress", StringComparison.Ordinal))
+        {
+            var apiName = Uri.UnescapeDataString(path.Split('/')[^1]);
+            var value = 0d;
+            if (body is SetStatRequestWire set)
+            {
+                value = set.Value;
+            }
+
+            return Json.Serialize(
+                new SetStatResponseWire
+                {
+                    AppId = 0,
+                    PreviousValue = 0,
+                    UnlockedAchievements = Array.Empty<string>(),
+                    Stat = new PlayerStatProgressWire
+                    {
+                        ApiName = apiName,
+                        DisplayName = apiName,
+                        ValueType = "int",
+                        Value = value,
+                        DefaultValue = 0,
+                        IncrementOnly = false,
+                        SetBy = "client",
+                        Stored = true
+                    }
+                });
+        }
+
         return Json.Serialize(new { ok = true });
     }
 }

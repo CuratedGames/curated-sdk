@@ -195,10 +195,11 @@ All bindings use these exact strings so support logs read the same across engine
 
 ## 6. Other features
 
-Achievements, Cloud Save, friends, presence, and OpenID ID token minting use the same bearer
-token and are listed in the OpenAPI file. They all require an active entitlement for the app on
-the server side, so a binding that skips the entitlement check still cannot unlock achievements
-for players who do not own the game. A game-scoped token gets `403` on another app's routes.
+Achievements, player stats, Cloud Save, friends, presence, and OpenID ID token minting use the
+same bearer token and are listed in the OpenAPI file. They all require an active entitlement for
+the app on the server side, so a binding that skips the entitlement check still cannot unlock
+achievements or write stats for players who do not own the game. A game-scoped token gets `403`
+on another app's routes.
 
 ## 7. Dedicated servers
 

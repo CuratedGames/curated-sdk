@@ -2,7 +2,7 @@
 
 Integrate games with [Curated](https://curated.games) on any engine. When the Curated launcher
 starts a game, the game can sign the player in, confirm they own it, and use achievements,
-Cloud Save, friends, and presence. The SDK also includes the Content Builder CLI for depot uploads.
+stats, Cloud Save, friends, and presence. The SDK also includes the Content Builder CLI for depot uploads.
 
 This repository is **source-available under the [Curated SDK License](LICENSE.md)**. It is **not**
 an open-source license: you may use the official packages in your game, but you may not republish
@@ -131,6 +131,13 @@ in `dedicated_server` exports.
 await Achievements.RefreshAsync();
 await new Achievement("win_level_1").TriggerAsync();
 
+await Stats.RefreshAsync();
+Stats.SetStat("CardsCreated", 10);          // local (Steam-style)
+await Stats.StoreStatsAsync();              // POST /stats/store
+// Or write immediately:
+await Stats.SetStatAsync("CardsCreated", 10);
+await Stats.IncrementStatAsync("CardsCreated", 1);
+
 await Cloud.SyncOnLaunchAsync(saveFolder);
 await Cloud.SyncOnQuitAsync(saveFolder, "saves/slot1.sav");
 
@@ -150,7 +157,8 @@ string idToken = await CuratedClient.GetOpenIdIdTokenAsync();
 
 Public types: `CuratedClient`, `CuratedSession` (includes `CuratedId`), `Entitlement`,
 `Entitlements`, `LaunchContext`, `GameLanguages`, `GameLanguage`, `CuratedLaunchException`,
-`CuratedLaunchError`, `Achievement`, `Achievements`, `Cloud`, `CloudSyncResult`, `Friends`,
+`CuratedLaunchError`, `Achievement`, `Achievements`, `Stat`, `Stats`, `StatUpdate`,
+`StatWriteResult`, `StatStoreResult`, `Cloud`, `CloudSyncResult`, `Friends`,
 `Friend`, `Presence`, `CuratedException`, `LocalAccountSession`. Transport and wire models stay
 internal. `Curated.Sdk.dll` targets netstandard2.1 and net8.0 and has no third-party
 dependencies.

@@ -144,7 +144,7 @@ Copy `CuratedSDK.js` into `js/plugins/`, add it in the Plugin Manager, and set *
 The title screen waits for the ownership check. Unlock achievements with the
 **Unlock achievement** plugin command or `Curated.unlockAchievement("BOSS_1")`.
 
-## 6. C# features (Achievements, Cloud Save, friends, presence, OpenID)
+## 6. C# features (Achievements, stats, Cloud Save, friends, presence, OpenID)
 
 After `InitFromLauncherAsync` (or `CuratedClient.Init(appId, token)` when you already have a
 session):
@@ -152,6 +152,12 @@ session):
 ```csharp
 await Achievements.RefreshAsync();
 await new Achievement("win_level_1").TriggerAsync();
+
+await Stats.RefreshAsync();
+Stats.SetStat("CardsCreated", 10);   // local (Steam-style)
+await Stats.StoreStatsAsync();       // POST /games/app/{id}/stats/store
+// Or: await Stats.SetStatAsync("CardsCreated", 10);
+// Or: await Stats.IncrementStatAsync("CardsCreated", 1);
 
 await Cloud.SyncOnLaunchAsync(saveFolder);
 await Cloud.SyncOnQuitAsync(saveFolder, "saves/slot1.sav");
@@ -170,8 +176,8 @@ CuratedClient.Shutdown(); // on quit
 ```
 
 `CuratedSession` exposes `UserId`, `CuratedId` (public 17-digit player id), `Username`, and
-`Entitlement`. Define achievement names in the admin Achievements tool. Configure Cloud Save path
-patterns in the Cloud Save tool before players sync (last write wins).
+`Entitlement`. Define achievement and stat API names in the admin Achievements and Stats tools.
+Configure Cloud Save path patterns in the Cloud Save tool before players sync (last write wins).
 
 ### Smoke checklist
 
@@ -182,6 +188,7 @@ patterns in the Cloud Save tool before players sync (last write wins).
 - [ ] Launch options from Properties > General reach the game's arguments
 - [ ] Switch the launcher language (account main language) and relaunch: `GetCurrentGameLanguage` follows it; started directly it returns `en`
 - [ ] Unlock one test achievement
+- [ ] SetStat + StoreStats (or SetStatAsync) for one client-writable stat
 - [ ] Dedicated server build contains no Curated code
 - [ ] Shutdown on quit without hanging
 

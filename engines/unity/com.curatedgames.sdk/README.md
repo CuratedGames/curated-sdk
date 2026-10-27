@@ -84,11 +84,18 @@ Curated. Player builds still return `not_launched_by_curated` in that case. The 
 is sent only to the Curated API.
 
 `CuratedUnity.InitFromLauncherAsync` shuts Curated down on `Application.quitting`. Achievements,
-Cloud Save, friends, and presence are on the `Curated.Sdk` API (`Achievements`, `Cloud`, `Friends`,
-`Presence`). For Unity Authentication OpenID Connect, call
-`CuratedUnity.GetOpenIdIdTokenAsync()` after init and pass the string to
-`SignInWithOpenIdConnectAsync` / `LinkWithOpenIdConnectAsync` with provider `oidc-curated`. Never
-log the ID token; never send `CURATED_SESSION_TOKEN` to Unity.
+stats, Cloud Save, friends, and presence are on the `Curated.Sdk` API (`Achievements`, `Stats`,
+`Cloud`, `Friends`, `Presence`). Example:
+
+```csharp
+await Stats.RefreshAsync();
+Stats.SetStat("CardsCreated", 10);
+await Stats.StoreStatsAsync();
+```
+
+For Unity Authentication OpenID Connect, call `CuratedUnity.GetOpenIdIdTokenAsync()` after init
+and pass the string to `SignInWithOpenIdConnectAsync` / `LinkWithOpenIdConnectAsync` with provider
+`oidc-curated`. Never log the ID token; never send `CURATED_SESSION_TOKEN` to Unity.
 
 ## Dedicated server and WebGL builds
 
