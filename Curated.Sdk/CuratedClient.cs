@@ -214,6 +214,7 @@ public static class CuratedClient
             _session = null;
         }
 
+        Stats.ResetCache();
         old?.Dispose();
     }
 

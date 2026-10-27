@@ -2,12 +2,12 @@
   "name": "com.curatedgames.sdk",
   "version": "1.3.1",
   "displayName": "Curated SDK",
-  "description": "Curated launcher sign-in, ownership checks, achievements, Cloud Save, friends and presence. Excluded from dedicated server and WebGL builds.",
+  "description": "Curated launcher sign-in, ownership checks, achievements, stats, Cloud Save, friends and presence. Excluded from dedicated server and WebGL builds.",
   "unity": "2021.3",
   "author": {
     "name": "Fatum Games SL",
     "email": "support@curated.games",
     "url": "https://curated.games"
   },
-  "keywords": ["curated", "launcher", "achievements", "cloud save", "entitlements"]
+  "keywords": ["curated", "launcher", "achievements", "stats", "cloud save", "entitlements"]
 }
