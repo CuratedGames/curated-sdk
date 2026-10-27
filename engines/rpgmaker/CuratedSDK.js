@@ -64,6 +64,8 @@
   "use strict";
 
   const CONTRACT_VERSION = 1;
+  /** Oldest contract version still accepted. Newer launcher versions stay OK. */
+  const MIN_COMPATIBLE_CONTRACT_VERSION = 1;
   const DEFAULT_API_BASE = "https://api.curated.games";
   const ERRORS = Object.freeze({
     NOT_LAUNCHED: "not_launched_by_curated",
@@ -158,7 +160,7 @@
       return { ok: false, error: ERRORS.NOT_LAUNCHED };
     }
     const version = readVar(env, "CURATED_CONTRACT_VERSION");
-    if (!isPositiveInteger(version) || Number(version) > CONTRACT_VERSION) {
+    if (!isPositiveInteger(version) || Number(version) < MIN_COMPATIBLE_CONTRACT_VERSION) {
       return { ok: false, error: ERRORS.UNSUPPORTED_VERSION };
     }
     const appId = readVar(env, "CURATED_APP_ID");
@@ -239,6 +241,7 @@
 
   const Curated = {
     CONTRACT_VERSION,
+    MIN_COMPATIBLE_CONTRACT_VERSION,
     DEFAULT_API_BASE,
     ERRORS,
     parseLaunchEnv,

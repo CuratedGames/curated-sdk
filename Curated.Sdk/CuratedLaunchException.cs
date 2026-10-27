@@ -8,7 +8,7 @@ public enum CuratedLaunchError
     /// <summary>Launch variables are missing. Contract code <c>not_launched_by_curated</c>.</summary>
     NotLaunchedByCurated,
 
-    /// <summary>The launcher speaks a newer contract. Contract code <c>unsupported_contract_version</c>.</summary>
+    /// <summary>Contract version is below the minimum this game still supports, or invalid. Contract code <c>unsupported_contract_version</c>.</summary>
     UnsupportedContractVersion,
 
     /// <summary>The launch was for a different app. Contract code <c>app_mismatch</c>.</summary>

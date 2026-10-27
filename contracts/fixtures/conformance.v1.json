@@ -173,10 +173,36 @@
         "CURATED_LAUNCHER": "1",
         "CURATED_CONTRACT_VERSION": "2",
         "CURATED_APP_ID": "1002",
-        "CURATED_SESSION_TOKEN": "tok"
+        "CURATED_SESSION_TOKEN": "tok-newer"
       },
-      "responses": {},
-      "expect": { "ok": false, "error": "unsupported_contract_version", "requests": [] }
+      "responses": {
+        "/auth/me": {
+          "status": 200,
+          "body": { "user_id": "0b4c6f8e-6f2a-4f3d-9a51-2f0e8f6a1c11", "username": "player_one", "curated_id": "10000000000000001" }
+        },
+        "/library": {
+          "status": 200,
+          "body": [
+            { "app_id": 1002, "title": "Ariokan", "source": "primary", "acquired_at": "2026-10-20T08:30:00Z" }
+          ]
+        }
+      },
+      "expect": {
+        "ok": true,
+        "requests": [
+          "GET https://api.curated.games/auth/me",
+          "GET https://api.curated.games/library"
+        ],
+        "authorization": "Bearer tok-newer",
+        "app_id": 1002,
+        "api_base": "https://api.curated.games",
+        "language": null,
+        "user_id": "0b4c6f8e-6f2a-4f3d-9a51-2f0e8f6a1c11",
+        "username": "player_one",
+        "entitled": true,
+        "source": "primary",
+        "acquired_at": "2026-10-20T08:30:00Z"
+      }
     },
     {
       "name": "invalid_contract_version",

@@ -47,7 +47,7 @@ session and `GET /library` to confirm ownership, and returns a session or a stab
 | Code | Meaning | Typical handling |
 |------|---------|------------------|
 | `not_launched_by_curated` | Started outside the launcher | Show "Start from Curated" and quit |
-| `unsupported_contract_version` | Launcher is newer than the SDK | Ask the player to update the game |
+| `unsupported_contract_version` | Contract below the game minimum, or invalid | Update the launcher, or the game after an old contract is retired |
 | `app_mismatch` | Launched for a different app id | Quit |
 | `session_invalid` | Session expired or signed out | Ask the player to sign in again in Curated |
 | `not_entitled` | Player does not own the game | Quit |
