@@ -128,12 +128,24 @@ void UCuratedSubsystem::CheckEntitlement(FCuratedEntitlementChecked OnChecked)
 	});
 }
 
+bool UCuratedSubsystem::RequireReady(ECuratedLaunchError& OutError) const
+{
+	if (!bReady)
+	{
+		OutError = ECuratedLaunchError::NotLaunchedByCurated;
+		return false;
+	}
+	OutError = ECuratedLaunchError::None;
+	return true;
+}
+
 void UCuratedSubsystem::UnlockAchievement(const FString& ApiName, FCuratedAchievementUnlocked OnUnlocked)
 {
 	const FString Trimmed = ApiName.TrimStartAndEnd();
-	if (!bReady || Trimmed.IsEmpty())
+	ECuratedLaunchError ReadyError;
+	if (!RequireReady(ReadyError) || Trimmed.IsEmpty())
 	{
-		OnUnlocked.ExecuteIfBound(bReady ? ECuratedLaunchError::HubError : ECuratedLaunchError::NotLaunchedByCurated, false);
+		OnUnlocked.ExecuteIfBound(Trimmed.IsEmpty() && bReady ? ECuratedLaunchError::HubError : ReadyError, false);
 		return;
 	}
 	const FString Path = FString::Printf(TEXT("/games/app/%lld/achievements/%s/unlock"), Context.AppId, *FGenericPlatformHttp::UrlEncode(Trimmed));
@@ -150,17 +162,98 @@ void UCuratedSubsystem::UnlockAchievement(const FString& ApiName, FCuratedAchiev
 	});
 }
 
-void UCuratedSubsystem::SendRequest(const FCuratedLaunchContext& RequestContext, const FString& Verb, const FString& Path, FResponseHandler OnDone)
+void UCuratedSubsystem::RefreshStats(FCuratedStatsRefreshed OnRefreshed)
+{
+	ECuratedLaunchError ReadyError;
+	if (!RequireReady(ReadyError))
+	{
+		OnRefreshed.ExecuteIfBound(ReadyError, FString());
+		return;
+	}
+	const FString Path = FString::Printf(TEXT("/games/app/%lld/stats/progress"), Context.AppId);
+	SendRequest(Context, TEXT("GET"), Path, [OnRefreshed](ECuratedLaunchError Error, const FString& Body)
+	{
+		OnRefreshed.ExecuteIfBound(Error, Body);
+	});
+}
+
+void UCuratedSubsystem::SetStat(const FString& ApiName, float Value, FCuratedStatWritten OnWritten)
+{
+	const FString Trimmed = ApiName.TrimStartAndEnd();
+	ECuratedLaunchError ReadyError;
+	if (!RequireReady(ReadyError) || Trimmed.IsEmpty())
+	{
+		OnWritten.ExecuteIfBound(Trimmed.IsEmpty() && bReady ? ECuratedLaunchError::HubError : ReadyError, FString());
+		return;
+	}
+	const FString Path = FString::Printf(TEXT("/games/app/%lld/stats/%s"), Context.AppId, *FGenericPlatformHttp::UrlEncode(Trimmed));
+	const FString Body = FString::Printf(TEXT("{\"value\":%g}"), Value);
+	SendRequest(Context, TEXT("PUT"), Path, [OnWritten](ECuratedLaunchError Error, const FString& ResponseBody)
+	{
+		OnWritten.ExecuteIfBound(Error, ResponseBody);
+	}, Body);
+}
+
+void UCuratedSubsystem::IncrementStat(const FString& ApiName, float Delta, FCuratedStatWritten OnWritten)
+{
+	const FString Trimmed = ApiName.TrimStartAndEnd();
+	ECuratedLaunchError ReadyError;
+	if (!RequireReady(ReadyError) || Trimmed.IsEmpty())
+	{
+		OnWritten.ExecuteIfBound(Trimmed.IsEmpty() && bReady ? ECuratedLaunchError::HubError : ReadyError, FString());
+		return;
+	}
+	const FString Path = FString::Printf(TEXT("/games/app/%lld/stats/%s/increment"), Context.AppId, *FGenericPlatformHttp::UrlEncode(Trimmed));
+	const FString Body = FString::Printf(TEXT("{\"delta\":%g}"), Delta);
+	SendRequest(Context, TEXT("POST"), Path, [OnWritten](ECuratedLaunchError Error, const FString& ResponseBody)
+	{
+		OnWritten.ExecuteIfBound(Error, ResponseBody);
+	}, Body);
+}
+
+void UCuratedSubsystem::GetOpenIdIdToken(FCuratedOpenIdIdToken OnDone)
+{
+	ECuratedLaunchError ReadyError;
+	if (!RequireReady(ReadyError))
+	{
+		OnDone.ExecuteIfBound(ReadyError, FString());
+		return;
+	}
+	const FString Body = FString::Printf(TEXT("{\"app_id\":%lld}"), Context.AppId);
+	SendRequest(Context, TEXT("POST"), TEXT("/auth/openid/id-token"), [OnDone](ECuratedLaunchError Error, const FString& ResponseBody)
+	{
+		FString IdToken;
+		TSharedPtr<FJsonObject> Result;
+		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
+		if (Error == ECuratedLaunchError::None && FJsonSerializer::Deserialize(Reader, Result) && Result.IsValid())
+		{
+			Result->TryGetStringField(TEXT("id_token"), IdToken);
+			IdToken = IdToken.TrimStartAndEnd();
+		}
+		if (Error == ECuratedLaunchError::None && IdToken.IsEmpty())
+		{
+			Error = ECuratedLaunchError::HubError;
+		}
+		OnDone.ExecuteIfBound(Error, IdToken);
+	}, Body);
+}
+
+void UCuratedSubsystem::SendRequest(
+	const FCuratedLaunchContext& RequestContext,
+	const FString& Verb,
+	const FString& Path,
+	FResponseHandler OnDone,
+	const FString& JsonBody)
 {
 	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
 	Request->SetURL(RequestContext.ApiBase + Path);
 	Request->SetVerb(Verb);
 	Request->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("Bearer %s"), *RequestContext.SessionToken));
 	Request->SetHeader(TEXT("Accept"), TEXT("application/json"));
-	if (Verb == TEXT("POST"))
+	if (Verb == TEXT("POST") || Verb == TEXT("PUT"))
 	{
 		Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-		Request->SetContentAsString(TEXT("{}"));
+		Request->SetContentAsString(JsonBody.IsEmpty() ? TEXT("{}") : JsonBody);
 	}
 	TWeakObjectPtr<UCuratedSubsystem> WeakThis(this);
 	Request->OnProcessRequestComplete().BindLambda([WeakThis, OnDone](FHttpRequestPtr, FHttpResponsePtr Response, bool bConnected)

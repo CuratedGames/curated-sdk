@@ -21,7 +21,11 @@ public static class CuratedClient
     /// <summary>Default Curated hub used when Init is called without an explicit URL.</summary>
     public static readonly Uri DefaultHubUrl = new("https://api.curated.games");
 
-    /// <summary>True after a successful <see cref="Init(long,string)"/>.</summary>
+    /// <summary>
+    /// True after a successful <see cref="InitAsync(long,string,CancellationToken)"/>,
+    /// <see cref="InitFromLauncherAsync(long, CancellationToken)"/>, or
+    /// <see cref="Init(long,string)"/> (all of which verify ownership).
+    /// </summary>
     public static bool IsValid
     {
         get
@@ -29,6 +33,21 @@ public static class CuratedClient
             lock (Gate)
             {
                 return _state is not null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// True when Curated verified that the signed-in player owns <see cref="AppId"/> during init.
+    /// Game-scoped APIs require this. False before init and after <see cref="Shutdown"/>.
+    /// </summary>
+    public static bool IsEntitled
+    {
+        get
+        {
+            lock (Gate)
+            {
+                return _state is { EntitlementVerified: true };
             }
         }
     }
@@ -47,17 +66,54 @@ public static class CuratedClient
     }
 
     /// <summary>
-    /// Start Curated for this game. Pass the session token from the Curated launcher
-    /// (or a signed-in player session). Throws if already initialized or arguments are invalid.
+    /// Start Curated for this game with a session token the game already holds, verify the
+    /// player session, and confirm ownership of <paramref name="appId"/>. Blocks until the hub
+    /// responds. Prefer <see cref="InitAsync(long,string,CancellationToken)"/> or
+    /// <see cref="InitFromLauncherAsync(long, CancellationToken)"/> from async game code
+    /// (Unity main thread included). Throws if already initialized or arguments are invalid;
+    /// throws <see cref="CuratedLaunchException"/> when the session is invalid or the player
+    /// does not own the game.
     /// </summary>
     public static void Init(long appId, string sessionToken) =>
         Init(appId, sessionToken, DefaultHubUrl);
 
     /// <summary>
-    /// Start Curated with an explicit API base URL (local development or a non-default host). Prefer the overload
-    /// without a URL for shipping builds.
+    /// Same as <see cref="Init(long,string)"/> with an explicit API base URL (local development
+    /// or a non-default host). Prefer the overload without a URL for shipping builds.
     /// </summary>
-    public static void Init(long appId, string sessionToken, Uri hubUrl)
+    public static void Init(long appId, string sessionToken, Uri hubUrl) =>
+        InitAsync(appId, sessionToken, hubUrl)
+            .ConfigureAwait(false)
+            .GetAwaiter()
+            .GetResult();
+
+    /// <summary>
+    /// Start Curated with a session token the game already holds, verify the player session,
+    /// and confirm ownership of <paramref name="appId"/>. On failure Curated is left shut down
+    /// and a <see cref="CuratedLaunchException"/> carries the launch contract error code.
+    /// </summary>
+    public static Task<CuratedSession> InitAsync(
+        long appId,
+        string sessionToken,
+        CancellationToken cancellationToken = default) =>
+        InitAsync(appId, sessionToken, DefaultHubUrl, cancellationToken);
+
+    /// <summary>
+    /// Same as <see cref="InitAsync(long,string,CancellationToken)"/> with an explicit API base.
+    /// </summary>
+    public static Task<CuratedSession> InitAsync(
+        long appId,
+        string sessionToken,
+        Uri hubUrl,
+        CancellationToken cancellationToken = default) =>
+        InitAsync(appId, sessionToken, hubUrl, handler: null, cancellationToken);
+
+    internal static Task<CuratedSession> InitAsync(
+        long appId,
+        string sessionToken,
+        Uri hubUrl,
+        HttpMessageHandler? handler,
+        CancellationToken cancellationToken)
     {
         if (appId <= 0)
         {
@@ -70,7 +126,11 @@ public static class CuratedClient
         }
 
         Guard.NotNull(hubUrl, nameof(hubUrl));
-        InitCore(appId, new HttpTransport(hubUrl, sessionToken.Trim()));
+        return InitFromLauncherAsync(
+            appId,
+            LaunchContext.ForAccountSession(appId, sessionToken.Trim(), hubUrl),
+            handler,
+            cancellationToken);
     }
 
     /// <summary>
@@ -135,6 +195,7 @@ public static class CuratedClient
             {
                 if (ReferenceEquals(_state, state))
                 {
+                    state.EntitlementVerified = true;
                     _session = session;
                 }
             }
@@ -178,7 +239,7 @@ public static class CuratedClient
     /// <see cref="CuratedLaunchError.NetworkError"/> when Curated cannot be reached.
     /// </exception>
     public static Task<string> GetOpenIdIdTokenAsync(CancellationToken cancellationToken = default) =>
-        OpenIdService.MintIdTokenAsync(State, cancellationToken);
+        OpenIdService.MintIdTokenAsync(GameState, cancellationToken);
 
     /// <summary>
     /// The game language the player selected in the Curated launcher, as a lowercase Curated code
@@ -214,10 +275,14 @@ public static class CuratedClient
             _session = null;
         }
 
+        Stats.ResetCache();
         old?.Dispose();
     }
 
-    /// <summary>Test hook: inject fakes without opening the network.</summary>
+    /// <summary>
+    /// Test hook: inject fakes without opening the network. Marks the client entitled so
+    /// game-scoped APIs can run against the fake transport.
+    /// </summary>
     internal static void InitForTests(long appId, ITransport transport, IBlobTransfer? blobs = null)
     {
         if (appId <= 0)
@@ -236,7 +301,32 @@ public static class CuratedClient
                 transport,
                 blobs ?? new MemoryBlobTransfer(),
                 ownsTransport: false,
-                ownsBlobs: blobs is null);
+                ownsBlobs: blobs is null,
+                entitlementVerified: true);
+        }
+    }
+
+    /// <summary>
+    /// Test hook: initialized transport without ownership verification (fail-closed game APIs).
+    /// </summary>
+    internal static void InitForTestsWithoutEntitlement(long appId, ITransport transport)
+    {
+        if (appId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(appId));
+        }
+
+        Guard.NotNull(transport, nameof(transport));
+        Shutdown();
+        lock (Gate)
+        {
+            _state = new ClientState(
+                appId,
+                transport,
+                new MemoryBlobTransfer(),
+                ownsTransport: false,
+                ownsBlobs: true,
+                entitlementVerified: false);
         }
     }
 
@@ -248,6 +338,29 @@ public static class CuratedClient
             {
                 EnsureInitialized_NoLock();
                 return _state!;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Initialized client that passed ownership verification. Game-scoped APIs use this so a
+    /// token-only bootstrap cannot reach achievements, stats, Cloud Save, friends, presence, or OpenID.
+    /// </summary>
+    internal static ClientState GameState
+    {
+        get
+        {
+            lock (Gate)
+            {
+                EnsureInitialized_NoLock();
+                if (!_state!.EntitlementVerified)
+                {
+                    throw new CuratedLaunchException(
+                        CuratedLaunchError.NotEntitled,
+                        "This Curated account does not own the game.");
+                }
+
+                return _state;
             }
         }
     }
@@ -267,11 +380,13 @@ public static class CuratedClient
             ITransport transport,
             IBlobTransfer blobs,
             bool ownsTransport,
-            bool ownsBlobs)
+            bool ownsBlobs,
+            bool entitlementVerified = false)
         {
             AppId = appId;
             Transport = transport;
             Blobs = blobs;
+            EntitlementVerified = entitlementVerified;
             _ownsTransport = ownsTransport;
             _ownsBlobs = ownsBlobs;
         }
@@ -281,6 +396,9 @@ public static class CuratedClient
         public ITransport Transport { get; }
 
         public IBlobTransfer Blobs { get; }
+
+        /// <summary>True after a successful ownership check during init (or test init).</summary>
+        public bool EntitlementVerified { get; set; }
 
         private readonly bool _ownsTransport;
         private readonly bool _ownsBlobs;

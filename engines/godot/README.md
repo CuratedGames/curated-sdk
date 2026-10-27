@@ -25,11 +25,14 @@ func _ready() -> void:
 
 func _on_boss_defeated() -> void:
 	await Curated.unlock_achievement("BOSS_1")
+	await Curated.set_stat("BossesDefeated", 1)
 ```
 
-`Curated.check_entitlement()` re-checks ownership during long sessions. `Curated.session`
-holds `user_id`, `curated_id`, `username`, `language` (raw launcher value), `game_language`, and
-`entitlement` after a successful init.
+`Curated.check_entitlement()` re-checks ownership during long sessions. After a successful
+`init_from_launcher`, call `refresh_stats` / `set_stat` / `increment_stat` / `store_stats`,
+or `get_openid_id_token` (never log the token). Cloud Save, friends, and presence stay on
+`Curated.Sdk.dll` for C# projects. `Curated.session` holds `user_id`, `curated_id`,
+`username`, `language` (raw launcher value), `game_language`, and `entitlement` after init.
 
 ## Game language
 

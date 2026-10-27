@@ -43,7 +43,8 @@ bool FCuratedLaunchParseTest::RunTest(const FString& Parameters)
 
 	Env = ValidEnvironment();
 	Env[TEXT("CURATED_CONTRACT_VERSION")] = TEXT("2");
-	TestTrue(TEXT("newer version"), CuratedLaunchContract::Parse(Env, 1002, Context) == ECuratedLaunchError::UnsupportedContractVersion);
+	TestTrue(TEXT("newer version still accepted"), CuratedLaunchContract::Parse(Env, 1002, Context) == ECuratedLaunchError::None);
+	TestEqual(TEXT("reported newer version"), Context.ContractVersion, 2);
 
 	Env = ValidEnvironment();
 	Env[TEXT("CURATED_CONTRACT_VERSION")] = TEXT("v1");

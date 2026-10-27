@@ -152,3 +152,100 @@ internal sealed class SetPresenceRequest
 
     public long? AppId { get; set; }
 }
+
+internal sealed class PlayerStatProgressWire
+{
+    public string ApiName { get; set; } = "";
+
+    public string DisplayName { get; set; } = "";
+
+    public string ValueType { get; set; } = "int";
+
+    public double Value { get; set; }
+
+    public double DefaultValue { get; set; }
+
+    public double? MinValue { get; set; }
+
+    public double? MaxValue { get; set; }
+
+    public bool IncrementOnly { get; set; }
+
+    public string SetBy { get; set; } = "client";
+
+    public bool Stored { get; set; }
+}
+
+internal sealed class StatsProgressResponseWire
+{
+    public long AppId { get; set; }
+
+    public IReadOnlyList<PlayerStatProgressWire> Stats { get; set; } =
+        Array.Empty<PlayerStatProgressWire>();
+}
+
+internal sealed class SetStatRequestWire
+{
+    public double Value { get; set; }
+}
+
+internal sealed class SetStatResponseWire
+{
+    public long AppId { get; set; }
+
+    public PlayerStatProgressWire Stat { get; set; } = new();
+
+    public double PreviousValue { get; set; }
+
+    public IReadOnlyList<string> UnlockedAchievements { get; set; } = Array.Empty<string>();
+}
+
+internal sealed class IncrementStatRequestWire
+{
+    public double? Delta { get; set; }
+}
+
+internal sealed class IncrementStatResponseWire
+{
+    public long AppId { get; set; }
+
+    public PlayerStatProgressWire Stat { get; set; } = new();
+
+    public double PreviousValue { get; set; }
+
+    public double Delta { get; set; }
+
+    public IReadOnlyList<string> UnlockedAchievements { get; set; } = Array.Empty<string>();
+}
+
+internal sealed class StoreStatEntryWire
+{
+    public string ApiName { get; set; } = "";
+
+    public double? Value { get; set; }
+
+    public double? Delta { get; set; }
+}
+
+internal sealed class StoreStatsRequestWire
+{
+    public IReadOnlyList<StoreStatEntryWire> Stats { get; set; } =
+        Array.Empty<StoreStatEntryWire>();
+}
+
+internal sealed class StoreStatsUpdatedItemWire
+{
+    public PlayerStatProgressWire Stat { get; set; } = new();
+
+    public double PreviousValue { get; set; }
+}
+
+internal sealed class StoreStatsResponseWire
+{
+    public long AppId { get; set; }
+
+    public IReadOnlyList<StoreStatsUpdatedItemWire> Updated { get; set; } =
+        Array.Empty<StoreStatsUpdatedItemWire>();
+
+    public IReadOnlyList<string> UnlockedAchievements { get; set; } = Array.Empty<string>();
+}

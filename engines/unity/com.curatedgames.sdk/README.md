@@ -11,18 +11,20 @@ Add the package from this public repository with Unity Package Manager. In
 ```json
 {
   "dependencies": {
-    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.0"
+    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.4.0"
   }
 }
 ```
 
-Replace `v1.3.0` with a release tag, branch name, or commit SHA. Examples:
+Replace `v1.4.0` with a release tag, branch name, or commit SHA. Examples:
 
 ```text
-https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.0
+https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.4.0
 https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#main
-https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#8c6da5d
 ```
+
+Use a tag from **v1.3.1** onward (or `main`). Tags before that (including `v1.3.0`) still use the
+old folder name `games.curated.sdk` and fail with a pathspec error.
 
 Or in the Editor: **Window > Package Manager > + > Add package from git URL…** and paste the
 same URL (including `?path=/engines/unity/com.curatedgames.sdk#…`).
@@ -37,7 +39,7 @@ If you prefer an offline install, download `com.curatedgames.sdk-<version>.tgz` 
 **Window > Package Manager > + > Add package from tarball…**, or:
 
 ```json
-"com.curatedgames.sdk": "file:../Packages-local/com.curatedgames.sdk-1.3.0.tgz"
+"com.curatedgames.sdk": "file:../Packages-local/com.curatedgames.sdk-1.4.0.tgz"
 ```
 
 ## Use
@@ -82,11 +84,18 @@ Curated. Player builds still return `not_launched_by_curated` in that case. The 
 is sent only to the Curated API.
 
 `CuratedUnity.InitFromLauncherAsync` shuts Curated down on `Application.quitting`. Achievements,
-Cloud Save, friends, and presence are on the `Curated.Sdk` API (`Achievements`, `Cloud`, `Friends`,
-`Presence`). For Unity Authentication OpenID Connect, call
-`CuratedUnity.GetOpenIdIdTokenAsync()` after init and pass the string to
-`SignInWithOpenIdConnectAsync` / `LinkWithOpenIdConnectAsync` with provider `oidc-curated`. Never
-log the ID token; never send `CURATED_SESSION_TOKEN` to Unity.
+stats, Cloud Save, friends, and presence are on the `Curated.Sdk` API (`Achievements`, `Stats`,
+`Cloud`, `Friends`, `Presence`). Example:
+
+```csharp
+await Stats.RefreshAsync();
+Stats.SetStat("CardsCreated", 10);
+await Stats.StoreStatsAsync();
+```
+
+For Unity Authentication OpenID Connect, call `CuratedUnity.GetOpenIdIdTokenAsync()` after init
+and pass the string to `SignInWithOpenIdConnectAsync` / `LinkWithOpenIdConnectAsync` with provider
+`oidc-curated`. Never log the ID token; never send `CURATED_SESSION_TOKEN` to Unity.
 
 ## Dedicated server and WebGL builds
 

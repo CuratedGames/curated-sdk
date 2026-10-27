@@ -18,6 +18,7 @@ tags:
   - name: auth
   - name: entitlements
   - name: achievements
+  - name: stats
   - name: cloud-save
   - name: social
 paths:
@@ -141,6 +142,135 @@ paths:
           $ref: "#/components/responses/NotEntitled"
         "404":
           description: Achievement not defined for this app
+  /games/app/{app_id}/stats/progress:
+    get:
+      operationId: getStatsProgress
+      tags: [stats]
+      summary: Stat definitions and current player values for this app
+      parameters:
+        - $ref: "#/components/parameters/AppId"
+      responses:
+        "200":
+          description: Progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsProgressResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotEntitled"
+        "404":
+          description: Game not published or unavailable
+  /games/app/{app_id}/stats/{api_name}:
+    put:
+      operationId: setStat
+      tags: [stats]
+      summary: SetStat absolute value for the player
+      parameters:
+        - $ref: "#/components/parameters/AppId"
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+          description: Must not be purely numeric (def CRUD uses /stats/defs/{game_stat_id})
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetStatRequest"
+      responses:
+        "200":
+          description: Updated stat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetStatResponse"
+        "400":
+          description: Validation (increment_only, max_change, int fractional, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotEntitled"
+        "404":
+          description: Stat not defined for this app
+  /games/app/{app_id}/stats/{api_name}/increment:
+    post:
+      operationId: incrementStat
+      tags: [stats]
+      summary: Increment a player stat
+      parameters:
+        - $ref: "#/components/parameters/AppId"
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncrementStatRequest"
+      responses:
+        "200":
+          description: Updated stat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncrementStatResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotEntitled"
+        "404":
+          description: Stat not defined for this app
+  /games/app/{app_id}/stats/store:
+    post:
+      operationId: storeStats
+      tags: [stats]
+      summary: Batch SetStat / increment (StoreStats)
+      parameters:
+        - $ref: "#/components/parameters/AppId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreStatsRequest"
+      responses:
+        "200":
+          description: Batch result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreStatsResponse"
+        "400":
+          description: Validation or empty batch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotEntitled"
+        "404":
+          description: Game or stat not found
   /games/app/{app_id}/cloud-save/manifest:
     get:
       operationId: getCloudSaveManifest
@@ -361,6 +491,156 @@ components:
           type: boolean
         source:
           type: string
+    PlayerStatProgress:
+      type: object
+      required:
+        - api_name
+        - display_name
+        - value_type
+        - value
+        - default_value
+        - increment_only
+        - set_by
+        - stored
+      properties:
+        api_name:
+          type: string
+          example: CardsCreated
+        display_name:
+          type: string
+          example: Cards Created
+        value_type:
+          type: string
+          enum: [int, float]
+        value:
+          type: number
+          example: 7
+        default_value:
+          type: number
+          example: 0
+        min_value:
+          type: [number, "null"]
+        max_value:
+          type: [number, "null"]
+        increment_only:
+          type: boolean
+        set_by:
+          type: string
+          enum: [client, server]
+        stored:
+          type: boolean
+          description: false means value is the def default (no player_stats row yet)
+    StatsProgressResponse:
+      type: object
+      required: [app_id, stats]
+      properties:
+        app_id:
+          type: integer
+          format: int64
+          example: 1002
+        stats:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerStatProgress"
+    SetStatRequest:
+      type: object
+      required: [value]
+      properties:
+        value:
+          type: number
+    SetStatResponse:
+      type: object
+      required: [app_id, stat, previous_value, unlocked_achievements]
+      properties:
+        app_id:
+          type: integer
+          format: int64
+        stat:
+          $ref: "#/components/schemas/PlayerStatProgress"
+        previous_value:
+          type: number
+        unlocked_achievements:
+          type: array
+          items:
+            type: string
+          description: Newly unlocked achievement api_names (may be empty)
+    IncrementStatRequest:
+      type: object
+      properties:
+        delta:
+          type: number
+          description: Preferred; defaults to 1 if omitted
+        amount:
+          type: number
+          description: Alias for delta
+      description: Provide delta or amount or neither (defaults to +1)
+    IncrementStatResponse:
+      type: object
+      required: [app_id, stat, previous_value, delta, unlocked_achievements]
+      properties:
+        app_id:
+          type: integer
+          format: int64
+        stat:
+          $ref: "#/components/schemas/PlayerStatProgress"
+        previous_value:
+          type: number
+        delta:
+          type: number
+        unlocked_achievements:
+          type: array
+          items:
+            type: string
+    StoreStatEntry:
+      type: object
+      required: [api_name]
+      properties:
+        api_name:
+          type: string
+        value:
+          type: number
+          description: Absolute SetStat; mutually exclusive with delta
+        delta:
+          type: number
+          description: Increment; mutually exclusive with value
+        amount:
+          type: number
+          description: Alias for delta
+      description: Exactly one of value or delta/amount
+    StoreStatsRequest:
+      type: object
+      required: [stats]
+      properties:
+        stats:
+          type: array
+          minItems: 1
+          maxItems: 64
+          items:
+            $ref: "#/components/schemas/StoreStatEntry"
+    StoreStatsUpdatedItem:
+      type: object
+      required: [stat, previous_value]
+      properties:
+        stat:
+          $ref: "#/components/schemas/PlayerStatProgress"
+        previous_value:
+          type: number
+    StoreStatsResponse:
+      type: object
+      required: [app_id, updated, unlocked_achievements]
+      properties:
+        app_id:
+          type: integer
+          format: int64
+        updated:
+          type: array
+          items:
+            $ref: "#/components/schemas/StoreStatsUpdatedItem"
+        unlocked_achievements:
+          type: array
+          items:
+            type: string
+          description: Deduped newly unlocked achievement api_names across the batch
     CloudSaveSyncRequest:
       type: object
       required: [direction, files]

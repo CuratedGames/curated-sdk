@@ -16,14 +16,14 @@ public static class Presence
         string status,
         string? richText = null,
         CancellationToken cancellationToken = default) =>
-        FriendsService.SetPresenceAsync(CuratedClient.State, status, richText, cancellationToken);
+        FriendsService.SetPresenceAsync(CuratedClient.GameState, status, richText, cancellationToken);
 
     /// <summary>Keep presence fresh while the game is running.</summary>
     public static Task HeartbeatAsync(CancellationToken cancellationToken = default) =>
-        FriendsService.HeartbeatAsync(CuratedClient.State, cancellationToken);
+        FriendsService.HeartbeatAsync(CuratedClient.GameState, cancellationToken);
 
     /// <summary>Presence rows for accepted friends.</summary>
     public static Task<IReadOnlyList<Friend>> GetFriendsAsync(
         CancellationToken cancellationToken = default) =>
-        FriendsService.GetFriendsPresenceAsync(CuratedClient.State, cancellationToken);
+        FriendsService.GetFriendsPresenceAsync(CuratedClient.GameState, cancellationToken);
 }

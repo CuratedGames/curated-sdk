@@ -6,3 +6,4 @@ artifacts/
 .vs/
 tooling/**/target/
 **/*.rs.bk
+__pycache__/

@@ -2,6 +2,8 @@ extends RefCounted
 ## Curated launch contract v1: pure parsing and classification helpers (no networking).
 
 const CONTRACT_VERSION := 1
+## Oldest contract version still accepted. Newer launcher versions stay OK.
+const MIN_COMPATIBLE_CONTRACT_VERSION := 1
 const DEFAULT_API_BASE := "https://api.curated.games"
 
 const ERR_NOT_LAUNCHED := "not_launched_by_curated"
@@ -132,7 +134,7 @@ static func parse_launch_env(env: Dictionary, expected_app_id: int) -> Dictionar
 	if read_var(env, "CURATED_LAUNCHER") != "1" or token.is_empty():
 		return {"ok": false, "error": ERR_NOT_LAUNCHED}
 	var version := read_var(env, "CURATED_CONTRACT_VERSION")
-	if not _is_positive_integer(version) or int(version) > CONTRACT_VERSION:
+	if not _is_positive_integer(version) or int(version) < MIN_COMPATIBLE_CONTRACT_VERSION:
 		return {"ok": false, "error": ERR_UNSUPPORTED_VERSION}
 	var app_id := read_var(env, "CURATED_APP_ID")
 	if not _is_positive_integer(app_id) or int(app_id) != expected_app_id:

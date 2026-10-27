@@ -26,7 +26,7 @@ The Curated launcher starts games with environment variables defined in
 | Variable | Example | Notes |
 |----------|---------|-------|
 | `CURATED_LAUNCHER` | `1` | Present only when started by Curated |
-| `CURATED_CONTRACT_VERSION` | `1` | Reject versions newer than the SDK supports |
+| `CURATED_CONTRACT_VERSION` | `1` | Reject only below `MinCompatibleContractVersion` (or invalid); newer stays OK |
 | `CURATED_APP_ID` | `1002` | Must equal the game's own app id |
 | `CURATED_SESSION_TOKEN` | (secret) | Bearer token scoped to this game (12 h max). Never log, persist, or forward it |
 | `CURATED_API_BASE` | `https://api.curated.games` | Only destination for the token |
@@ -73,11 +73,13 @@ ordinary command-line arguments. Credentials are never on the command line.
 1. Add the package from this repository with a Git URL. In `Packages/manifest.json`:
 
 ```json
-"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.0"
+"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.1"
 ```
 
-Replace `v1.3.0` with a release tag, `main`, or a commit SHA. Or use
+Replace `v1.3.1` with a release tag, `main`, or a commit SHA. Or use
 **Window > Package Manager > + > Add package from git URL…** with the same URL.
+Use **v1.3.1 or newer** (or `main`). Older tags such as `v1.3.0` still have the previous
+folder name `games.curated.sdk` and fail with a pathspec error.
 
 Optional offline install: download `com.curatedgames.sdk-<version>.tgz` from Releases, then
 **Add package from tarball…**, or `"com.curatedgames.sdk": "file:<path>.tgz"`.
@@ -142,14 +144,20 @@ Copy `CuratedSDK.js` into `js/plugins/`, add it in the Plugin Manager, and set *
 The title screen waits for the ownership check. Unlock achievements with the
 **Unlock achievement** plugin command or `Curated.unlockAchievement("BOSS_1")`.
 
-## 6. C# features (Achievements, Cloud Save, friends, presence, OpenID)
+## 6. C# features (Achievements, stats, Cloud Save, friends, presence, OpenID)
 
-After `InitFromLauncherAsync` (or `CuratedClient.Init(appId, token)` when you already have a
-session):
+After `InitFromLauncherAsync` (or `CuratedClient.Init` / `InitAsync` when you already have a
+session). Every init path verifies ownership; game-scoped APIs require `CuratedClient.IsEntitled`:
 
 ```csharp
 await Achievements.RefreshAsync();
 await new Achievement("win_level_1").TriggerAsync();
+
+await Stats.RefreshAsync();
+Stats.SetStat("CardsCreated", 10);   // local (Steam-style)
+await Stats.StoreStatsAsync();       // POST /games/app/{id}/stats/store
+// Or: await Stats.SetStatAsync("CardsCreated", 10);
+// Or: await Stats.IncrementStatAsync("CardsCreated", 1);
 
 await Cloud.SyncOnLaunchAsync(saveFolder);
 await Cloud.SyncOnQuitAsync(saveFolder, "saves/slot1.sav");
@@ -168,8 +176,8 @@ CuratedClient.Shutdown(); // on quit
 ```
 
 `CuratedSession` exposes `UserId`, `CuratedId` (public 17-digit player id), `Username`, and
-`Entitlement`. Define achievement names in the admin Achievements tool. Configure Cloud Save path
-patterns in the Cloud Save tool before players sync (last write wins).
+`Entitlement`. Define achievement and stat API names in the admin Achievements and Stats tools.
+Configure Cloud Save path patterns in the Cloud Save tool before players sync (last write wins).
 
 ### Smoke checklist
 
@@ -180,6 +188,7 @@ patterns in the Cloud Save tool before players sync (last write wins).
 - [ ] Launch options from Properties > General reach the game's arguments
 - [ ] Switch the launcher language (account main language) and relaunch: `GetCurrentGameLanguage` follows it; started directly it returns `en`
 - [ ] Unlock one test achievement
+- [ ] SetStat + StoreStats (or SetStatAsync) for one client-writable stat
 - [ ] Dedicated server build contains no Curated code
 - [ ] Shutdown on quit without hanging
 

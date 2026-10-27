@@ -13,15 +13,16 @@ Single-file plugin implementing launch contract v1 (`contracts/launch-contract.m
 The title screen waits until the ownership check finishes. Test play from the editor skips
 the check.
 
-## Achievements
+## Achievements and stats
 
 - Event command **Plugin Command > CuratedSDK > Unlock achievement** (MZ), with the
   achievement's API name.
-- Script call: `Curated.unlockAchievement("BOSS_1");`
+- Script calls: `Curated.unlockAchievement("BOSS_1");`, `Curated.setStat("CardsCreated", 10);`,
+  `Curated.incrementStat("CardsCreated", 1);`, `Curated.refreshStats();`
 
 `Curated.session` holds `userId`, `curatedId`, `username`, `language` (raw launcher value),
 `gameLanguage`, and `entitlement` once the check succeeds. `Curated.checkEntitlement()`
-re-checks ownership.
+re-checks ownership. `Curated.getOpenIdIdToken()` mints an OpenID Connect ID token (never log it).
 
 ## Game language
 

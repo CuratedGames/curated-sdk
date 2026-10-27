@@ -34,6 +34,9 @@ void UMyGameInstance::Init()
 ```
 
 `CheckEntitlement` re-checks ownership; `UnlockAchievement` unlocks by API name.
+`RefreshStats` / `SetStat` / `IncrementStat` cover player stats; `GetOpenIdIdToken` mints an
+OpenID Connect ID token (never log it). Cloud Save, friends, and presence remain C#-only
+(use `Curated.Sdk` from a managed game layer, or call the same HTTP paths yourself).
 
 ## Game language
 

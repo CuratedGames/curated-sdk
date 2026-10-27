@@ -2,7 +2,7 @@
 
 Integrate games with [Curated](https://curated.games) on any engine. When the Curated launcher
 starts a game, the game can sign the player in, confirm they own it, and use achievements,
-Cloud Save, friends, and presence. The SDK also includes the Content Builder CLI for depot uploads.
+stats, Cloud Save, friends, and presence. The SDK also includes the Content Builder CLI for depot uploads.
 
 This repository is **source-available under the [Curated SDK License](LICENSE.md)**. It is **not**
 an open-source license: you may use the official packages in your game, but you may not republish
@@ -29,7 +29,7 @@ In `Packages/manifest.json` (replace the `#` fragment with a tag, branch, or com
 ```json
 {
   "dependencies": {
-    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.0"
+    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.4.0"
   }
 }
 ```
@@ -47,7 +47,7 @@ session and `GET /library` to confirm ownership, and returns a session or a stab
 | Code | Meaning | Typical handling |
 |------|---------|------------------|
 | `not_launched_by_curated` | Started outside the launcher | Show "Start from Curated" and quit |
-| `unsupported_contract_version` | Launcher is newer than the SDK | Ask the player to update the game |
+| `unsupported_contract_version` | Contract below the game minimum, or invalid | Update the launcher, or the game after an old contract is retired |
 | `app_mismatch` | Launched for a different app id | Quit |
 | `session_invalid` | Session expired or signed out | Ask the player to sign in again in Curated |
 | `not_entitled` | Player does not own the game | Quit |
@@ -131,6 +131,13 @@ in `dedicated_server` exports.
 await Achievements.RefreshAsync();
 await new Achievement("win_level_1").TriggerAsync();
 
+await Stats.RefreshAsync();
+Stats.SetStat("CardsCreated", 10);          // local (Steam-style)
+await Stats.StoreStatsAsync();              // POST /stats/store
+// Or write immediately:
+await Stats.SetStatAsync("CardsCreated", 10);
+await Stats.IncrementStatAsync("CardsCreated", 1);
+
 await Cloud.SyncOnLaunchAsync(saveFolder);
 await Cloud.SyncOnQuitAsync(saveFolder, "saves/slot1.sav");
 
@@ -150,13 +157,17 @@ string idToken = await CuratedClient.GetOpenIdIdTokenAsync();
 
 Public types: `CuratedClient`, `CuratedSession` (includes `CuratedId`), `Entitlement`,
 `Entitlements`, `LaunchContext`, `GameLanguages`, `GameLanguage`, `CuratedLaunchException`,
-`CuratedLaunchError`, `Achievement`, `Achievements`, `Cloud`, `CloudSyncResult`, `Friends`,
+`CuratedLaunchError`, `Achievement`, `Achievements`, `Stat`, `Stats`, `StatUpdate`,
+`StatWriteResult`, `StatStoreResult`, `Cloud`, `CloudSyncResult`, `Friends`,
 `Friend`, `Presence`, `CuratedException`, `LocalAccountSession`. Transport and wire models stay
 internal. `Curated.Sdk.dll` targets netstandard2.1 and net8.0 and has no third-party
 dependencies.
 
-`CuratedClient.Init(appId, sessionToken)` is still available for games that receive the
-session another way; it does not check ownership.
+`CuratedClient.Init(appId, sessionToken)` / `InitAsync` are available when the game already
+holds a session token. Both verify the session and ownership (same as
+`InitFromLauncherAsync`) and leave Curated shut down with `not_entitled` /
+`session_invalid` on failure. Game-scoped APIs (achievements, stats, Cloud Save, friends,
+presence, OpenID) refuse to run until that check succeeds (`CuratedClient.IsEntitled`).
 
 ## Content Builder CLI
 
@@ -200,12 +211,35 @@ existing compile flags and add Curated in parallel.
 dotnet test Curated.Sdk.sln --configuration Release
 node --test engines/rpgmaker/CuratedSDK.test.mjs
 python3 scripts/check-game-languages.py
+python3 -m unittest discover -s scripts -p 'test_*.py'
 bash scripts/pack-unity-zip.sh artifacts/sdk-unity
 bash scripts/pack-engines.sh artifacts/sdk-unity/publish/Curated.Sdk.dll artifacts/engines
 cd tooling/content-builder && cargo test && cargo build --release
 ```
 
 Godot and Unreal tests run inside the engine (see their READMEs).
+
+## Changelog
+
+Releases follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) in
+[CHANGELOG.md](CHANGELOG.md). When you bump `<Version>` in `Curated.Sdk.csproj` (and the
+matching Unity `package.json`) and merge to `main`, the Release workflow:
+
+1. Promotes any bullets under `[Unreleased]`, or if that section is empty, generates entries
+   from commits since the previous `v*` tag with [git-cliff](https://github.com/orhun/git-cliff)
+   (`cliff.toml`).
+2. Writes the version section into `CHANGELOG.md` and attaches those notes to the GitHub
+   Release for `v<version>`.
+
+**How to add notes for the next release**
+
+- Preferred for features and fixes: put a Keep a Changelog bullet under `## [Unreleased]` in
+  `CHANGELOG.md` (use `### Added` / `### Changed` / `### Fixed` / …).
+- Or name the PR / commit with a prefix the cliff parsers understand: `[Feature]`,
+  `[Bugfix]`, `[Docs]`, `[Chore]`, or conventional `feat:` / `fix:` / `docs:` / `chore:`.
+
+Do not hand-edit past released sections unless you are correcting a mistake. Version tags stay
+`vMAJOR.MINOR.PATCH` (Unity Git URL installs use that fragment).
 
 ## License
 
