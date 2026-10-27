@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-10-27
+
 ### Changed
 
-- Content Builder depot uploads: adaptive chunk size (up to 32 MiB) and parallel PUTs (up to 8) from a short bandwidth probe, respecting API limits. Overrides: `--chunk-size`, `--concurrency`.
+- Content Builder depot uploads: adaptive chunk size (up to 32 MiB) and parallel PUTs (up to 8) from a short bandwidth probe, respecting API limits. Overrides: `--chunk-size`, `--concurrency`. ([#18](https://github.com/CuratedGames/curated-sdk/pull/18))
 
 ## [1.5.0] - 2026-10-27
 
@@ -97,7 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial Curated.Sdk public API: launcher auth, entitlements, achievements, Cloud Save, friends and presence
 
-[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/CuratedGames/curated-sdk/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/CuratedGames/curated-sdk/compare/v1.4.0...v1.4.1
