@@ -1,0 +1,50 @@
+# git-cliff configuration for Keep a Changelog 1.1.0
+# https://keepachangelog.com/en/1.1.0/
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+header = ""
+body = """
+{% if version %}\
+## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+## [Unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim | upper_first }}
+{% for commit in commits %}
+- {{ commit.message | split(pat="\\n") | first | trim }}
+{% endfor %}
+{% endfor %}
+"""
+footer = ""
+trim = true
+render_always = true
+
+[git]
+conventional_commits = false
+filter_unconventional = false
+split_commits = false
+commit_preprocessors = [
+  # Keep only the subject line so body text cannot flip the group.
+  { pattern = "\\n(?:.|\\n)*", replace = "" },
+]
+commit_parsers = [
+  { message = "^\\[Feature\\]", group = "Added" },
+  { message = "^\\[Bugfix\\]", group = "Fixed" },
+  { message = "^\\[Docs\\]", group = "Changed" },
+  { message = "^\\[Chore\\]", group = "Changed" },
+  { message = "(?i)^feat(\\(|:|\\s)", group = "Added" },
+  { message = "(?i)^fix(\\(|:|\\s)", group = "Fixed" },
+  { message = "(?i)^docs?(\\(|:|\\s)", group = "Changed" },
+  { message = "(?i)^chore(\\(|:|\\s)", group = "Changed" },
+  { message = "(?i)^release\\b", group = "Changed" },
+  { message = "^Initial commit$", skip = true },
+  { message = ".*", group = "Changed" },
+]
+protect_breaking_commits = false
+filter_commits = false
+tag_pattern = "v[0-9].*"
+ignore_tags = ""
+topo_order = false
+sort_commits = "oldest"

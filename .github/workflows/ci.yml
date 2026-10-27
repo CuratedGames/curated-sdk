@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   sdk:
     runs-on: ubuntu-latest
@@ -49,3 +52,11 @@ jobs:
       - name: Build CLI
         working-directory: tooling/content-builder
         run: cargo build --release
+
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test changelog release helper
+        working-directory: scripts
+        run: python3 -m unittest test_release_changelog.py -v

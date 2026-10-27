@@ -15,11 +15,12 @@ on:
       - "LICENSE.md"
       - "README.md"
       - "Agents.md"
+      - "cliff.toml"
       - ".github/workflows/release.yml"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   sdk:
@@ -115,8 +116,13 @@ jobs:
   release:
     needs: [sdk, cli-linux, cli-windows]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download SDK artifacts
         uses: actions/download-artifact@v4
         with:
@@ -132,26 +138,34 @@ jobs:
         with:
           name: cli-windows
           path: release-assets
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff@2.14.2
+      - name: Update CHANGELOG and release notes
+        id: changelog
+        run: |
+          python3 scripts/release_changelog.py \
+            --version "${{ needs.sdk.outputs.version }}" \
+            --write-notes "${RUNNER_TEMP}/release-notes.md"
+      - name: Commit CHANGELOG.md when updated
+        if: steps.changelog.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "docs: CHANGELOG for ${{ needs.sdk.outputs.version }} [skip ci]"
+          git push origin HEAD:main
+      - name: Resolve tag commit
+        id: tag_commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.sdk.outputs.version }}
           name: Curated.Sdk ${{ needs.sdk.outputs.version }}
-          body: |
-            **Curated.Sdk** ${{ needs.sdk.outputs.version }}: launch contract v1, engine bindings, `.nupkg`, and Content Builder CLI.
-
-            Download assets from this Release page (not nuget.org).
-
-            - Unity (recommended): `"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v${{ needs.sdk.outputs.version }}"` in Packages/manifest.json.
-            - Unity (optional tarball): `com.curatedgames.sdk-${{ needs.sdk.outputs.version }}.tgz` via Add package from tarball.
-            - Godot 4: unzip `curated-godot-${{ needs.sdk.outputs.version }}.zip` into the project root and enable the plugin.
-            - Unreal Engine 5: unzip `curated-unreal-${{ needs.sdk.outputs.version }}.zip` into the project's `Plugins/` folder.
-            - RPG Maker MZ/MV: copy `CuratedSDK.js` into `js/plugins/`.
-            - .NET: add a local NuGet source for `Curated.Sdk.${{ needs.sdk.outputs.version }}.nupkg`, or reference `Curated.Sdk.dll`.
-            - Other engines: implement `launch-contract.md` and check it against `conformance.v1.json`.
-            - CLI: `curated-content-builder-windows-x64.exe` (login, list-depots, upload). See Agents.md.
-
-            License: see LICENSE.md (Curated SDK License). Source-available, not open source.
+          body_path: ${{ runner.temp }}/release-notes.md
+          target_commitish: ${{ steps.tag_commit.outputs.sha }}
           files: |
             release-assets/Curated.Sdk.${{ needs.sdk.outputs.version }}.nupkg
             release-assets/Curated.Sdk.${{ needs.sdk.outputs.version }}.snupkg
