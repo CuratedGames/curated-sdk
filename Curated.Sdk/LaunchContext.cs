@@ -12,8 +12,19 @@ namespace Curated.Sdk;
 /// </summary>
 public sealed class LaunchContext
 {
-    /// <summary>Newest launch contract version this SDK understands.</summary>
+    /// <summary>
+    /// Newest launch contract version this SDK fully implements.
+    /// Informational only: launch accepts any version at or above
+    /// <see cref="MinCompatibleContractVersion"/>.
+    /// </summary>
     public const int SupportedContractVersion = 1;
+
+    /// <summary>
+    /// Oldest launch contract version this SDK still accepts.
+    /// Raise this only when retiring an old contract; newer launcher versions stay accepted
+    /// so shipped games keep working while their used features remain available.
+    /// </summary>
+    public const int MinCompatibleContractVersion = 1;
 
     public const string LauncherVariable = "CURATED_LAUNCHER";
     public const string ContractVersionVariable = "CURATED_CONTRACT_VERSION";
@@ -130,12 +141,11 @@ public sealed class LaunchContext
 
         var versionRaw = Read(environment, ContractVersionVariable);
         if (!int.TryParse(versionRaw, NumberStyles.None, CultureInfo.InvariantCulture, out var version)
-            || version <= 0
-            || version > SupportedContractVersion)
+            || version < MinCompatibleContractVersion)
         {
             throw new CuratedLaunchException(
                 CuratedLaunchError.UnsupportedContractVersion,
-                "The Curated launcher uses a newer launch contract than this game supports.");
+                "The Curated launcher uses a launch contract this game does not support.");
         }
 
         var appRaw = Read(environment, AppIdVariable);

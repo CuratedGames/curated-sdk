@@ -82,6 +82,8 @@ struct CURATEDSDK_API FCuratedLaunchContext
 namespace CuratedLaunchContract
 {
 	constexpr int32 SupportedContractVersion = 1;
+	/** Oldest contract version still accepted. Newer launcher versions stay OK. */
+	constexpr int32 MinCompatibleContractVersion = 1;
 
 	CURATEDSDK_API FString DefaultApiBase();
 

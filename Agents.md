@@ -26,7 +26,7 @@ The Curated launcher starts games with environment variables defined in
 | Variable | Example | Notes |
 |----------|---------|-------|
 | `CURATED_LAUNCHER` | `1` | Present only when started by Curated |
-| `CURATED_CONTRACT_VERSION` | `1` | Reject versions newer than the SDK supports |
+| `CURATED_CONTRACT_VERSION` | `1` | Reject only below `MinCompatibleContractVersion` (or invalid); newer stays OK |
 | `CURATED_APP_ID` | `1002` | Must equal the game's own app id |
 | `CURATED_SESSION_TOKEN` | (secret) | Bearer token scoped to this game (12 h max). Never log, persist, or forward it |
 | `CURATED_API_BASE` | `https://api.curated.games` | Only destination for the token |

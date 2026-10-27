@@ -38,8 +38,11 @@ Rules for bindings:
 2. If `CURATED_LAUNCHER` is not `1` or `CURATED_SESSION_TOKEN` is missing, report
    `not_launched_by_curated`. Do not prompt for a password inside the game.
 3. Parse `CURATED_CONTRACT_VERSION` as an integer. Report `unsupported_contract_version` when it
-   is higher than the newest version the binding supports, or not a positive integer.
-   Additive changes (new optional variables, new response fields) never bump the version.
+   is lower than the binding's minimum compatible version (`MinCompatibleContractVersion`,
+   currently `1`), or not a positive integer. Newer launcher versions are accepted so shipped
+   games keep working while the features they use remain available; ignore unknown optional
+   variables. Additive changes (new optional variables, new response fields) never bump the
+   version. Raise the minimum only when an old contract is formally retired.
 4. Every game ships with its own Curated app id compiled in. If `CURATED_APP_ID` is missing, is
    not a positive integer, or does not match it, report `app_mismatch`. This stops a launch meant
    for one title from being picked up by another.
@@ -186,7 +189,7 @@ All bindings use these exact strings so support logs read the same across engine
 | Code | When |
 |------|------|
 | `not_launched_by_curated` | Launch variables missing. |
-| `unsupported_contract_version` | Launcher speaks a newer, incompatible contract. |
+| `unsupported_contract_version` | Contract version below the binding minimum, or invalid. |
 | `app_mismatch` | `CURATED_APP_ID` is not this game's app id. |
 | `session_invalid` | `/auth/me` returned 401. |
 | `not_entitled` | `/library` has no active item for this app. |
@@ -210,6 +213,9 @@ it excludes itself (Unity define constraints, Unreal target deny list, and so on
 
 - Breaking changes create contract `v2` with its own spec file. The launcher keeps setting the
   v1 variables until v1 is formally retired, so shipped games keep working.
+- Bindings gate on a **minimum** compatible contract version, not an exact match and not a
+  maximum. A launcher that speaks a newer version must keep providing the older variables until
+  that older contract's minimum is raised. Games that never update their SDK keep launching.
 - The conformance file is append-only for a given version.
 
 ## Migrating from Steam

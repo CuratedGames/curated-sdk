@@ -153,7 +153,7 @@ namespace CuratedLaunchContract
 		}
 
 		int64 Version = 0;
-		if (!ParsePositiveInteger(ReadVar(Environment, TEXT("CURATED_CONTRACT_VERSION")), Version) || Version > SupportedContractVersion)
+		if (!ParsePositiveInteger(ReadVar(Environment, TEXT("CURATED_CONTRACT_VERSION")), Version) || Version < MinCompatibleContractVersion)
 		{
 			return ECuratedLaunchError::UnsupportedContractVersion;
 		}

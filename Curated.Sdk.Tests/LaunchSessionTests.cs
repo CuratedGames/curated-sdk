@@ -79,6 +79,32 @@ public class LaunchSessionTests : IDisposable
     }
 
     [Fact]
+    public void Newer_launcher_contract_version_is_accepted()
+    {
+        var env = LaunchEnv();
+        env[LaunchContext.ContractVersionVariable] = "2";
+        var context = LaunchContext.ParseVariables(env, AppId);
+        Assert.Equal(2, context.ContractVersion);
+        Assert.Equal(1, LaunchContext.MinCompatibleContractVersion);
+        Assert.True(context.ContractVersion >= LaunchContext.MinCompatibleContractVersion);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("one")]
+    [InlineData("1.5")]
+    public void Invalid_or_below_min_contract_version_is_rejected(string? version)
+    {
+        var env = LaunchEnv();
+        env[LaunchContext.ContractVersionVariable] = version;
+        var e = Assert.Throws<CuratedLaunchException>(() => LaunchContext.ParseVariables(env, AppId));
+        Assert.Equal("unsupported_contract_version", e.Code);
+    }
+
+    [Fact]
     public void Session_token_is_not_public()
     {
         var publicNames = typeof(LaunchContext).GetProperties().Select(p => p.Name);
