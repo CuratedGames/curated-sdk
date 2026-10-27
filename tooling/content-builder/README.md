@@ -88,9 +88,10 @@ What happens:
 
 1. Validates the depot ID and confirms ownership of the app.
 2. Packs `content` into a zip under `build-output` (default `depot.zip`).
-3. Requests a chunked upload slot for that app + depot.
-4. Uploads ~1 MiB chunks (override with `--chunk-size`).
-5. Registers the build against the depot (does **not** set Default/Beta live; use admin for that).
+3. Samples upload bandwidth (short probe) and picks chunk size + parallel PUT count within API limits (64 KiB..32 MiB chunks, up to 8 concurrent). Override with `--chunk-size` / `--concurrency`.
+4. Requests a chunked upload slot for that app + depot.
+5. Uploads chunks in parallel (reads from disk by offset; does not keep the whole zip in RAM).
+6. Registers the build against the depot (does **not** set Default/Beta live; use admin for that).
 
 ## Build script
 

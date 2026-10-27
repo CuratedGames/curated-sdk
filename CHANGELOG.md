@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Content Builder depot uploads: adaptive chunk size (up to 32 MiB) and parallel PUTs (up to 8) from a short bandwidth probe, respecting API limits. Overrides: `--chunk-size`, `--concurrency`.
+
 ## [1.5.0] - 2026-10-27
 
 ### Added

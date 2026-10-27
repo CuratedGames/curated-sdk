@@ -151,6 +151,8 @@ pub fn pack_content_directory(
 }
 
 /// Stream file bytes in fixed-size chunks (last chunk may be shorter).
+/// Prefer [`read_file_chunk_at`] for parallel uploads of large depots.
+#[allow(dead_code)]
 pub fn read_file_chunks(path: &Path, chunk_size: usize) -> Result<Vec<Vec<u8>>, PackError> {
     if chunk_size == 0 {
         return Err(PackError::Message("chunk size must be > 0".into()));
@@ -174,6 +176,49 @@ pub fn read_file_chunks(path: &Path, chunk_size: usize) -> Result<Vec<Vec<u8>>, 
         chunks.push(buf);
     }
     Ok(chunks)
+}
+
+/// Read one chunk at `offset` (up to `max_len` bytes). Used for parallel PUTs
+/// without loading the whole depot into memory.
+pub fn read_file_chunk_at(
+    path: &Path,
+    offset: u64,
+    max_len: usize,
+) -> Result<Vec<u8>, PackError> {
+    use std::io::{Read, Seek, SeekFrom};
+    if max_len == 0 {
+        return Ok(Vec::new());
+    }
+    let mut file = File::open(path)?;
+    file.seek(SeekFrom::Start(offset))?;
+    let mut buf = vec![0u8; max_len];
+    let mut filled = 0usize;
+    while filled < max_len {
+        let n = file.read(&mut buf[filled..])?;
+        if n == 0 {
+            break;
+        }
+        filled += n;
+    }
+    buf.truncate(filled);
+    Ok(buf)
+}
+
+/// Expected byte length of chunk `index` for a payload of `total_bytes`.
+pub fn chunk_len_at(total_bytes: u64, chunk_size: u64, index: u32, chunk_count: u32) -> u64 {
+    if total_bytes == 0 || chunk_count == 0 {
+        return 0;
+    }
+    if index + 1 == chunk_count {
+        let rem = total_bytes % chunk_size;
+        if rem == 0 {
+            chunk_size
+        } else {
+            rem
+        }
+    } else {
+        chunk_size
+    }
 }
 
 #[cfg(test)]
@@ -215,5 +260,26 @@ mod tests {
             rebuilt.extend_from_slice(&c);
         }
         assert_eq!(rebuilt, fs::read(&out).unwrap());
+
+        let total = packed.size_bytes;
+        let chunk_size = 4u64;
+        let count = ((total + chunk_size - 1) / chunk_size) as u32;
+        let mut via_offset = Vec::new();
+        for i in 0..count {
+            let len = chunk_len_at(total, chunk_size, i, count) as usize;
+            let piece = read_file_chunk_at(&out, i as u64 * chunk_size, len).unwrap();
+            assert_eq!(piece.len(), len);
+            via_offset.extend_from_slice(&piece);
+        }
+        assert_eq!(via_offset, fs::read(&out).unwrap());
+    }
+
+    #[test]
+    fn chunk_len_at_matches_last_partial() {
+        assert_eq!(chunk_len_at(10, 4, 0, 3), 4);
+        assert_eq!(chunk_len_at(10, 4, 1, 3), 4);
+        assert_eq!(chunk_len_at(10, 4, 2, 3), 2);
+        assert_eq!(chunk_len_at(8, 4, 1, 2), 4);
+        assert_eq!(chunk_len_at(0, 4, 0, 0), 0);
     }
 }

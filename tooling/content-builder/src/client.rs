@@ -77,6 +77,24 @@ pub struct ChunkUrl {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct UploadLimits {
+    pub min_chunk_size: i64,
+    pub max_chunk_size: i64,
+    pub default_chunk_size: i64,
+    pub max_upload_bytes: i64,
+    pub max_concurrent_chunks: u32,
+    #[serde(default)]
+    pub max_bandwidth_probe_bytes: Option<i64>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct BandwidthProbeResponse {
+    pub bytes: usize,
+    #[serde(default)]
+    pub limits: Option<UploadLimits>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct InitUploadResponse {
     pub upload_id: Uuid,
     pub depot_id: String,
@@ -87,6 +105,8 @@ pub struct InitUploadResponse {
     pub chunk_size: i64,
     pub chunk_count: u32,
     pub chunks: Vec<ChunkUrl>,
+    #[serde(default)]
+    pub limits: Option<UploadLimits>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -252,6 +272,44 @@ uploads and depot listing are limited to apps you own"
             return Err(Self::map_error(resp));
         }
         Ok(resp.json()?)
+    }
+
+    pub fn content_upload_limits(&self, app_id: i64) -> Result<UploadLimits, ApiError> {
+        let resp = self
+            .http
+            .get(self.url(&format!(
+                "/games/app/{app_id}/builds/content-upload/limits"
+            )))
+            .header(AUTHORIZATION, self.bearer()?)
+            .send()?;
+        if !resp.status().is_success() {
+            return Err(Self::map_error(resp));
+        }
+        Ok(resp.json()?)
+    }
+
+    /// POST a probe body so the caller can time upload bandwidth. Returns elapsed
+    /// client-side time and the server response (includes limits when supported).
+    pub fn bandwidth_probe(
+        &self,
+        app_id: i64,
+        body: &[u8],
+    ) -> Result<(Duration, BandwidthProbeResponse), ApiError> {
+        let started = std::time::Instant::now();
+        let resp = self
+            .http
+            .post(self.url(&format!(
+                "/games/app/{app_id}/builds/content-upload/bandwidth-probe"
+            )))
+            .header(AUTHORIZATION, self.bearer()?)
+            .header(CONTENT_TYPE, "application/octet-stream")
+            .body(body.to_vec())
+            .send()?;
+        let elapsed = started.elapsed();
+        if !resp.status().is_success() {
+            return Err(Self::map_error(resp));
+        }
+        Ok((elapsed, resp.json()?))
     }
 
     pub fn init_content_upload(

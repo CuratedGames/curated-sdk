@@ -73,8 +73,12 @@ enum Commands {
         filename: Option<String>,
         #[arg(long)]
         build_output: Option<PathBuf>,
+        /// Chunk size in bytes (64 KiB..32 MiB). Default: adaptive from a short bandwidth probe.
         #[arg(long)]
         chunk_size: Option<i64>,
+        /// Parallel chunk PUTs (1..8). Default: adaptive from measured bandwidth.
+        #[arg(long)]
+        concurrency: Option<usize>,
         #[arg(long, env = "CURATED_API_BASE")]
         api_base: Option<String>,
         #[arg(long, env = "CURATED_TOKEN")]
@@ -227,6 +231,7 @@ fn run(cli: Cli) -> Result<(), String> {
             filename,
             build_output,
             chunk_size,
+            concurrency,
             api_base,
             token,
         } => {
@@ -245,6 +250,7 @@ fn run(cli: Cli) -> Result<(), String> {
                     filename: filename.or(s.filename),
                     build_output: build_output.or(s.build_output),
                     chunk_size,
+                    concurrency,
                 }
             } else {
                 let app_id = app_id.ok_or("--app-id is required without --script")?;
@@ -257,14 +263,20 @@ fn run(cli: Cli) -> Result<(), String> {
                     filename,
                     build_output,
                     chunk_size,
+                    concurrency,
                 }
             };
 
             let client = resolve_client(api_base, token)?;
             let result = run_upload(&client, opts).map_err(|e| e.to_string())?;
             println!(
-                "Build {} registered on depot {} ({} files → {}).",
-                result.build.id, result.depot_id, result.file_count, result.artifact_uri
+                "Build {} registered on depot {} ({} files → {}; {} byte chunks × {}).",
+                result.build.id,
+                result.depot_id,
+                result.file_count,
+                result.artifact_uri,
+                result.chunk_size,
+                result.concurrency
             );
             Ok(())
         }
