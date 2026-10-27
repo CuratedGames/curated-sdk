@@ -6,5 +6,3 @@ artifacts/
 .vs/
 tooling/**/target/
 **/*.rs.bk
-engines/unity/games.curated.sdk/Plugins/Curated.Sdk.dll
-engines/unity/games.curated.sdk/LICENSE.md

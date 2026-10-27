@@ -1,4 +1,4 @@
-//! Curated Content Builder — Windows-first CLI to upload depot builds.
+//! Curated Content Builder: Windows-first CLI to upload depot builds.
 
 use clap::{Parser, Subcommand};
 use curated_content_builder::{
@@ -105,7 +105,7 @@ fn resolve_client(
     let token = token_flag
         .or_else(|| creds.as_ref().map(|c| c.token.clone()))
         .ok_or_else(|| {
-            "not signed in — run `curated-content-builder login` or pass --token".to_string()
+            "not signed in: run `curated-content-builder login` or pass --token".to_string()
         })?;
     ApiClient::new(&api_base, Some(&token)).map_err(|e| e.to_string())
 }

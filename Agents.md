@@ -8,7 +8,7 @@ Download packages from this repository's **Releases** (not nuget.org).
 | Piece | Path / download |
 |-------|-----------------|
 | Launch contract v1 (all engines) | [`contracts/`](contracts): spec, OpenAPI subset, conformance fixture |
-| Unity package | [`engines/unity/games.curated.sdk`](engines/unity/games.curated.sdk): Releases ship `games.curated.sdk-<version>.tgz` |
+| Unity package | [`engines/unity/com.curatedgames.sdk`](engines/unity/com.curatedgames.sdk): add via Git URL (see below); Releases also ship `com.curatedgames.sdk-<version>.tgz` |
 | Godot 4 addon | [`engines/godot`](engines/godot): Releases ship `curated-godot-<version>.zip` |
 | Unreal Engine 5 plugin | [`engines/unreal`](engines/unreal): Releases ship `curated-unreal-<version>.zip` |
 | RPG Maker MZ / MV plugin | [`engines/rpgmaker`](engines/rpgmaker): Releases ship `CuratedSDK.js` |
@@ -70,10 +70,19 @@ ordinary command-line arguments. Credentials are never on the command line.
 
 ## 2. Unity
 
-1. Download `games.curated.sdk-<version>.tgz` from Releases.
-2. **Window > Package Manager > + > Add package from tarball...**, or add
-   `"games.curated.sdk": "file:<path>.tgz"` to `Packages/manifest.json`.
-3. Add **Curated Launcher Bootstrap** to the first scene (set app id), or call:
+1. Add the package from this repository with a Git URL. In `Packages/manifest.json`:
+
+```json
+"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.0"
+```
+
+Replace `v1.3.0` with a release tag, `main`, or a commit SHA. Or use
+**Window > Package Manager > + > Add package from git URL…** with the same URL.
+
+Optional offline install: download `com.curatedgames.sdk-<version>.tgz` from Releases, then
+**Add package from tarball…**, or `"com.curatedgames.sdk": "file:<path>.tgz"`.
+
+2. Add **Curated Launcher Bootstrap** to the first scene (set app id), or call:
 
 ```csharp
 #if !UNITY_SERVER && !UNITY_WEBGL

@@ -142,7 +142,8 @@ jobs:
 
             Download assets from this Release page (not nuget.org).
 
-            - Unity: add `games.curated.sdk-${{ needs.sdk.outputs.version }}.tgz` with Package Manager (Add package from tarball).
+            - Unity (recommended): `"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v${{ needs.sdk.outputs.version }}"` in Packages/manifest.json.
+            - Unity (optional tarball): `com.curatedgames.sdk-${{ needs.sdk.outputs.version }}.tgz` via Add package from tarball.
             - Godot 4: unzip `curated-godot-${{ needs.sdk.outputs.version }}.zip` into the project root and enable the plugin.
             - Unreal Engine 5: unzip `curated-unreal-${{ needs.sdk.outputs.version }}.zip` into the project's `Plugins/` folder.
             - RPG Maker MZ/MV: copy `CuratedSDK.js` into `js/plugins/`.
@@ -150,7 +151,7 @@ jobs:
             - Other engines: implement `launch-contract.md` and check it against `conformance.v1.json`.
             - CLI: `curated-content-builder-windows-x64.exe` (login, list-depots, upload). See Agents.md.
 
-            License: see LICENSE.md (Curated SDK License) — source-available, not open source.
+            License: see LICENSE.md (Curated SDK License). Source-available, not open source.
           files: |
             release-assets/Curated.Sdk.${{ needs.sdk.outputs.version }}.nupkg
             release-assets/Curated.Sdk.${{ needs.sdk.outputs.version }}.snupkg
@@ -158,7 +159,7 @@ jobs:
             release-assets/Curated.Sdk.${{ needs.sdk.outputs.version }}.unity.zip
             release-assets/Curated.Sdk.unity.zip
             release-assets/Curated.Sdk.dll
-            release-assets/games.curated.sdk-${{ needs.sdk.outputs.version }}.tgz
+            release-assets/com.curatedgames.sdk-${{ needs.sdk.outputs.version }}.tgz
             release-assets/curated-godot-${{ needs.sdk.outputs.version }}.zip
             release-assets/curated-unreal-${{ needs.sdk.outputs.version }}.zip
             release-assets/CuratedSDK.js

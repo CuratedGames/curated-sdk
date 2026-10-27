@@ -1,15 +1,44 @@
-# Curated SDK for Unity (`games.curated.sdk`)
+# Curated SDK for Unity (`com.curatedgames.sdk`)
 
 Unity package wrapping the official `Curated.Sdk.dll` (netstandard2.1, no third-party
 dependencies) plus a small `Curated.Unity` helper assembly.
 
-## Install
+## Install from GitHub (recommended)
 
-1. Download `games.curated.sdk-<version>.tgz` from this repository's
-   [Releases](https://github.com/CuratedGames/curated-sdk/releases) (not nuget.org).
-2. Unity: **Window > Package Manager > + > Add package from tarball...** and pick the file.
-   Or reference it from `Packages/manifest.json`:
-   `"games.curated.sdk": "file:../Packages-local/games.curated.sdk-1.3.0.tgz"`.
+Add the package from this public repository with Unity Package Manager. In
+`Packages/manifest.json`:
+
+```json
+{
+  "dependencies": {
+    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.0"
+  }
+}
+```
+
+Replace `v1.3.0` with a release tag, branch name, or commit SHA. Examples:
+
+```text
+https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.0
+https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#main
+https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#8c6da5d
+```
+
+Or in the Editor: **Window > Package Manager > + > Add package from git URL…** and paste the
+same URL (including `?path=/engines/unity/com.curatedgames.sdk#…`).
+
+Unity resolves the package from the `engines/unity/com.curatedgames.sdk` folder in this repo.
+You do **not** need a tarball for normal installs.
+
+### Optional: Releases tarball
+
+If you prefer an offline install, download `com.curatedgames.sdk-<version>.tgz` from
+[Releases](https://github.com/CuratedGames/curated-sdk/releases), then
+**Window > Package Manager > + > Add package from tarball…**, or:
+
+```json
+"com.curatedgames.sdk": "file:../Packages-local/com.curatedgames.sdk-1.3.0.tgz"
+```
 
 ## Use
 

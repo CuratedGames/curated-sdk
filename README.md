@@ -10,19 +10,32 @@ the SDK source as your own toolkit or competing middleware. See [LICENSE.md](LIC
 
 ## Download and install
 
-Every package ships on this repository's **[Releases](https://github.com/CuratedGames/curated-sdk/releases)**
-page. There is no nuget.org package and no private package feed — download the files from Releases
-(or build from this repo).
+| Engine | Install |
+|--------|---------|
+| Unity 2021.3+ | Add `com.curatedgames.sdk` from this GitHub repo via Package Manager ([details](engines/unity/com.curatedgames.sdk)) |
+| Godot 4 | Download `curated-godot-<version>.zip` from [Releases](https://github.com/CuratedGames/curated-sdk/releases), unzip into the project root, enable the plugin ([details](engines/godot)) |
+| Unreal Engine 5 | Download `curated-unreal-<version>.zip` from Releases, unzip into `Plugins/` ([details](engines/unreal)) |
+| RPG Maker MZ / MV | Copy `CuratedSDK.js` from Releases (or `engines/rpgmaker/`) into `js/plugins/` ([details](engines/rpgmaker)) |
+| .NET (Godot C#, MonoGame, Stride, tools) | Download `Curated.Sdk.<version>.nupkg` or `Curated.Sdk.dll` from Releases, or build [Curated.Sdk](Curated.Sdk) |
+| Any other engine | Implement [contracts](contracts) yourself |
+| Depot uploads | Content Builder binary from Releases, or build [tooling/content-builder](tooling/content-builder) |
 
-| Engine | Download from Releases | Install |
-|--------|------------------------|---------|
-| Unity 2021.3+ | `games.curated.sdk-<version>.tgz` | Package Manager → **Add package from tarball…** ([details](engines/unity/games.curated.sdk)) |
-| Godot 4 | `curated-godot-<version>.zip` | Unzip into the project root and enable the plugin ([details](engines/godot)) |
-| Unreal Engine 5 | `curated-unreal-<version>.zip` | Unzip into `Plugins/` ([details](engines/unreal)) |
-| RPG Maker MZ / MV | `CuratedSDK.js` | Copy into `js/plugins/` ([details](engines/rpgmaker)) |
-| .NET (Godot C#, MonoGame, Stride, tools) | `Curated.Sdk.<version>.nupkg` or `Curated.Sdk.dll` | Add a local NuGet source pointing at the downloaded `.nupkg`, or reference the DLL ([Curated.Sdk](Curated.Sdk)) |
-| Any other engine | `launch-contract.md` + fixtures | Implement [contracts](contracts) yourself |
-| Depot uploads | `curated-content-builder-windows-x64.exe` (or Linux) | See [Content Builder](tooling/content-builder) |
+There is no nuget.org package and no private package feed.
+
+### Unity (Git URL)
+
+In `Packages/manifest.json` (replace the `#` fragment with a tag, branch, or commit):
+
+```json
+{
+  "dependencies": {
+    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.0"
+  }
+}
+```
+
+Or **Window > Package Manager > + > Add package from git URL…** and paste that same URL.
+See [engines/unity/com.curatedgames.sdk](engines/unity/com.curatedgames.sdk) for tarball and usage details.
 
 ## How it works
 

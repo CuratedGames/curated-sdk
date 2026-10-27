@@ -176,7 +176,7 @@ impl ApiClient {
             .map(|t| format!("Bearer {t}"))
             .ok_or_else(|| {
                 ApiError::Message(
-                    "not signed in — run `curated-content-builder login` first".into(),
+                    "not signed in: run `curated-content-builder login` first".into(),
                 )
             })
     }
@@ -197,7 +197,7 @@ impl ApiClient {
                 || message.contains("not game owner")
                 || message.eq_ignore_ascii_case("forbidden"))
         {
-            "not game owner — uploads and depot listing are limited to apps you own".into()
+            "not game owner: uploads and depot listing are limited to apps you own".into()
         } else {
             message
         };
@@ -236,7 +236,7 @@ impl ApiClient {
             return Ok(());
         }
         Err(ApiError::Message(format!(
-            "app {app_id} is not owned by this developer account — \
+            "app {app_id} is not owned by this developer account: \
 uploads and depot listing are limited to apps you own"
         )))
     }
