@@ -86,6 +86,68 @@ test("checkEntitlement and unlock fail before a successful launch", async () => 
   await Curated.initFromLauncher(1002, { env: {}, transport: async () => ({ status: 500, text: "" }) });
   assert.deepEqual(await Curated.checkEntitlement(), { ok: false, error: "not_launched_by_curated" });
   assert.deepEqual(await Curated.unlockAchievement("x"), { ok: false, error: "not_launched_by_curated" });
+  assert.deepEqual(await Curated.refreshStats(), { ok: false, error: "not_launched_by_curated" });
+  assert.deepEqual(await Curated.setStat("x", 1), { ok: false, error: "not_launched_by_curated" });
+  assert.deepEqual(await Curated.getOpenIdIdToken(), { ok: false, error: "not_launched_by_curated" });
+});
+
+test("setStat and incrementStat hit the player stats routes", async () => {
+  const log = [];
+  const transport = async (method, url, _token, body) => {
+    log.push({ line: `${method} ${url}`, body });
+    const path = new URL(url).pathname;
+    if (path === "/auth/me") return { status: 200, text: '{"user_id":"u","username":"p","curated_id":"10000000000000001"}' };
+    if (path === "/library") return { status: 200, text: '[{"app_id":1002,"source":"grant"}]' };
+    if (path.endsWith("/increment")) {
+      return { status: 200, text: '{"stat":{"api_name":"CardsCreated","value":4},"previous_value":3}' };
+    }
+    if (path.includes("/stats/")) {
+      return { status: 200, text: '{"stat":{"api_name":"CardsCreated","value":10},"previous_value":0}' };
+    }
+    return { status: 500, text: "" };
+  };
+  const env = {
+    CURATED_LAUNCHER: "1",
+    CURATED_CONTRACT_VERSION: "1",
+    CURATED_APP_ID: "1002",
+    CURATED_SESSION_TOKEN: "tok",
+  };
+  assert.equal((await Curated.initFromLauncher(1002, { env, transport })).ok, true);
+  const set = await Curated.setStat("CardsCreated", 10);
+  assert.equal(set.ok, true);
+  assert.equal(set.stat.api_name, "CardsCreated");
+  assert.equal(set.previousValue, 0);
+  assert.equal(log.at(-1).line, "PUT https://api.curated.games/games/app/1002/stats/CardsCreated");
+  assert.deepEqual(log.at(-1).body, { value: 10 });
+
+  const inc = await Curated.incrementStat("CardsCreated", 1);
+  assert.equal(inc.ok, true);
+  assert.equal(inc.previousValue, 3);
+  assert.equal(log.at(-1).line, "POST https://api.curated.games/games/app/1002/stats/CardsCreated/increment");
+  assert.deepEqual(log.at(-1).body, { delta: 1 });
+});
+
+test("getOpenIdIdToken posts app_id and returns id_token", async () => {
+  const log = [];
+  const transport = async (method, url, _token, body) => {
+    log.push({ line: `${method} ${url}`, body });
+    const path = new URL(url).pathname;
+    if (path === "/auth/me") return { status: 200, text: '{"user_id":"u","username":"p","curated_id":"10000000000000001"}' };
+    if (path === "/library") return { status: 200, text: '[{"app_id":1002,"source":"grant"}]' };
+    if (path === "/auth/openid/id-token") return { status: 200, text: '{"id_token":"jwt.example"}' };
+    return { status: 500, text: "" };
+  };
+  const env = {
+    CURATED_LAUNCHER: "1",
+    CURATED_CONTRACT_VERSION: "1",
+    CURATED_APP_ID: "1002",
+    CURATED_SESSION_TOKEN: "tok",
+  };
+  assert.equal((await Curated.initFromLauncher(1002, { env, transport })).ok, true);
+  const token = await Curated.getOpenIdIdToken();
+  assert.deepEqual(token, { ok: true, idToken: "jwt.example" });
+  assert.equal(log.at(-1).line, "POST https://api.curated.games/auth/openid/id-token");
+  assert.deepEqual(log.at(-1).body, { app_id: 1002 });
 });
 
 const languageFixture = JSON.parse(

@@ -29,7 +29,7 @@ In `Packages/manifest.json` (replace the `#` fragment with a tag, branch, or com
 ```json
 {
   "dependencies": {
-    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.3.1"
+    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.4.0"
   }
 }
 ```
@@ -163,8 +163,11 @@ Public types: `CuratedClient`, `CuratedSession` (includes `CuratedId`), `Entitle
 internal. `Curated.Sdk.dll` targets netstandard2.1 and net8.0 and has no third-party
 dependencies.
 
-`CuratedClient.Init(appId, sessionToken)` is still available for games that receive the
-session another way; it does not check ownership.
+`CuratedClient.Init(appId, sessionToken)` / `InitAsync` are available when the game already
+holds a session token. Both verify the session and ownership (same as
+`InitFromLauncherAsync`) and leave Curated shut down with `not_entitled` /
+`session_invalid` on failure. Game-scoped APIs (achievements, stats, Cloud Save, friends,
+presence, OpenID) refuse to run until that check succeeds (`CuratedClient.IsEntitled`).
 
 ## Content Builder CLI
 
