@@ -1,6 +1,6 @@
 # Curated Content Builder
 
-Windows-first CLI to upload game files into a **depot** for any app you own, including drafts and titles still in review. Sign in once, list depots, pack a content folder, upload, and register the build.
+Windows-first CLI to upload game files into a **depot** for any app you own, including drafts and titles still in review. Sign in once, list depots, stage and compress files, upload to CAS, and register the build.
 
 Lives in `tooling/content-builder` in this repository.
 
@@ -87,11 +87,10 @@ right away with the expected format; `--depot-key` and `depot_key` no longer exi
 What happens:
 
 1. Validates the depot ID and confirms ownership of the app.
-2. Packs `content` into a zip under `build-output` (default `depot.zip`).
-3. Samples upload bandwidth (short probe) and picks chunk size + parallel PUT count within API limits (64 KiB..32 MiB chunks, up to 8 concurrent). Override with `--chunk-size` / `--concurrency`.
-4. Requests a chunked upload slot for that app + depot.
-5. Uploads chunks in parallel (reads from disk by offset; does not keep the whole zip in RAM).
-6. Registers the build against the depot (does **not** set Default/Beta live; use admin for that).
+2. Walks `content`, hashes each file, and stages zstd-compressed blobs (or identity when compression saves less than 5%) under `build-output/.cas-staging` by default.
+3. Samples upload bandwidth (short probe) and picks parallel PUT count within CAS API limits. Override with `--concurrency` (and `--chunk-size` as a throughput hint).
+4. Batch-checks which CAS objects are missing, uploads only those via presigned PUT URLs.
+5. Registers the build against the depot with a CAS file manifest (does **not** set Default/Beta live; use admin for that).
 
 ## Build script
 

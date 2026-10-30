@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Content Builder uploads depot files via file-level CAS (zstd or identity blobs) instead of packing a zip. `register_build` sends `delivery: cas_files` and per-file codec metadata. CLI flags are unchanged; staging lives under `build-output/.cas-staging` by default.
+
 ## [1.5.1] - 2026-10-27
 
 ### Changed

@@ -270,12 +270,13 @@ fn run(cli: Cli) -> Result<(), String> {
             let client = resolve_client(api_base, token)?;
             let result = run_upload(&client, opts).map_err(|e| e.to_string())?;
             println!(
-                "Build {} registered on depot {} ({} files → {}; {} byte chunks × {}).",
+                "Build {} registered on depot {} ({} files → {}; uploaded {} CAS objects, reused {}; concurrency {}).",
                 result.build.id,
                 result.depot_id,
                 result.file_count,
                 result.artifact_uri,
-                result.chunk_size,
+                result.uploaded_objects,
+                result.reused_objects,
                 result.concurrency
             );
             Ok(())
