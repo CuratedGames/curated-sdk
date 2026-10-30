@@ -230,6 +230,10 @@ matching Unity `package.json`) and merge to `main`, the Release workflow:
    (`cliff.toml`).
 2. Writes the version section into `CHANGELOG.md` and attaches those notes to the GitHub
    Release for `v<version>`.
+3. Regenerates each engine package `CHANGELOG.md` (Unity, Godot, Unreal, RPG Maker) via
+   `scripts/engine_changelogs.py`, filtering to engine-specific and shared SDK notes so Unity
+   Package Manager can show version history. Content Builder / tooling-only bullets are omitted
+   unless they affect that package.
 
 **How to add notes for the next release**
 
@@ -237,6 +241,8 @@ matching Unity `package.json`) and merge to `main`, the Release workflow:
   `CHANGELOG.md` (use `### Added` / `### Changed` / `### Fixed` / …).
 - Or name the PR / commit with a prefix the cliff parsers understand: `[Feature]`,
   `[Bugfix]`, `[Docs]`, `[Chore]`, or conventional `feat:` / `fix:` / `docs:` / `chore:`.
+- Do not hand-edit `engines/**/CHANGELOG.md`; CI checks they match the filter. Regenerate with
+  `python3 scripts/engine_changelogs.py --write`.
 
 Do not hand-edit past released sections unless you are correcting a mistake. Version tags stay
 `vMAJOR.MINOR.PATCH` (Unity Git URL installs use that fragment).

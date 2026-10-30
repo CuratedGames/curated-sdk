@@ -59,4 +59,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Test changelog release helper
         working-directory: scripts
-        run: python3 -m unittest test_release_changelog.py -v
+        run: python3 -m unittest test_release_changelog.py test_engine_changelogs.py -v
+      - name: Check engine package changelogs are in sync
+        run: python3 scripts/engine_changelogs.py --check

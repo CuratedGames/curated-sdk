@@ -159,14 +159,19 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           branch="changelog-${{ needs.sdk.outputs.version }}"
           git checkout -B "$branch"
-          git add CHANGELOG.md
+          git add CHANGELOG.md \
+            engines/unity/com.curatedgames.sdk/CHANGELOG.md \
+            engines/unity/com.curatedgames.sdk/CHANGELOG.md.meta \
+            engines/godot/addons/curated/CHANGELOG.md \
+            engines/unreal/CuratedSDK/CHANGELOG.md \
+            engines/rpgmaker/CHANGELOG.md
           git commit -m "docs: CHANGELOG for ${{ needs.sdk.outputs.version }}"
           git push --force-with-lease -u origin "$branch"
           existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$branch" --base main --json number --jq '.[0].number // empty')
           if [ -z "$existing" ]; then
             gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" \
               --title "docs: CHANGELOG for ${{ needs.sdk.outputs.version }}" \
-              --body "main is protected, so this changelog update is opened as a pull request. The GitHub Release is published without waiting on it."
+              --body "main is protected, so this changelog update (root + filtered engine package CHANGELOG.md files for UPM and other bindings) is opened as a pull request. The GitHub Release is published without waiting on it."
           fi
       - name: Resolve tag commit
         id: tag_commit

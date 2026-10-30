@@ -319,11 +319,34 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(f"{args.changelog} already has [{version}]")
     print(f"wrote release notes to {args.write_notes}")
+
+    # Keep engine package CHANGELOG.md files aligned with the root changelog
+    # (Unity Package Manager and other engine package UIs read those copies).
+    from engine_changelogs import sync_engine_changelogs
+
+    # dry-run still renders against the would-be root text without writing.
+    engine_results = sync_engine_changelogs(
+        updated if changed else text,
+        write=not args.dry_run,
+    )
+    engine_changed = any(c for _p, _t, c in engine_results.values())
+    for engine, (path, _text, eng_changed) in engine_results.items():
+        rel = path.relative_to(REPO_ROOT)
+        if args.dry_run:
+            print(
+                f"{'would update' if eng_changed else 'unchanged'} {rel} ({engine})"
+            )
+        else:
+            print(f"{'updated' if eng_changed else 'unchanged'} {rel} ({engine})")
+
+    any_changed = changed or engine_changed
     # Expose changed flag for the workflow.
     github_output = os.environ.get("GITHUB_OUTPUT")
     if github_output:
         with open(github_output, "a", encoding="utf-8") as fh:
-            fh.write(f"changed={'true' if changed else 'false'}\n")
+            fh.write(f"changed={'true' if any_changed else 'false'}\n")
+            fh.write(f"root_changed={'true' if changed else 'false'}\n")
+            fh.write(f"engine_changed={'true' if engine_changed else 'false'}\n")
             fh.write(f"version={version}\n")
     return 0
 
