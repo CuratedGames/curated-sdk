@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-10-30
 ### Changed
 
 - Content Builder uploads depot files via file-level CAS (zstd or identity blobs) instead of packing a zip. `register_build` sends `delivery: cas_files` and per-file codec metadata. CLI flags are unchanged; staging lives under `build-output/.cas-staging` by default.
@@ -103,7 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial Curated.Sdk public API: launcher auth, entitlements, achievements, Cloud Save, friends and presence
 
-[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/CuratedGames/curated-sdk/compare/v1.4.1...v1.4.2
