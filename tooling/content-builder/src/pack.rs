@@ -14,6 +14,14 @@ pub struct ManifestEntry {
     pub path: String,
     pub sha256: String,
     pub size_bytes: u64,
+    pub codec: String,
+    pub compressed_size_bytes: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct PreparedCasFile {
+    pub entry: ManifestEntry,
+    pub blob_path: PathBuf,
 }
 
 #[derive(Debug, Clone)]
@@ -110,10 +118,91 @@ pub fn walk_manifest_files(content_root: &Path) -> Result<Vec<ManifestEntry>, Pa
             path: rel,
             sha256: file_sha256_hex(path)?,
             size_bytes: meta.len(),
+            codec: String::new(),
+            compressed_size_bytes: 0,
         });
     }
     files.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(files)
+}
+
+/// Default zstd compression level for depot blobs.
+pub const DEFAULT_ZSTD_LEVEL: i32 = 3;
+
+/// Compress `src` into `dst` with zstd. Returns compressed byte length.
+pub fn compress_file_zstd(src: &Path, dst: &Path, level: i32) -> Result<u64, PackError> {
+    if let Some(parent) = dst.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let mut input = File::open(src)?;
+    let output = File::create(dst)?;
+    let mut encoder = zstd::stream::write::Encoder::new(output, level)?;
+    io::copy(&mut input, &mut encoder)?;
+    encoder.finish()?;
+    Ok(fs::metadata(dst)?.len())
+}
+
+/// SHA-256 hex of the canonical manifest digest (must match API `manifest_content_sha256`).
+pub fn manifest_content_sha256(files: &[ManifestEntry]) -> String {
+    let mut sorted: Vec<&ManifestEntry> = files.iter().collect();
+    sorted.sort_by(|a, b| a.path.cmp(&b.path));
+    let mut hasher = Sha256::new();
+    for f in sorted {
+        let line = format!(
+            "{}\n{}\n{}\n{}\n{}\n",
+            f.path, f.sha256, f.size_bytes, f.codec, f.compressed_size_bytes
+        );
+        hasher.update(line.as_bytes());
+    }
+    hex::encode(hasher.finalize())
+}
+
+/// Walk content, hash each file, stage zstd or identity blobs under `staging_dir`.
+pub fn prepare_cas_entries(
+    content_root: &Path,
+    staging_dir: &Path,
+) -> Result<Vec<PreparedCasFile>, PackError> {
+    fs::create_dir_all(staging_dir)?;
+    let walked = walk_manifest_files(content_root)?;
+    if walked.is_empty() {
+        return Err(PackError::Message(
+            "content directory has no files to upload".into(),
+        ));
+    }
+    let mut prepared = Vec::with_capacity(walked.len());
+    for partial in walked {
+        let abs = content_root.join(partial.path.replace('/', std::path::MAIN_SEPARATOR_STR));
+        let zstd_blob = staging_dir.join(format!("{}.zst", partial.sha256));
+        let compressed_len = compress_file_zstd(&abs, &zstd_blob, DEFAULT_ZSTD_LEVEL)?;
+        let threshold = ((partial.size_bytes as f64) * 0.95).floor() as u64;
+        let (codec, blob_path, compressed_size_bytes) = if compressed_len < threshold {
+            (
+                "zstd".to_string(),
+                zstd_blob,
+                compressed_len,
+            )
+        } else {
+            let _ = fs::remove_file(&zstd_blob);
+            let identity_blob = staging_dir.join(format!("{}.raw", partial.sha256));
+            fs::copy(&abs, &identity_blob)?;
+            (
+                "identity".to_string(),
+                identity_blob,
+                partial.size_bytes,
+            )
+        };
+        prepared.push(PreparedCasFile {
+            entry: ManifestEntry {
+                path: partial.path,
+                sha256: partial.sha256,
+                size_bytes: partial.size_bytes,
+                codec,
+                compressed_size_bytes,
+            },
+            blob_path,
+        });
+    }
+    Ok(prepared)
 }
 
 /// Pack all files under `content_root` into `zip_path` (created/overwritten).
@@ -250,6 +339,7 @@ mod tests {
         assert!(out.exists());
         assert_eq!(packed.files.len(), 1);
         assert_eq!(packed.files[0].path, "bin/game.exe");
+        assert_eq!(packed.files[0].codec, "");
         assert_eq!(packed.size_bytes, fs::metadata(&out).unwrap().len());
         assert_eq!(packed.sha256.len(), 64);
 
@@ -281,5 +371,54 @@ mod tests {
         assert_eq!(chunk_len_at(10, 4, 2, 3), 2);
         assert_eq!(chunk_len_at(8, 4, 1, 2), 4);
         assert_eq!(chunk_len_at(0, 4, 0, 0), 0);
+    }
+
+    #[test]
+    fn manifest_content_sha256_matches_canonical_lines() {
+        let files = vec![
+            ManifestEntry {
+                path: "b.txt".into(),
+                sha256: "bb".repeat(32),
+                size_bytes: 2,
+                codec: "zstd".into(),
+                compressed_size_bytes: 1,
+            },
+            ManifestEntry {
+                path: "a.txt".into(),
+                sha256: "aa".repeat(32),
+                size_bytes: 1,
+                codec: "identity".into(),
+                compressed_size_bytes: 1,
+            },
+        ];
+        let digest = manifest_content_sha256(&files);
+        assert_eq!(digest.len(), 64);
+        // Sorted by path: a.txt before b.txt
+        let mut hasher = Sha256::new();
+        hasher.update(b"a.txt\n");
+        hasher.update(format!("{}\n", "aa".repeat(32)).as_bytes());
+        hasher.update(b"1\nidentity\n1\n");
+        hasher.update(b"b.txt\n");
+        hasher.update(format!("{}\n", "bb".repeat(32)).as_bytes());
+        hasher.update(b"2\nzstd\n1\n");
+        assert_eq!(digest, hex::encode(hasher.finalize()));
+    }
+
+    #[test]
+    fn prepare_cas_entries_stages_blobs() {
+        let dir = tempdir().unwrap();
+        let content = dir.path().join("content");
+        fs::create_dir_all(content.join("data")).unwrap();
+        let mut f = File::create(content.join("data").join("payload.bin")).unwrap();
+        f.write_all(b"repeat-repeat-repeat").unwrap();
+        let staging = dir.path().join("staging");
+        let prepared = prepare_cas_entries(&content, &staging).unwrap();
+        assert_eq!(prepared.len(), 1);
+        assert_eq!(prepared[0].entry.path, "data/payload.bin");
+        assert!(prepared[0].blob_path.exists());
+        assert!(!prepared[0].entry.codec.is_empty());
+        assert!(prepared[0].entry.compressed_size_bytes > 0);
+        let digest = manifest_content_sha256(std::slice::from_ref(&prepared[0].entry));
+        assert_eq!(digest.len(), 64);
     }
 }

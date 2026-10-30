@@ -1,6 +1,6 @@
 [package]
 name = "curated-content-builder"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 description = "Curated content builder CLI: upload depot builds (Windows-first)"
 publish = false
@@ -25,6 +25,7 @@ toml = "0.8"
 uuid = { version = "1", features = ["serde"] }
 walkdir = "2"
 zip = { version = "2", default-features = false, features = ["deflate"] }
+zstd = "0.13"
 
 [dev-dependencies]
 tempfile = "3"

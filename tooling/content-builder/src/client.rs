@@ -71,6 +71,45 @@ pub struct DepotRow {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct CasLimits {
+    pub max_objects_per_missing_request: u32,
+    pub max_objects_per_upload_url_request: u32,
+    pub max_object_bytes: i64,
+    pub max_concurrent_puts: u32,
+    pub presign_ttl_seconds: u32,
+    #[serde(default)]
+    pub codecs: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct CasObjectRef {
+    pub sha256: String,
+    pub codec: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CasMissingResponse {
+    pub missing: Vec<CasObjectRef>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CasUploadUrlEntry {
+    pub sha256: String,
+    pub codec: String,
+    pub key: String,
+    pub url: String,
+    pub ttl_seconds: u32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CasUploadUrlsResponse {
+    pub uploads: Vec<CasUploadUrlEntry>,
+    #[serde(default)]
+    #[allow(dead_code)]
+    pub download_auth: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct ChunkUrl {
     pub index: u32,
     pub url: String,
@@ -118,6 +157,15 @@ pub struct CompleteUploadResponse {
     pub total_bytes: i64,
 }
 
+#[derive(Debug, Clone)]
+pub struct RegisterManifestFile {
+    pub path: String,
+    pub sha256: String,
+    pub size_bytes: u64,
+    pub codec: String,
+    pub compressed_size_bytes: u64,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct RegisteredBuild {
     pub id: Uuid,
@@ -152,20 +200,45 @@ struct InitBody<'a> {
 }
 
 #[derive(Debug, Serialize)]
+struct CasObjectBody<'a> {
+    sha256: &'a str,
+    codec: &'a str,
+}
+
+#[derive(Debug, Serialize)]
+struct CasObjectUploadBody<'a> {
+    sha256: &'a str,
+    codec: &'a str,
+    compressed_size_bytes: u64,
+}
+
+#[derive(Debug, Serialize)]
+struct CasMissingBody<'a> {
+    objects: Vec<CasObjectBody<'a>>,
+}
+
+#[derive(Debug, Serialize)]
+struct CasUploadUrlsBody<'a> {
+    objects: Vec<CasObjectUploadBody<'a>>,
+}
+
+#[derive(Debug, Serialize)]
 struct ManifestFileBody<'a> {
     path: &'a str,
     sha256: &'a str,
     size_bytes: u64,
+    codec: &'a str,
+    compressed_size_bytes: u64,
 }
 
 #[derive(Debug, Serialize)]
 struct CreateBuildBody<'a> {
     version: &'a str,
-    artifact_uri: &'a str,
+    depot_id: &'a str,
+    delivery: &'static str,
     artifact_sha256: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
     changelog: Option<&'a str>,
-    depot_id: &'a str,
     files: Vec<ManifestFileBody<'a>>,
 }
 
@@ -274,6 +347,86 @@ uploads and depot listing are limited to apps you own"
         Ok(resp.json()?)
     }
 
+    pub fn cas_limits(&self, app_id: i64) -> Result<CasLimits, ApiError> {
+        let resp = self
+            .http
+            .get(self.url(&format!("/games/app/{app_id}/builds/cas/limits")))
+            .header(AUTHORIZATION, self.bearer()?)
+            .send()?;
+        if !resp.status().is_success() {
+            return Err(Self::map_error(resp));
+        }
+        Ok(resp.json()?)
+    }
+
+    pub fn cas_missing(
+        &self,
+        app_id: i64,
+        objects: &[CasObjectRef],
+    ) -> Result<Vec<CasObjectRef>, ApiError> {
+        let body = CasMissingBody {
+            objects: objects
+                .iter()
+                .map(|o| CasObjectBody {
+                    sha256: &o.sha256,
+                    codec: &o.codec,
+                })
+                .collect(),
+        };
+        let resp = self
+            .http
+            .post(self.url(&format!("/games/app/{app_id}/builds/cas/missing")))
+            .header(AUTHORIZATION, self.bearer()?)
+            .json(&body)
+            .send()?;
+        if !resp.status().is_success() {
+            return Err(Self::map_error(resp));
+        }
+        let parsed: CasMissingResponse = resp.json()?;
+        Ok(parsed.missing)
+    }
+
+    pub fn cas_upload_urls(
+        &self,
+        app_id: i64,
+        objects: &[(CasObjectRef, u64)],
+    ) -> Result<Vec<CasUploadUrlEntry>, ApiError> {
+        let body = CasUploadUrlsBody {
+            objects: objects
+                .iter()
+                .map(|(o, size)| CasObjectUploadBody {
+                    sha256: &o.sha256,
+                    codec: &o.codec,
+                    compressed_size_bytes: *size,
+                })
+                .collect(),
+        };
+        let resp = self
+            .http
+            .post(self.url(&format!("/games/app/{app_id}/builds/cas/upload-urls")))
+            .header(AUTHORIZATION, self.bearer()?)
+            .json(&body)
+            .send()?;
+        if !resp.status().is_success() {
+            return Err(Self::map_error(resp));
+        }
+        let parsed: CasUploadUrlsResponse = resp.json()?;
+        Ok(parsed.uploads)
+    }
+
+    pub fn put_cas_object(&self, url: &str, bytes: &[u8], content_type: &str) -> Result<(), ApiError> {
+        let resp = self
+            .http
+            .put(url)
+            .header(CONTENT_TYPE, content_type)
+            .body(bytes.to_vec())
+            .send()?;
+        if resp.status() != StatusCode::NO_CONTENT && !resp.status().is_success() {
+            return Err(Self::map_error(resp));
+        }
+        Ok(())
+    }
+
     pub fn content_upload_limits(&self, app_id: i64) -> Result<UploadLimits, ApiError> {
         let resp = self
             .http
@@ -378,24 +531,25 @@ uploads and depot listing are limited to apps you own"
         &self,
         app_id: i64,
         version: &str,
-        artifact_uri: &str,
         artifact_sha256: &str,
         depot_id: &str,
         changelog: Option<&str>,
-        files: &[(String, String, u64)],
+        files: &[RegisterManifestFile],
     ) -> Result<RegisteredBuild, ApiError> {
         let body = CreateBuildBody {
             version,
-            artifact_uri,
+            depot_id,
+            delivery: "cas_files",
             artifact_sha256,
             changelog,
-            depot_id,
             files: files
                 .iter()
-                .map(|(path, sha, size)| ManifestFileBody {
-                    path,
-                    sha256: sha,
-                    size_bytes: *size,
+                .map(|f| ManifestFileBody {
+                    path: &f.path,
+                    sha256: &f.sha256,
+                    size_bytes: f.size_bytes,
+                    codec: &f.codec,
+                    compressed_size_bytes: f.compressed_size_bytes,
                 })
                 .collect(),
         };
