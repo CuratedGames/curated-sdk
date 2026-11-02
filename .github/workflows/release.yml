@@ -4,6 +4,9 @@ name: Release Curated.Sdk
 on:
   push:
     branches: [main]
+    # README.md is omitted: a docs edit is not a version bump.
+    # This workflow file is omitted so editing that filter does not republish the current tag.
+    # Use workflow_dispatch when a workflow edit should ship artifacts.
     paths:
       - "Curated.Sdk/**"
       - "Curated.Sdk.Tests/**"
@@ -13,10 +16,8 @@ on:
       - "engines/**"
       - "Curated.Sdk.sln"
       - "LICENSE.md"
-      - "README.md"
       - "Agents.md"
       - "cliff.toml"
-      - ".github/workflows/release.yml"
   workflow_dispatch:
 
 permissions:
