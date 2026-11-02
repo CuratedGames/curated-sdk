@@ -1,7 +1,7 @@
 ---
 layout: home
 hero:
-  name: Curated Docs
+  name: Curated Developer Docs
   text: Ship your game on Curated
   tagline: Integrate the SDK, upload builds, and set up your store page.
   actions:

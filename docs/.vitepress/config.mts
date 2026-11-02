@@ -25,18 +25,53 @@ function replaceVersion(text: string): string {
 }
 
 const repo = "https://github.com/CuratedGames/curated-sdk";
+const siteUrl = "https://docs.curated.games";
+const siteTitle = "Curated Developer Docs";
+const description = "Integrate games with Curated: SDK guides, Content Builder, launch contract, and the developer admin.";
 
 export default defineConfig({
-  title: "Curated Docs",
-  description: "Integrate games with Curated: SDK guides, Content Builder, launch contract, and the developer admin.",
+  title: siteTitle,
+  description,
   lang: "en-US",
   base: "/",
   cleanUrls: true,
   lastUpdated: true,
-  appearance: "dark",
+  // The store is dark-only, so the docs are too (no appearance toggle). Brand: theme/brand.css.
+  appearance: "force-dark",
   srcExclude: ["README.md"],
-  head: [["link", { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }]],
+  // Same favicon, icons, theme color, and link-preview card as the store (apps/store/app/layout.tsx
+  // and lib/link-preview.ts). Files in public/brand are copies checked by curated CI (docs-brand).
+  head: [
+    ["link", { rel: "icon", href: "/brand/favicon.ico", sizes: "any" }],
+    ["link", { rel: "icon", href: "/brand/icon-32.png", sizes: "32x32", type: "image/png" }],
+    ["link", { rel: "icon", href: "/brand/icon-192.png", sizes: "192x192", type: "image/png" }],
+    ["link", { rel: "apple-touch-icon", href: "/brand/app-apple-touch-icon.png", sizes: "180x180" }],
+    ["link", { rel: "preload", href: "/fonts/source-sans-3-latin-wght-normal.woff2", as: "font", type: "font/woff2", crossorigin: "" }],
+    ["meta", { name: "theme-color", content: "#13161c" }],
+    ["meta", { property: "og:site_name", content: "Curated" }],
+    ["meta", { property: "og:type", content: "website" }],
+    ["meta", { property: "og:image", content: `${siteUrl}/brand/og-card.png` }],
+    ["meta", { property: "og:image:width", content: "1200" }],
+    ["meta", { property: "og:image:height", content: "630" }],
+    ["meta", { name: "twitter:card", content: "summary_large_image" }],
+    ["meta", { name: "twitter:site", content: "@Curated_Games" }],
+  ],
+  // Per-page title, description, and URL for link previews.
+  transformPageData(pageData) {
+    const title = pageData.frontmatter.layout === "home" || !pageData.title
+      ? siteTitle
+      : `${pageData.title} | ${siteTitle}`;
+    const path = pageData.relativePath.replace(/(^|\/)index\.md$/, "$1").replace(/\.md$/, "");
+    pageData.frontmatter.head ??= [];
+    pageData.frontmatter.head.push(
+      ["meta", { property: "og:title", content: title }],
+      ["meta", { property: "og:description", content: pageData.description || description }],
+      ["meta", { property: "og:url", content: `${siteUrl}/${path}` }],
+    );
+  },
   markdown: {
+    // Sits on --curated-bg-deep; its comment color keeps 4.9:1 there.
+    theme: "github-dark-dimmed",
     config(md) {
       md.core.ruler.push("curated_sdk_version", (state) => {
         const walk = (tokens: typeof state.tokens) => {
@@ -51,8 +86,10 @@ export default defineConfig({
     },
   },
   themeConfig: {
-    siteTitle: "Curated Docs",
-    logo: "/favicon.svg",
+    // Store header wordmark (apps/store/public/brand/logo.png, 649x205, shown 28px tall like the
+    // store's .brand-logo). The text after it names the docs.
+    logo: { src: "/brand/logo.png", alt: "Curated", width: 89, height: 28 },
+    siteTitle: "Developer Docs",
     nav: [
       { text: "SDK", link: "/guide/" },
       { text: "Content Builder", link: "/guide/content-builder" },

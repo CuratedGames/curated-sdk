@@ -1,0 +1,279 @@
+/*
+ * Curated brand for docs.curated.games. Every brand value of the docs lives in this file.
+ *
+ * Section 1 copies the store's design tokens. Each `--curated-<name>` line must equal the
+ * store token `--<name>` in CuratedGames/curated packages/ui-theme/theme.css (vendored to
+ * apps/store/styles/theme.css). The curated CI job `docs-brand` (scripts/check-docs-brand.mjs)
+ * fails when a value here differs from the store, when the store fonts loaded in
+ * apps/store/app/layout.tsx differ from the @font-face families below, or when a file in
+ * docs/public/brand differs from apps/store/public/brand. After a store restyle, run in curated:
+ *
+ *   node scripts/check-docs-brand.mjs --docs ../curated-sdk/docs --write
+ *
+ * It rewrites the token values below and copies the brand files; then open a curated-sdk PR.
+ *
+ * Section 2 maps those tokens onto VitePress variables. It only references var(--curated-*)
+ * (tints use color-mix), so it follows token changes on its own. The store is dark-only, so the
+ * docs are too (appearance: "force-dark" in config.mts, which also holds the theme-color meta).
+ */
+
+/* Section 0: fonts. Self-hosted copies of the families the store loads with next/font/google
+ * (apps/store/app/layout.tsx): Source Sans 3 everywhere, Sora on the About and For developers
+ * landings (here: the home hero). Variable woff2 from Fontsource, SIL OFL 1.1 (licenses in
+ * docs/public/fonts). Latin and Latin Extended subsets, like the store's `subsets: ["latin"]`. */
+@font-face {
+  font-family: "Source Sans 3";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url("/fonts/source-sans-3-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url("/fonts/source-sans-3-latin-ext-wght-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url("/fonts/source-sans-3-latin-wght-italic.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url("/fonts/source-sans-3-latin-ext-wght-italic.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Sora";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("/fonts/sora-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Sora";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("/fonts/sora-latin-ext-wght-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Section 1: store tokens. Source: packages/ui-theme/theme.css in CuratedGames/curated.
+ * One token per line, `--curated-<store name>: <store value>;`. Checked by docs-brand. */
+:root {
+  --curated-bg: #13161c;
+  --curated-bg-deep: #0e1116;
+  --curated-bg-elevated: #2b3140;
+  --curated-bg-panel: #1a1e26;
+  --curated-bg-panel-2: #222833;
+  --curated-bg-input: rgba(255, 255, 255, 0.05);
+  --curated-fg: #e8eaef;
+  --curated-fg-bright: #ffffff;
+  --curated-muted: #b4bac6;
+  --curated-faint: #8b93a1;
+  --curated-accent: #7eb0e0;
+  --curated-accent-dim: #5a8fbf;
+  --curated-accent-soft: #a8cff0;
+  --curated-chrome: #a7b0bd;
+  --curated-hair: rgba(255, 255, 255, 0.07);
+  --curated-line-soft: rgba(255, 255, 255, 0.1);
+  --curated-btn: #4e8f47;
+  --curated-btn-hover: #5ba153;
+  --curated-btn-deep: #3f7539;
+  --curated-btn-action: #3f5168;
+  --curated-btn-action-hover: #4c617c;
+  --curated-btn-action-fg: #e8eef6;
+  --curated-warn: #e5c158;
+  --curated-danger: #c35c5c;
+  --curated-radius: 8px;
+  --curated-radius-sm: 5px;
+  --curated-radius-lg: 12px;
+  --curated-font-body: "Source Sans 3", "Noto Sans", "Segoe UI", Tahoma, sans-serif;
+}
+
+/* Not a theme.css token: the landing display stack from apps/store/app/layout.tsx
+ * (--font-landing-display), with the next/font variable replaced by the self-hosted family. */
+:root {
+  --curated-font-landing-display: "Sora", "Source Sans 3", sans-serif;
+}
+
+/* Section 2: VitePress mapping. `.dark` is always set (force-dark); :root covers first paint. */
+:root,
+.dark {
+  /* Fonts */
+  --vp-font-family-base: var(--curated-font-body);
+  /* Monospace for code stays the VitePress default system stack. */
+
+  /* Surfaces */
+  --vp-c-bg: var(--curated-bg);
+  --vp-c-bg-alt: var(--curated-bg-deep);
+  --vp-c-bg-soft: var(--curated-bg-panel);
+  --vp-c-bg-elv: var(--curated-bg-panel-2);
+  --vp-c-divider: var(--curated-hair);
+  --vp-c-border: var(--curated-line-soft);
+  --vp-c-gutter: var(--curated-bg-deep);
+
+  /* Text: body 15.0:1, secondary 9.3:1, tertiary 5.9:1 on --curated-bg (WCAG AA). */
+  --vp-c-text-1: var(--curated-fg);
+  --vp-c-text-2: var(--curated-muted);
+  --vp-c-text-3: var(--curated-faint);
+
+  /* Neutral scale (alt buttons, chips, inline code bg) */
+  --vp-c-default-1: var(--curated-bg-elevated);
+  --vp-c-default-2: var(--curated-bg-panel-2);
+  --vp-c-default-3: var(--curated-bg-panel);
+  --vp-c-default-soft: var(--curated-line-soft);
+
+  /* Brand: store link blue. Links 7.9:1 on --curated-bg. */
+  --vp-c-brand-1: var(--curated-accent);
+  --vp-c-brand-2: var(--curated-accent-soft);
+  --vp-c-brand-3: var(--curated-accent-dim);
+  --vp-c-brand-soft: color-mix(in srgb, var(--curated-accent) 16%, transparent);
+
+  /* Callouts. tip and note follow brand. */
+  --vp-c-success-1: var(--curated-btn-hover);
+  --vp-c-success-2: var(--curated-btn);
+  --vp-c-success-3: var(--curated-btn-deep);
+  --vp-c-success-soft: color-mix(in srgb, var(--curated-btn) 16%, transparent);
+  --vp-c-warning-1: var(--curated-warn);
+  --vp-c-warning-2: var(--curated-warn);
+  --vp-c-warning-3: var(--curated-warn);
+  --vp-c-warning-soft: color-mix(in srgb, var(--curated-warn) 16%, transparent);
+  /* --curated-danger is 3.7:1 on its soft fill, so danger text gets a 25% white tint (5.4:1).
+   * Bars and fills keep the store value. */
+  --vp-c-danger-1: color-mix(in srgb, var(--curated-danger) 75%, #ffffff);
+  --vp-c-danger-2: var(--curated-danger);
+  --vp-c-danger-3: var(--curated-danger);
+  --vp-c-danger-soft: color-mix(in srgb, var(--curated-danger) 16%, transparent);
+  --vp-c-caution-1: var(--vp-c-danger-1);
+  --vp-c-caution-2: var(--vp-c-danger-2);
+  --vp-c-caution-3: var(--vp-c-danger-3);
+  --vp-c-caution-soft: var(--vp-c-danger-soft);
+  --vp-custom-block-info-bg: var(--curated-bg-panel);
+  --vp-custom-block-details-bg: var(--curated-bg-panel);
+
+  /* Code. Blocks sit on the deepest surface so github-dark-dimmed comments stay at 4.9:1. */
+  --vp-code-color: var(--curated-fg);
+  --vp-code-bg: var(--curated-line-soft);
+  --vp-code-block-bg: var(--curated-bg-deep);
+  --vp-code-block-color: var(--curated-fg);
+  --vp-code-copy-code-bg: var(--curated-bg-panel);
+  --vp-code-copy-code-hover-bg: var(--curated-bg-panel-2);
+  --vp-code-tab-active-bar-color: var(--curated-accent);
+
+  /* Buttons. Docs CTAs are non-money actions, so they use the store's slate action CTA (white
+   * on the money-green CTA is only 3.9:1). Alt buttons are panel chips with a hairline. */
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-text: var(--curated-btn-action-fg);
+  --vp-button-brand-bg: var(--curated-btn-action);
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-hover-text: var(--curated-fg-bright);
+  --vp-button-brand-hover-bg: var(--curated-btn-action-hover);
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-active-text: var(--curated-fg-bright);
+  --vp-button-brand-active-bg: var(--curated-btn-action-hover);
+  --vp-button-alt-border: var(--curated-line-soft);
+  --vp-button-alt-text: var(--curated-fg);
+  --vp-button-alt-bg: var(--curated-bg-panel);
+  --vp-button-alt-hover-border: var(--curated-line-soft);
+  --vp-button-alt-hover-text: var(--curated-fg-bright);
+  --vp-button-alt-hover-bg: var(--curated-bg-panel-2);
+  --vp-button-alt-active-border: var(--curated-line-soft);
+  --vp-button-alt-active-text: var(--curated-fg-bright);
+  --vp-button-alt-active-bg: var(--curated-bg-elevated);
+
+  /* Chrome: nav like the store header, sidebar on the deep surface. */
+  --vp-nav-bg-color: var(--curated-bg);
+  --vp-nav-screen-bg-color: var(--curated-bg);
+  --vp-nav-logo-height: 28px; /* store .brand-logo height: 1.75rem */
+  --vp-local-nav-bg-color: var(--curated-bg);
+  --vp-sidebar-bg-color: var(--curated-bg-deep);
+  --vp-input-border-color: var(--curated-line-soft);
+  --vp-input-bg-color: var(--curated-bg-input);
+  --vp-local-search-bg: var(--curated-bg-panel);
+  --vp-local-search-result-bg: var(--curated-bg-panel-2);
+  --vp-local-search-result-selected-border: var(--curated-accent);
+
+  /* Home hero */
+  --vp-home-hero-name-color: var(--curated-accent);
+  --vp-home-hero-name-background: transparent;
+}
+
+/* Overrides of scoped VitePress component styles. The `html` prefix outranks their [data-v]
+ * attribute selectors regardless of stylesheet order. */
+
+/* Store radii: CTAs use --radius-sm (square-ish, not pills), panels --radius-lg, blocks --radius. */
+html .VPButton.medium.medium,
+html .VPButton.big.big {
+  border-radius: var(--curated-radius-sm);
+  font-weight: 600;
+}
+html .VPFeatures .VPFeature {
+  border-radius: var(--curated-radius-lg);
+}
+.vp-doc div[class*="language-"],
+.custom-block {
+  border-radius: var(--curated-radius);
+}
+.vp-doc div[class*="language-"] {
+  box-shadow: inset 0 0 0 1px var(--curated-hair); /* store --shadow-panel */
+}
+
+/* Nav links like the store header .site-nav: muted, brighter on hover with a chrome underline. */
+html .VPNavBarMenu .VPNavBarMenuLink,
+html .VPNavBarMenu .VPFlyout .button .text {
+  color: var(--curated-muted);
+}
+html .VPNavBarMenu .VPNavBarMenuLink:hover,
+html .VPNavBarMenu .VPFlyout:hover .button .text {
+  color: var(--curated-fg);
+}
+html .VPNavBarMenu .VPNavBarMenuLink:hover,
+html .VPNavBarMenu .VPFlyout:hover .button {
+  box-shadow: inset 0 -2px 0 var(--curated-chrome); /* store --shadow-nav-hover */
+}
+html .VPNavBarMenu .VPNavBarMenuLink.active,
+html .VPNavBarMenu .VPFlyout.active .button .text {
+  color: var(--curated-accent);
+}
+
+/* Nav title next to the logo, like a section label in the store header. */
+html .VPNavBarTitle .title {
+  font-weight: 600;
+  color: var(--curated-muted);
+}
+
+/* Home hero: the store For developers landing headline (Sora, 650, tight tracking). */
+html .VPHero .name,
+html .VPHero .text {
+  font-family: var(--curated-font-landing-display);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+html .VPHero .text {
+  color: var(--curated-fg-bright);
+}
+html .VPHero .tagline {
+  color: var(--curated-muted);
+}

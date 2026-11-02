@@ -309,5 +309,8 @@ The site in `docs/` is checked by CI, so drift fails the build instead of shippi
 - **Admin guides** (`docs/admin/`): write UI labels in **bold**, exactly as the admin shows them,
   one per bold span (`A > B` paths are checked per segment). CuratedGames/curated checks every
   bold label against `apps/admin` and fails when one disappears.
+- **Brand** (fonts, colors, logo, icons): all values are in `docs/.vitepress/theme/brand.css` and
+  `docs/public/brand`, copied from the store. Do not hand-edit the `--curated-*` tokens or the
+  brand files; CuratedGames/curated CI compares them with the store and its `--write` mode updates them.
 - Never use em dashes in docs, comments, or commit messages.
 
