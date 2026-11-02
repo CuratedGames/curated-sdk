@@ -74,6 +74,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
       - name: Public API manifest matches every binding
         run: python3 scripts/check-public-api.py
       - name: No hardcoded SDK versions in docs
@@ -82,10 +84,7 @@ jobs:
         run: python3 scripts/check-docs-snippets.py
       - name: Install
         working-directory: docs
-        run: if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
-      - name: Print resolved lockfile (one-off, to commit it)
-        working-directory: docs
-        run: echo "LOCKFILE_B64_BEGIN"; gzip -c package-lock.json | base64 -w0; echo; echo "LOCKFILE_B64_END"
+        run: npm ci
       - name: Build (generates reference pages, fails on dead links)
         working-directory: docs
         env:
