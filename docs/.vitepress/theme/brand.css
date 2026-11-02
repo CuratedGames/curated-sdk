@@ -12,9 +12,9 @@
  *
  * It rewrites the token values below and copies the brand files; then open a curated-sdk PR.
  *
- * Section 2 maps those tokens onto VitePress variables. It only uses var(--curated-*) except
- * where a value is derived (marked "derived"). The store is dark-only, so the docs are too
- * (appearance: "force-dark" in config.mts).
+ * Section 2 maps those tokens onto VitePress variables. It only references var(--curated-*)
+ * (tints use color-mix), so it follows token changes on its own. The store is dark-only, so the
+ * docs are too (appearance: "force-dark" in config.mts, which also holds the theme-color meta).
  */
 
 /* Section 0: fonts. Self-hosted copies of the families the store loads with next/font/google
@@ -96,7 +96,6 @@
   --curated-accent-dim: #5a8fbf;
   --curated-accent-soft: #a8cff0;
   --curated-chrome: #a7b0bd;
-  --curated-chrome-soft: rgba(167, 176, 189, 0.22);
   --curated-hair: rgba(255, 255, 255, 0.07);
   --curated-line-soft: rgba(255, 255, 255, 0.1);
   --curated-btn: #4e8f47;
@@ -111,8 +110,6 @@
   --curated-radius-sm: 5px;
   --curated-radius-lg: 12px;
   --curated-font-body: "Source Sans 3", "Noto Sans", "Segoe UI", Tahoma, sans-serif;
-  --curated-font-display: "Source Sans 3", "Noto Sans", "Segoe UI", Tahoma, sans-serif;
-  --curated-grad-header: rgba(19, 22, 28, 0.78);
 }
 
 /* Not a theme.css token: the landing display stack from apps/store/app/layout.tsx
@@ -152,23 +149,23 @@
   --vp-c-brand-1: var(--curated-accent);
   --vp-c-brand-2: var(--curated-accent-soft);
   --vp-c-brand-3: var(--curated-accent-dim);
-  --vp-c-brand-soft: rgba(126, 176, 224, 0.16); /* derived: --curated-accent at 16% */
+  --vp-c-brand-soft: color-mix(in srgb, var(--curated-accent) 16%, transparent);
 
   /* Callouts. tip and note follow brand. */
   --vp-c-success-1: var(--curated-btn-hover);
   --vp-c-success-2: var(--curated-btn);
   --vp-c-success-3: var(--curated-btn-deep);
-  --vp-c-success-soft: rgba(78, 143, 71, 0.16); /* derived: --curated-btn at 16% */
+  --vp-c-success-soft: color-mix(in srgb, var(--curated-btn) 16%, transparent);
   --vp-c-warning-1: var(--curated-warn);
   --vp-c-warning-2: var(--curated-warn);
   --vp-c-warning-3: var(--curated-warn);
-  --vp-c-warning-soft: rgba(229, 193, 88, 0.16); /* derived: --curated-warn at 16% */
-  /* derived: --curated-danger is 3.7:1 on its soft fill, so danger text uses a 25% white tint
-   * (5.4:1). Bars and fills keep the store value. */
-  --vp-c-danger-1: #d28585;
+  --vp-c-warning-soft: color-mix(in srgb, var(--curated-warn) 16%, transparent);
+  /* --curated-danger is 3.7:1 on its soft fill, so danger text gets a 25% white tint (5.4:1).
+   * Bars and fills keep the store value. */
+  --vp-c-danger-1: color-mix(in srgb, var(--curated-danger) 75%, #ffffff);
   --vp-c-danger-2: var(--curated-danger);
   --vp-c-danger-3: var(--curated-danger);
-  --vp-c-danger-soft: rgba(195, 92, 92, 0.16); /* derived: --curated-danger at 16% */
+  --vp-c-danger-soft: color-mix(in srgb, var(--curated-danger) 16%, transparent);
   --vp-c-caution-1: var(--vp-c-danger-1);
   --vp-c-caution-2: var(--vp-c-danger-2);
   --vp-c-caution-3: var(--vp-c-danger-3);
@@ -226,8 +223,7 @@
 /* Overrides of scoped VitePress component styles. The `html` prefix outranks their [data-v]
  * attribute selectors regardless of stylesheet order. */
 
-/* Store radii: CTAs use --radius-sm (square-ish, not pills); panels use --radius-lg. Code blocks
- * and callouts already use 8px (= --radius). */
+/* Store radii: CTAs use --radius-sm (square-ish, not pills), panels --radius-lg, blocks --radius. */
 html .VPButton.medium.medium,
 html .VPButton.big.big {
   border-radius: var(--curated-radius-sm);
@@ -236,8 +232,26 @@ html .VPButton.big.big {
 html .VPFeatures .VPFeature {
   border-radius: var(--curated-radius-lg);
 }
+.vp-doc div[class*="language-"],
+.custom-block {
+  border-radius: var(--curated-radius);
+}
 .vp-doc div[class*="language-"] {
   box-shadow: inset 0 0 0 1px var(--curated-hair); /* store --shadow-panel */
+}
+
+/* Nav links like the store header .site-nav: muted, brighter on hover with a chrome underline. */
+html .VPNavBarMenuLink,
+html .VPNavBarMenuGroup .VPFlyout .button {
+  color: var(--curated-muted);
+}
+html .VPNavBarMenuLink:hover,
+html .VPNavBarMenuGroup .VPFlyout:hover .button {
+  color: var(--curated-fg);
+  box-shadow: inset 0 -2px 0 var(--curated-chrome); /* store --shadow-nav-hover */
+}
+html .VPNavBarMenuLink.active {
+  color: var(--curated-accent);
 }
 
 /* Nav title next to the logo, like a section label in the store header. */
