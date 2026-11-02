@@ -113,6 +113,6 @@ See [`examples/simple_app_build.toml`](examples/simple_app_build.toml). Relative
 
 ## Related admin UI
 
-After upload, open **Game Build** on admin to mark the build clean and set Default or Beta live. Depots are managed under **Game Build > Builds and Depots**, packages under **Packages and product keys**.
+After upload, open **Game Build > Builds** on admin to set the build live on Default or Beta. Depots are managed under **Game Build > Depots**, packages under **Packages and product keys**. Full guide: [docs.curated.games/guide/content-builder](https://docs.curated.games/guide/content-builder).
 
 See also [Agents.md](../../Agents.md) at the repo root.

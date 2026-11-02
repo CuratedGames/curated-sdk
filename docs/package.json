@@ -1,0 +1,14 @@
+{
+  "name": "curated-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen": "python3 ../scripts/docs_gen.py",
+    "dev": "npm run gen && vitepress dev",
+    "build": "npm run gen && vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "1.6.3"
+  }
+}

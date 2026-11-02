@@ -1,0 +1,25 @@
+# Fails a PR that changes a public SDK API or a Content Builder flag without touching docs/ or
+# contracts/public-api.v1.json. Internal edits (method bodies, private members) do not count.
+# Override: add the `docs-not-needed` label. The label events below re-run this check, and the
+# script reads the labels from the event payload, so no token is needed.
+name: Docs required
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  docs-required:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Docs updated with public API or CLI changes
+        run: >
+          python3 scripts/check-docs-updated.py
+          --base "${{ github.event.pull_request.base.sha }}"
+          --head "${{ github.event.pull_request.head.sha }}"

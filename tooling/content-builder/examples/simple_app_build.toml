@@ -1,4 +1,5 @@
 # Curated content builder script.
+# #region script
 # Paths are relative to this file unless absolute.
 
 app_id = 1000
@@ -7,7 +8,7 @@ content_root = "../content"
 build_output = "../output"
 version = "1.0.0"
 
-# Target depot by depot ID `<app_id>_<NN>` (Game Build > Builds and Depots, or
+# Target depot by depot ID `<app_id>_<NN>` (admin Game Build > Depots, or
 # `curated-content-builder list-depots --app-id 1000`). 1000_00 is the base depot.
 # When omitted, the build goes to <app_id>_00.
 depot_id = "1000_00"
@@ -19,3 +20,4 @@ depot_id = "1000_00"
 local_path = "*"
 depot_path = "."
 recursive = true
+# #endregion script

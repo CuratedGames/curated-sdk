@@ -1,6 +1,7 @@
 # Agents.md: Curated SDK and Content Builder
 
-Guide for coding agents and developers integrating a game with Curated.
+Guide for coding agents and developers integrating a game with Curated. The full docs are at
+[docs.curated.games](https://docs.curated.games) (built from [`docs/`](docs)).
 
 This repository is source-available under the [Curated SDK License](LICENSE.md) (not open source).
 Download packages from this repository's **Releases** (not nuget.org).
@@ -248,8 +249,8 @@ curated-content-builder.exe upload ^
   --version 1.2.3
 ```
 
-`--depot-id` takes the depot ID `<app_id>_<NN>` from `list-depots` or admin Game Build > Builds and
-Depots (`1000_00` is the base depot, the default when the flag is omitted). The builder checks the
+`--depot-id` takes the depot ID `<app_id>_<NN>` from `list-depots` or admin Game Build > Depots
+(`1000_00` is the base depot, the default when the flag is omitted). The builder checks the
 format before uploading; depot keys such as `content` are rejected.
 
 Or use a script (see `tooling/content-builder/examples/simple_app_build.toml`):
@@ -283,3 +284,30 @@ Steam language names, use the Steam-name helpers instead of a private mapping ta
 
 C# helpers: `GameLanguages.ToSteamApiName` / `GameLanguages.FromSteamApiName`. Keep Steam (or other
 storefront) code behind existing compile flags and add Curated in parallel.
+
+---
+
+## Keeping docs.curated.games in sync (for agents changing this repo)
+
+The site in `docs/` is checked by CI, so drift fails the build instead of shipping:
+
+- **New or changed public API** in any binding (`Curated.Sdk/*.cs`, Unity `Runtime/*.cs`,
+  `curated.gd`, Unreal `Public/*.h`, `CuratedSDK.js`): run
+  `python3 scripts/check-public-api.py --write`, replace every `TODO` in
+  `contracts/public-api.v1.json` with a one-line description, and update the guide in
+  `docs/guide/` if behavior changed. The API reference pages are generated from the manifest.
+- **New or changed Content Builder flag** (`tooling/content-builder/src/main.rs`) or build script
+  field (`src/config.rs`): give it a `///` doc comment (it becomes the reference text) and update
+  `docs/guide/content-builder.md`.
+- A PR that changes either without touching `docs/` or the manifest fails `Docs required`. Add
+  the `docs-not-needed` label only when there is truly nothing to document.
+- **Never write a version number** in `docs/`. Use `%SDK_VERSION%` or `%SDK_TAG%`.
+- **Code samples** come from files CI runs: C# from `Curated.Sdk.Tests/DocsSnippetsTests.cs`,
+  RPG Maker from `engines/rpgmaker/CuratedSDK.test.mjs`, the build script from
+  `tooling/content-builder/examples/simple_app_build.toml`. Add a `#region name` there and import
+  it with `<<< @/../path#name{lang}`. Godot and Unreal samples are inline and not compiled.
+- **Admin guides** (`docs/admin/`): write UI labels in **bold**, exactly as the admin shows them,
+  one per bold span (`A > B` paths are checked per segment). CuratedGames/curated checks every
+  bold label against `apps/admin` and fails when one disappears.
+- Never use em dashes in docs, comments, or commit messages.
+

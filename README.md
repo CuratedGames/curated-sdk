@@ -1,6 +1,7 @@
 # Curated SDK
 
-Integrate games with [Curated](https://curated.games) on any engine. When the Curated launcher
+Integrate games with [Curated](https://curated.games) on any engine. Full documentation:
+**[docs.curated.games](https://docs.curated.games)**. When the Curated launcher
 starts a game, the game can sign the player in, confirm they own it, and use achievements,
 stats, Cloud Save, friends, and presence. The SDK also includes the Content Builder CLI for depot uploads.
 
@@ -192,7 +193,7 @@ curated-content-builder.exe upload --app-id 1000 --depot-id 1000_00 --content C:
 ```
 
 Depots use depot ID `<app_id>_<NN>` (`1000_00` is the base depot; see `list-depots` or admin
-**Game Build > Builds and Depots**). `--depot-key` is no longer accepted.
+**Game Build > Depots**). `--depot-key` is no longer accepted.
 
 See [tooling/content-builder/README.md](tooling/content-builder/README.md) and [Agents.md](Agents.md).
 
@@ -220,6 +221,8 @@ existing compile flags and add Curated in parallel.
 dotnet test Curated.Sdk.sln --configuration Release
 node --test engines/rpgmaker/CuratedSDK.test.mjs
 python3 scripts/check-game-languages.py
+python3 scripts/check-public-api.py
+python3 scripts/check-docs-versions.py
 python3 -m unittest discover -s scripts -p 'test_*.py'
 bash scripts/pack-unity-zip.sh artifacts/sdk-unity
 bash scripts/pack-engines.sh artifacts/sdk-unity/publish/Curated.Sdk.dll artifacts/engines
@@ -227,6 +230,41 @@ cd tooling/content-builder && cargo test && cargo build --release
 ```
 
 Godot and Unreal tests run inside the engine (see their READMEs).
+
+## Documentation site
+
+[docs.curated.games](https://docs.curated.games) is built with VitePress from [`docs/`](docs).
+It shows the latest release only and is deployed to GitHub Pages by
+[`.github/workflows/docs.yml`](.github/workflows/docs.yml) on every push to `main` and after each
+release.
+
+```bash
+cd docs && npm install && npm run dev   # http://localhost:5173
+```
+
+`npm run build` first runs `scripts/docs_gen.py`, which writes the pages nobody edits by hand
+(they are gitignored): the API reference (from `contracts/public-api.v1.json`), the Content
+Builder CLI reference (parsed from `tooling/content-builder/src`), the language table (from the
+fixture), the changelog (from GitHub Releases, or `CHANGELOG.md` offline), and the SDK version.
+
+Write `%SDK_VERSION%` / `%SDK_TAG%` instead of a version number. Import code from files CI runs
+(`<<< @/../Curated.Sdk.Tests/DocsSnippetsTests.cs#region-name`) instead of pasting it. Embed
+videos with `<VideoEmbed src="https://www.youtube.com/watch?v=..." title="..." />` (YouTube or an
+MP4/WebM URL; never commit video files).
+
+### What fails CI when docs drift
+
+| Check | Fails when | Fix |
+|-------|------------|-----|
+| `scripts/check-public-api.py` (`engines`, `docs` jobs) | A binding has a public member missing from `contracts/public-api.v1.json`, the manifest lists a member that no longer exists, or a description is empty | `python3 scripts/check-public-api.py --write`, then replace each `TODO` |
+| `scripts/check-docs-updated.py` (`Docs required` workflow) | A PR changes a public API signature or a Content Builder command/flag/script field but touches neither `docs/` nor the manifest | Update the docs, or add the `docs-not-needed` label |
+| `scripts/check-docs-versions.py` (`docs` job) | An authored docs page contains a released version or a `vX.Y.Z` tag | Use `%SDK_VERSION%` / `%SDK_TAG%` |
+| `npm run build` (`docs` job) | A link points at a missing page, or an imported `#region` is gone | Fix the link or the region |
+| `dotnet test`, `node --test`, `cargo test` | A docs snippet no longer compiles or runs | Fix the code in the test file; the page updates itself |
+| `check-admin-docs.mjs` in CuratedGames/curated | A **bold** UI label in `docs/admin` is gone from the admin app, or an admin route has no docs page | Update `docs/admin` here (merge first), then the route map there |
+
+Godot and Unreal snippets are not compiled in CI (no engine install). Their public functions are
+still checked by the manifest, and their language tables by `check-game-languages.py`.
 
 ## Changelog
 
