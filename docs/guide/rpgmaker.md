@@ -34,7 +34,7 @@ which CI runs with `node --test`.
 :::
 
 `Curated.checkEntitlement()` re-checks ownership. `Curated.getOpenIdIdToken()` mints an
-[OpenID Connect](./openid) ID token. For purchases see [In-game purchases](./purchases).
+[OpenID Connect](./openid) ID token. For purchases see [In-app purchases / Microtransactions](./purchases).
 
 ## Game language
 

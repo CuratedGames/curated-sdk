@@ -53,7 +53,7 @@ toast in the game. See [Achievements and stats](./achievements-stats).
 ### More
 
 - [Cloud Save, friends, presence](./cloud-friends-presence)
-- [In-game purchases](./purchases)
+- [In-app purchases / Microtransactions](./purchases)
 - [OpenID Connect](./openid)
 - [Game language](./game-language)
 

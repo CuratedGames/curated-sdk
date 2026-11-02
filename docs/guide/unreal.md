@@ -58,7 +58,7 @@ language table and its automation test cases against the fixture, and that every
 - `CheckEntitlement` re-checks ownership.
 - `UnlockAchievement` unlocks by API name.
 - `RefreshStats`, `SetStat`, `IncrementStat` for player stats.
-- `AuthorizeTxn` for [in-game purchases](./purchases).
+- `AuthorizeTxn` for [in-app purchases](./purchases).
 - `GetOpenIdIdToken` for [OpenID Connect](./openid).
 - `GetCurrentGameLanguage` (static) for the [game language](./game-language).
 

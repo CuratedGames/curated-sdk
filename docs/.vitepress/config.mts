@@ -126,7 +126,7 @@ export default defineConfig({
             { text: "Achievements and stats", link: "/guide/achievements-stats" },
             { text: "Game language", link: "/guide/game-language" },
             { text: "Cloud Save, friends, presence", link: "/guide/cloud-friends-presence" },
-            { text: "In-game purchases", link: "/guide/purchases" },
+            { text: "In-app purchases / Microtransactions", link: "/guide/purchases" },
             { text: "OpenID Connect", link: "/guide/openid" },
             { text: "Migrating from Steam", link: "/guide/migrating-from-steam" },
           ],
