@@ -1,2 +1,16 @@
 /* Layout tweaks that are not brand values. Brand colors, fonts and radii live in brand.css. */
 .api-signature { font-size: 13px; }
+
+.purchase-flow {
+  overflow-x: auto;
+  margin: 16px 0 8px;
+  border: 1px solid var(--curated-line-soft);
+  border-radius: var(--curated-radius);
+  background: var(--curated-bg-panel);
+}
+.purchase-flow svg {
+  display: block;
+  min-width: 720px;
+  width: 100%;
+  height: auto;
+}
