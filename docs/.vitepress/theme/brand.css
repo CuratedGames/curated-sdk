@@ -241,16 +241,20 @@ html .VPFeatures .VPFeature {
 }
 
 /* Nav links like the store header .site-nav: muted, brighter on hover with a chrome underline. */
-html .VPNavBarMenuLink,
-html .VPNavBarMenuGroup .VPFlyout .button {
+html .VPNavBarMenu .VPNavBarMenuLink,
+html .VPNavBarMenu .VPFlyout .button .text {
   color: var(--curated-muted);
 }
-html .VPNavBarMenuLink:hover,
-html .VPNavBarMenuGroup .VPFlyout:hover .button {
+html .VPNavBarMenu .VPNavBarMenuLink:hover,
+html .VPNavBarMenu .VPFlyout:hover .button .text {
   color: var(--curated-fg);
+}
+html .VPNavBarMenu .VPNavBarMenuLink:hover,
+html .VPNavBarMenu .VPFlyout:hover .button {
   box-shadow: inset 0 -2px 0 var(--curated-chrome); /* store --shadow-nav-hover */
 }
-html .VPNavBarMenuLink.active {
+html .VPNavBarMenu .VPNavBarMenuLink.active,
+html .VPNavBarMenu .VPFlyout.active .button .text {
   color: var(--curated-accent);
 }
 
