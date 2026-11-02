@@ -3,7 +3,7 @@
 
 # In-app purchases / Microtransactions
 
-Curated in-game purchases follow the Steam microtransaction flow. Your **game server** creates
+Curated in-app purchases follow the Steam microtransaction flow. Your **game server** creates
 and finalizes the order with the [publisher Web API key](/admin/web-api). The **game client** only
 reports the player's decision, using the player session. The publisher key never goes into the
 game client.

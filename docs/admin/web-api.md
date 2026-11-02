@@ -1,7 +1,7 @@
 # Publisher Web API key
 
 The publisher key authenticates requests from **your game servers** to the Curated Web API, for
-example InitTxn and FinalizeTxn for [in-game purchases](/guide/purchases). Keep it on your server.
+example InitTxn and FinalizeTxn for [in-app purchases](/guide/purchases). Keep it on your server.
 Never ship it in a game client.
 
 Open **Web API** in the admin menu.
