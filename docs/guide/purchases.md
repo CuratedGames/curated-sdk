@@ -4,11 +4,11 @@
 # In-app purchases / Microtransactions
 
 Curated in-app purchases follow the Steam microtransaction flow. Your **game server** creates
-and finalizes the order with the [publisher Web API key](/admin/web-api). The **game client** only
-reports the player's decision, using the player session. The publisher key never goes into the
-game client.
+and finalizes the order with the [publisher Web API key](/admin/web-api). The **game client** asks
+the Curated launcher overlay to confirm the purchase. It does not post the player's boolean. The
+publisher key never goes into the game client.
 
-The samples under [Game client](#game-client) are that player decision. They are not the sandbox.
+The samples under [Game client](#game-client) are that overlay handoff. They are not the sandbox.
 Which Curated base the order uses is chosen in the [game server](#game-server).
 
 ## Order flow
@@ -18,7 +18,7 @@ The player, the game, your server, and Curated each do a different job.
 <div class="purchase-flow">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 560" role="img" aria-labelledby="purchase-flow-title purchase-flow-desc">
   <title id="purchase-flow-title">In-app purchase flow across the game client, the game server, and Curated</title>
-  <desc id="purchase-flow-desc">The game client asks the server to start an order, the server calls InitTxn with the publisher key on either the live or sandbox base, the client authorizes with the player session on the live path, then the server calls FinalizeTxn on the same base it used to start the order. Live orders move wallet funds. Sandbox orders do not.</desc>
+  <desc id="purchase-flow-desc">The game client asks the server to start an order, the server calls InitTxn with the publisher key on either the live or sandbox base, the client asks the Curated launcher overlay to confirm the purchase, and the launcher calls AuthorizeTxn on that same live or sandbox path. Then the server calls FinalizeTxn on the same base it used to start the order. Live orders move wallet funds. Sandbox orders do not.</desc>
   <style>
     .pf-box { fill: var(--curated-bg-deep); stroke: var(--curated-line-soft); }
     .pf-title { fill: var(--curated-fg-bright); font: 600 15px "Source Sans 3", sans-serif; }
@@ -49,8 +49,8 @@ The player, the game, your server, and Curated each do a different job.
   <polyline class="pf-arrow" points="368,268 124,268" marker-end="url(#pf-head)"/>
   <text class="pf-label" x="380" y="258" text-anchor="middle">3. orderId and transId</text>
   <polyline class="pf-arrow" points="124,330 632,330" marker-end="url(#pf-head)"/>
-  <text class="pf-label" x="378" y="322" text-anchor="middle">4. AuthorizeTxn, player session</text>
-  <text class="pf-note" x="378" y="348" text-anchor="middle">Live path only. Not the sandbox base.</text>
+  <text class="pf-label" x="378" y="322" text-anchor="middle">4. Overlay purchase handoff</text>
+  <text class="pf-note" x="378" y="348" text-anchor="middle">Not an HTTP call. Not the sandbox switch.</text>
   <polyline class="pf-arrow" points="124,392 368,392" marker-end="url(#pf-head)"/>
   <text class="pf-label" x="246" y="384" text-anchor="middle">5. Authorized, denied, or error</text>
   <polyline class="pf-arrow" points="388,444 632,444" marker-end="url(#pf-head)"/>
@@ -71,12 +71,33 @@ part of the client samples.
 
 ## Game client
 
-The client reports the player's decision for an order the server already created. Every binding
-calls `POST /ICuratedMicroTxn/AuthorizeTxn/v1/` with the player session. There is no sandbox
-argument on these calls.
+The client asks the Curated launcher overlay to confirm an order the server already created.
+Purchases only run inside the Curated launcher, the same way Steam shows its overlay. There is
+no sandbox argument on these calls. The sandbox base URL stays a game-server setting.
+
+When `CURATED_OVERLAY_ENDPOINT` and `CURATED_OVERLAY_TOKEN` are set, every binding opens a TCP
+connection and sends one line before any HTTP call:
+
+```json
+{"v":1,"token":"<CURATED_OVERLAY_TOKEN>","type":"microtxn_purchase","app_id":1002,"order_id":938473,"trans_id":374839}
+```
+
+It reads one line back:
+
+```json
+{"v":1,"type":"microtxn_purchase_result","authorized":true,"status":"Authorized","order_id":938473,"trans_id":374839,"error_code":null,"error_description":null}
+```
+
+`status` is `Authorized`, `Denied`, or `Error`. The binding maps that status onto its result.
+It does not POST the game's boolean. The `authorized` argument stays on the call so existing
+scripts keep compiling, and the binding ignores it. The launcher calls AuthorizeTxn, with
+`x-curated-overlay-decision`, on the live or sandbox path the order is already using.
+
+If those overlay variables are missing, the call returns error. It does not fall back to
+posting the game's boolean.
 
 1. The game server calls InitTxn and sends `orderId` and `transId` to the client.
-2. The client calls the binding's authorize call with the player's decision.
+2. The client calls the binding's authorize call. The launcher overlay collects the decision.
 3. On authorized, the game server calls FinalizeTxn.
 
 | Binding | Call |
@@ -86,8 +107,8 @@ argument on these calls.
 | Unreal | `AuthorizeTxn(OrderId, TransId, bAuthorized, OnDone)` |
 | RPG Maker | `Curated.authorizeTxn(orderId, transId, authorized)` |
 
-The result is authorized, denied, or error. Error means Curated rejected the call. It is not a
-player denial.
+The result is authorized, denied, or error. Error means the overlay was missing, the purchase
+could not be completed, or Curated rejected it. It is not a player denial.
 
 <<< @/../Curated.Sdk.Tests/DocsSnippetsTests.cs#microtxn{csharp}
 
@@ -135,7 +156,8 @@ The game client calls the module, then calls the Curated SDK only for the player
 5. Deploy the module.
 6. From the game, after Unity Authentication has signed the player in, call `StartOrder`. It
    returns `orderId` and `transId`.
-7. Call `MicroTxn.AuthorizeAsync` as in [Game client](#game-client). That call is not the sandbox.
+7. Call `MicroTxn.AuthorizeAsync` as in [Game client](#game-client). That call is the overlay
+   handoff. It is not the sandbox switch.
 8. When the status is authorized, call `FinalizeOrder`. The module calls FinalizeTxn on the same
    base it used for InitTxn.
 9. Grant the item only after FinalizeTxn succeeds. QueryTxn and RefundTxn stay on the module.
@@ -210,6 +232,8 @@ OrderIds started = await CloudCodeService.Instance.CallModuleEndpointAsync<Order
     "StartOrder",
     new Dictionary<string, object> { ["sku"] = "gems_small" });
 
+// Overlay handoff from the game client section. The boolean is ignored.
+// This call is not the sandbox switch.
 MicroTxnAuthorization purchase = await MicroTxn.AuthorizeAsync(
     started.OrderId, started.TransId, authorized: true);
 

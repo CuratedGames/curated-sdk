@@ -20,7 +20,7 @@ and the [conformance fixture](https://github.com/CuratedGames/curated-sdk/blob/m
 | `CURATED_API_BASE` | no | `https://api.curated.games` | API origin. The only place the token may go |
 | `CURATED_USER_ID`, `CURATED_USERNAME` | no | | Display hints. Trust `/auth/me` instead |
 | `CURATED_LANGUAGE` | no | `it` | Launcher client language. See [Game language](./game-language) |
-| `CURATED_OVERLAY_ENDPOINT`, `CURATED_OVERLAY_TOKEN` | no | `127.0.0.1:4050` | Launcher overlay toast host. Bindings notify it on new achievements |
+| `CURATED_OVERLAY_ENDPOINT`, `CURATED_OVERLAY_TOKEN` | no | `127.0.0.1:4050` | Launcher overlay. Achievement toasts, and the in-game purchase handoff |
 
 ## Startup sequence
 

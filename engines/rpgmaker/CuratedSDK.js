@@ -216,14 +216,30 @@
     }));
   }
 
-  function readMicroTxnFlag(value) {
-    if (typeof value === "boolean") return value;
-    if (value === 0 || value === "0" || value === "false") return false;
-    if (value === 1 || value === "1" || value === "true") return true;
-    return null;
+  function overlayPurchaseError(orderId, transId, description) {
+    return {
+      ok: false,
+      status: "error",
+      error: ERRORS.HUB,
+      orderId,
+      transId,
+      errorCode: null,
+      errorDescription: description,
+    };
   }
 
-  function readMicroTxnId(value, fallback) {
+  function parseOverlayEndpoint(endpoint) {
+    let text = String(endpoint || "").trim();
+    if (text.toLowerCase().startsWith("http://")) text = text.slice("http://".length);
+    const colon = text.lastIndexOf(":");
+    if (colon <= 0) return null;
+    const host = text.slice(0, colon).trim() || "127.0.0.1";
+    const port = Number(text.slice(colon + 1).trim());
+    if (!host || !Number.isInteger(port) || port <= 0 || port > 65535) return null;
+    return { host, port };
+  }
+
+  function readOverlayId(value, fallback) {
     if (typeof value === "number" && Number.isSafeInteger(value) && value > 0) return value;
     if (typeof value === "string" && /^[1-9]\d*$/.test(value)) {
       const parsed = Number(value);
@@ -232,48 +248,104 @@
     return fallback;
   }
 
-  function readMicroTxnAuthorization(body, orderId, transId, submitted) {
-    const response = body && body.response && typeof body.response === "object" ? body.response : null;
-    const result = response && typeof response.result === "string" ? response.result.trim().toLowerCase() : "";
-    if (result === "ok") {
-      const params = response.params && typeof response.params === "object" ? response.params : {};
-      let decision = submitted;
-      if (Object.prototype.hasOwnProperty.call(params, "authorized")) {
-        const flag = readMicroTxnFlag(params.authorized);
-        if (flag === null) {
-          return {
-            ok: false,
-            status: "error",
-            error: ERRORS.HUB,
-            orderId,
-            transId,
-            errorDescription: "Curated returned an unreadable authorization response.",
-          };
-        }
-        decision = flag;
-      }
-      return {
-        ok: true,
-        status: decision ? "authorized" : "denied",
-        orderId: readMicroTxnId(params.orderid, orderId),
-        transId: readMicroTxnId(params.transid, transId),
-      };
+  function parseOverlayPurchaseResult(line, orderId, transId) {
+    let body;
+    try {
+      body = JSON.parse(String(line || "").trim());
+    } catch (_) {
+      return overlayPurchaseError(orderId, transId, "Curated overlay returned an unreadable purchase result.");
     }
-    const error = response && response.error && typeof response.error === "object" ? response.error : {};
-    const errorCode = Number.isInteger(error.errorcode) ? error.errorcode : null;
+    if (!body || body.type !== "microtxn_purchase_result") {
+      return overlayPurchaseError(orderId, transId, "Curated overlay returned an unreadable purchase result.");
+    }
+    const echoedOrder = readOverlayId(body.order_id, orderId);
+    const echoedTrans = readOverlayId(body.trans_id, transId);
+    const status = typeof body.status === "string" ? body.status.trim().toLowerCase() : "";
+    if (status === "authorized" || status === "denied") {
+      return { ok: true, status, orderId: echoedOrder, transId: echoedTrans };
+    }
+    if (status !== "error") {
+      return overlayPurchaseError(echoedOrder, echoedTrans, "Curated overlay returned an unreadable purchase result.");
+    }
+    const errorCode = Number.isInteger(body.error_code) ? body.error_code : null;
     const errorDescription =
-      typeof error.errordesc === "string" && error.errordesc.trim()
-        ? error.errordesc
+      typeof body.error_description === "string" && body.error_description.trim()
+        ? body.error_description
         : "Curated could not authorize the order.";
     return {
       ok: false,
       status: "error",
       error: ERRORS.HUB,
-      orderId,
-      transId,
+      orderId: echoedOrder,
+      transId: echoedTrans,
       errorCode,
       errorDescription,
     };
+  }
+
+  function exchangeOverlayPurchase(env, appId, orderId, transId) {
+    const endpoint = String((env && env.CURATED_OVERLAY_ENDPOINT) || "").trim();
+    const token = String((env && env.CURATED_OVERLAY_TOKEN) || "").trim();
+    const target = endpoint && token ? parseOverlayEndpoint(endpoint) : null;
+    if (!target || !token) {
+      return Promise.resolve(
+        overlayPurchaseError(orderId, transId, "Purchases require the Curated launcher overlay."),
+      );
+    }
+    if (typeof require !== "function") {
+      return Promise.resolve(overlayPurchaseError(orderId, transId, "Curated overlay did not answer."));
+    }
+    let net;
+    try {
+      net = require("net");
+    } catch (_) {
+      return Promise.resolve(overlayPurchaseError(orderId, transId, "Curated overlay did not answer."));
+    }
+    const payload =
+      JSON.stringify({
+        v: 1,
+        token,
+        type: "microtxn_purchase",
+        app_id: appId,
+        order_id: orderId,
+        trans_id: transId,
+      }) + "\n";
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      const socket = net.connect({ host: target.host, port: target.port });
+      let buf = "";
+      socket.setTimeout(2000);
+      socket.once("connect", () => {
+        socket.setTimeout(600000);
+        socket.write(payload);
+      });
+      socket.on("data", (chunk) => {
+        buf += chunk.toString("utf8");
+        const nl = buf.indexOf("\n");
+        if (nl < 0) {
+          if (buf.length > 65536) {
+            socket.destroy();
+            finish(overlayPurchaseError(orderId, transId, "Curated overlay returned an unreadable purchase result."));
+          }
+          return;
+        }
+        socket.end();
+        finish(parseOverlayPurchaseResult(buf.slice(0, nl), orderId, transId));
+      });
+      const fail = () => {
+        try {
+          socket.destroy();
+        } catch (_) {}
+        finish(overlayPurchaseError(orderId, transId, "Curated overlay did not answer."));
+      };
+      socket.on("error", fail);
+      socket.on("timeout", fail);
+    });
   }
 
   async function callApi(context, transport, method, path, body) {
@@ -462,15 +534,16 @@
     },
 
     /**
-     * Begin authorization for an order the game server created with InitTxn.
-     * `authorized` is the signed-in player's decision (true keeps the wallet reserve,
-     * false releases it and fails the order).
-     * Resolves { ok, status, orderId, transId } where status is "authorized" or "denied",
-     * or { ok: false, status: "error", error, errorCode, errorDescription }.
-     * POST /ICuratedMicroTxn/AuthorizeTxn/v1/ with the player session. Never sends a publisher key.
+     * Ask the Curated launcher overlay to confirm an order the game server created with InitTxn.
+     * `authorized` is ignored and kept so existing callers still compile. The overlay collects
+     * the decision. Resolves { ok, status, orderId, transId } where status is "authorized" or
+     * "denied", or { ok: false, status: "error", error, errorCode, errorDescription }.
+     * Sends one TCP line to CURATED_OVERLAY_ENDPOINT and reads microtxn_purchase_result.
+     * Does not POST the player's boolean. Outside the launcher the result is error.
      * The game server calls FinalizeTxn after the player authorizes.
      */
     async authorizeTxn(orderId, transId, authorized) {
+      void authorized;
       const order = Number(orderId);
       const trans = Number(transId);
       if (!this._context) {
@@ -479,17 +552,7 @@
       if (!Number.isSafeInteger(order) || order <= 0 || !Number.isSafeInteger(trans) || trans <= 0) {
         return { ok: false, status: "error", error: ERRORS.HUB, orderId: order, transId: trans };
       }
-      const decision = Boolean(authorized);
-      const res = await callApi(this._context, this._transport, "POST", "/ICuratedMicroTxn/AuthorizeTxn/v1/", {
-        orderid: order,
-        transid: trans,
-        appid: this._context.appId,
-        authorized: decision,
-      });
-      if (!res.ok) {
-        return { ok: false, status: "error", error: res.error, orderId: order, transId: trans };
-      }
-      return readMicroTxnAuthorization(res.body, order, trans, decision);
+      return exchangeOverlayPurchase(processEnv(), this._context.appId, order, trans);
     },
 
     /** Increment a player stat. Resolves { ok, stat, previousValue } or { ok: false, error }. */

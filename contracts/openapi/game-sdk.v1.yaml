@@ -367,13 +367,17 @@ paths:
       tags: [microtransactions]
       summary: Authorize or deny a pending in-game purchase
       description: |
-        Player-session call. The game server creates the order with InitTxn (publisher key,
-        which the game never has) and passes `orderid` and `transid` to the client. This call
-        records the signed-in player's decision. It does not capture the wallet reserve; the
-        game server calls FinalizeTxn after the player authorizes.
+        Player-session call made by the Curated launcher after the overlay purchase handoff,
+        on the live or sandbox base, with header `x-curated-overlay-decision`. Official game
+        clients do not call this route and do not post the player's boolean. The game server
+        creates the order with InitTxn (publisher key, which the game never has) and passes
+        `orderid` and `transid` to the client. This call records the overlay decision. It does
+        not capture the wallet reserve; the game server calls FinalizeTxn after the player
+        authorizes.
 
         Authenticate with the launcher session bearer token only. Do not send a publisher
-        `key` query parameter or body field.
+        `key` query parameter or body field. The sandbox base is a game-server setting, not
+        this route.
 
         The body uses Steam's names (`orderid`, `transid`, `appid`). `authorized` true keeps
         the reserve; false releases it and fails the order. The response envelope is Steam's:
