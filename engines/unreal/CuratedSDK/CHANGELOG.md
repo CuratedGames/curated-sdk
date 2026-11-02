@@ -11,6 +11,8 @@ they affect this package.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-02
+
 ### Added
 
 - Player in-game purchase authorization in every engine binding (`MicroTxn.AuthorizeAsync`): begin authorization for an `orderid` / `transid` the game server created, and report authorized, denied, or error. The client calls `POST /ICuratedMicroTxn/AuthorizeTxn/v1/` with the player session. The publisher key is never sent.
@@ -67,7 +69,8 @@ they affect this package.
 
 - Initial Curated.Sdk public API: launcher auth, entitlements, achievements, Cloud Save, friends and presence
 
-[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/CuratedGames/curated-sdk/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.2.0...v1.4.0
