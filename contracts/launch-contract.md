@@ -225,11 +225,17 @@ All bindings use these exact strings so support logs read the same across engine
 
 ## 6. Other features
 
-Achievements, player stats, Cloud Save, friends, presence, and OpenID ID token minting use the
-same bearer token and are listed in the OpenAPI file. They all require an active entitlement for
-the app on the server side, so a binding that skips the entitlement check still cannot unlock
-achievements or write stats for players who do not own the game. A game-scoped token gets `403`
-on another app's routes.
+Achievements, player stats, Cloud Save, friends, presence, OpenID ID token minting, and in-game
+purchase authorization use the same bearer token and are listed in the OpenAPI file. They all
+require an active entitlement for the app on the server side, so a binding that skips the
+entitlement check still cannot unlock achievements, write stats, or authorize a purchase for
+players who do not own the game. A game-scoped token gets `403` on another app's routes.
+
+`POST /ICuratedMicroTxn/AuthorizeTxn/v1/` is the player-session purchase step. The game server
+creates the order (InitTxn) and, after the player authorizes, captures it (FinalizeTxn). Those
+server calls use the publisher key. The game client never receives that key and never sends it.
+The client posts `orderid`, `transid`, `appid`, and the player's `authorized` decision, then
+surfaces authorized, denied, or error from Steam's `response.result` envelope.
 
 ## 7. Dedicated servers
 

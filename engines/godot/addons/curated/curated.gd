@@ -210,6 +210,93 @@ func increment_stat(api_name: String, delta: float = 1.0) -> Dictionary:
 	}
 
 
+## Begin authorization for an order the game server created with InitTxn.
+## `authorized` is the signed-in player's decision: true keeps the wallet reserve, false
+## releases it and fails the order. Returns { ok, status, order_id, trans_id } where status
+## is "authorized" or "denied", or { ok = false, status = "error", error, ... }.
+## POST /ICuratedMicroTxn/AuthorizeTxn/v1/ with the player session. Never sends a publisher key.
+## The game server calls FinalizeTxn after the player authorizes.
+func authorize_txn(order_id: int, trans_id: int, authorized: bool) -> Dictionary:
+	if _context.is_empty():
+		return _microtxn_error(order_id, trans_id, Contract.ERR_NOT_LAUNCHED, 0, "")
+	if order_id <= 0 or trans_id <= 0:
+		return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "")
+	var payload := {
+		"orderid": order_id,
+		"transid": trans_id,
+		"appid": int(_context.app_id),
+		"authorized": authorized,
+	}
+	var res := await _call(_context, HTTPClient.METHOD_POST, "/ICuratedMicroTxn/AuthorizeTxn/v1/", payload)
+	if not res.ok:
+		return _microtxn_error(order_id, trans_id, str(res.get("error", Contract.ERR_HUB)), 0, "")
+	return _microtxn_result(res.body, order_id, trans_id, authorized)
+
+
+func _microtxn_result(body, order_id: int, trans_id: int, authorized: bool) -> Dictionary:
+	var response: Dictionary = {}
+	if typeof(body) == TYPE_DICTIONARY and typeof(body.get("response", null)) == TYPE_DICTIONARY:
+		response = body.response
+	var result := str(response.get("result", "")).strip_edges().to_lower()
+	if result == "ok":
+		var params: Dictionary = {}
+		if typeof(response.get("params", null)) == TYPE_DICTIONARY:
+			params = response.params
+		var decision := authorized
+		if params.has("authorized"):
+			var flag = _microtxn_flag(params.authorized)
+			if flag == null:
+				return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "Curated returned an unreadable authorization response.")
+			decision = flag
+		return {
+			"ok": true,
+			"status": "authorized" if decision else "denied",
+			"order_id": int(params.get("orderid", order_id)),
+			"trans_id": int(params.get("transid", trans_id)),
+		}
+	var error_code := 0
+	var error_description := ""
+	if typeof(response.get("error", null)) == TYPE_DICTIONARY:
+		error_code = int(response.error.get("errorcode", 0))
+		error_description = str(response.error.get("errordesc", ""))
+	if error_description.is_empty():
+		error_description = "Curated could not authorize the order."
+	return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, error_code, error_description)
+
+
+func _microtxn_flag(value):
+	match typeof(value):
+		TYPE_BOOL:
+			return value
+		TYPE_INT, TYPE_FLOAT:
+			if int(value) == 0:
+				return false
+			if int(value) == 1:
+				return true
+	if typeof(value) == TYPE_STRING:
+		var text := str(value).strip_edges().to_lower()
+		if text == "0" or text == "false":
+			return false
+		if text == "1" or text == "true":
+			return true
+	return null
+
+
+func _microtxn_error(order_id: int, trans_id: int, error: String, error_code: int, error_description: String) -> Dictionary:
+	var result := {
+		"ok": false,
+		"status": "error",
+		"error": error,
+		"order_id": order_id,
+		"trans_id": trans_id,
+	}
+	if error_code != 0:
+		result["error_code"] = error_code
+	if not error_description.is_empty():
+		result["error_description"] = error_description
+	return result
+
+
 ## Batch StoreStats. `updates` is an array of { api_name, value } and/or { api_name, delta }.
 func store_stats(updates: Array) -> Dictionary:
 	if _context.is_empty():

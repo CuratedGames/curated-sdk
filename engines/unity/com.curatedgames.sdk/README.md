@@ -84,8 +84,10 @@ Curated. Player builds still return `not_launched_by_curated` in that case. The 
 is sent only to the Curated API.
 
 `CuratedUnity.InitFromLauncherAsync` shuts Curated down on `Application.quitting`. Achievements,
-stats, Cloud Save, friends, and presence are on the `Curated.Sdk` API (`Achievements`, `Stats`,
-`Cloud`, `Friends`, `Presence`). Example:
+stats, Cloud Save, friends, presence, and in-game purchase authorization are on the
+`Curated.Sdk` API (`Achievements`, `Stats`, `Cloud`, `Friends`, `Presence`, `MicroTxn`).
+`MicroTxn.AuthorizeAsync` uses the player session for an order the game server created. It
+never sends a publisher key. Example:
 
 ```csharp
 await Stats.RefreshAsync();

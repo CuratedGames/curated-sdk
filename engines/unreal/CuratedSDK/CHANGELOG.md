@@ -11,6 +11,10 @@ they affect this package.
 
 ## [Unreleased]
 
+### Added
+
+- Player in-game purchase authorization in every engine binding (`MicroTxn.AuthorizeAsync`): begin authorization for an `orderid` / `transid` the game server created, and report authorized, denied, or error. The client calls `POST /ICuratedMicroTxn/AuthorizeTxn/v1/` with the player session. The publisher key is never sent.
+
 ## [1.5.0] - 2026-10-27
 
 ### Added

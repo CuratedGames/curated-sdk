@@ -216,6 +216,66 @@
     }));
   }
 
+  function readMicroTxnFlag(value) {
+    if (typeof value === "boolean") return value;
+    if (value === 0 || value === "0" || value === "false") return false;
+    if (value === 1 || value === "1" || value === "true") return true;
+    return null;
+  }
+
+  function readMicroTxnId(value, fallback) {
+    if (typeof value === "number" && Number.isSafeInteger(value) && value > 0) return value;
+    if (typeof value === "string" && /^[1-9]\d*$/.test(value)) {
+      const parsed = Number(value);
+      if (Number.isSafeInteger(parsed)) return parsed;
+    }
+    return fallback;
+  }
+
+  function readMicroTxnAuthorization(body, orderId, transId, submitted) {
+    const response = body && body.response && typeof body.response === "object" ? body.response : null;
+    const result = response && typeof response.result === "string" ? response.result.trim().toLowerCase() : "";
+    if (result === "ok") {
+      const params = response.params && typeof response.params === "object" ? response.params : {};
+      let decision = submitted;
+      if (Object.prototype.hasOwnProperty.call(params, "authorized")) {
+        const flag = readMicroTxnFlag(params.authorized);
+        if (flag === null) {
+          return {
+            ok: false,
+            status: "error",
+            error: ERRORS.HUB,
+            orderId,
+            transId,
+            errorDescription: "Curated returned an unreadable authorization response.",
+          };
+        }
+        decision = flag;
+      }
+      return {
+        ok: true,
+        status: decision ? "authorized" : "denied",
+        orderId: readMicroTxnId(params.orderid, orderId),
+        transId: readMicroTxnId(params.transid, transId),
+      };
+    }
+    const error = response && response.error && typeof response.error === "object" ? response.error : {};
+    const errorCode = Number.isInteger(error.errorcode) ? error.errorcode : null;
+    const errorDescription =
+      typeof error.errordesc === "string" && error.errordesc.trim()
+        ? error.errordesc
+        : "Curated could not authorize the order.";
+    return {
+      ok: false,
+      status: "error",
+      error: ERRORS.HUB,
+      orderId,
+      transId,
+      errorCode,
+      errorDescription,
+    };
+  }
+
   async function callApi(context, transport, method, path, body) {
     let res;
     try {
@@ -399,6 +459,37 @@
         stat: (res.body && res.body.stat) || null,
         previousValue: res.body ? res.body.previous_value : null,
       };
+    },
+
+    /**
+     * Begin authorization for an order the game server created with InitTxn.
+     * `authorized` is the signed-in player's decision (true keeps the wallet reserve,
+     * false releases it and fails the order).
+     * Resolves { ok, status, orderId, transId } where status is "authorized" or "denied",
+     * or { ok: false, status: "error", error, errorCode, errorDescription }.
+     * POST /ICuratedMicroTxn/AuthorizeTxn/v1/ with the player session. Never sends a publisher key.
+     * The game server calls FinalizeTxn after the player authorizes.
+     */
+    async authorizeTxn(orderId, transId, authorized) {
+      const order = Number(orderId);
+      const trans = Number(transId);
+      if (!this._context) {
+        return { ok: false, status: "error", error: ERRORS.NOT_LAUNCHED, orderId: order, transId: trans };
+      }
+      if (!Number.isSafeInteger(order) || order <= 0 || !Number.isSafeInteger(trans) || trans <= 0) {
+        return { ok: false, status: "error", error: ERRORS.HUB, orderId: order, transId: trans };
+      }
+      const decision = Boolean(authorized);
+      const res = await callApi(this._context, this._transport, "POST", "/ICuratedMicroTxn/AuthorizeTxn/v1/", {
+        orderid: order,
+        transid: trans,
+        appid: this._context.appId,
+        authorized: decision,
+      });
+      if (!res.ok) {
+        return { ok: false, status: "error", error: res.error, orderId: order, transId: trans };
+      }
+      return readMicroTxnAuthorization(res.body, order, trans, decision);
     },
 
     /** Increment a player stat. Resolves { ok, stat, previousValue } or { ok: false, error }. */

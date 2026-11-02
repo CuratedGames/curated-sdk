@@ -12,6 +12,48 @@ DECLARE_DYNAMIC_DELEGATE_TwoParams(FCuratedStatsRefreshed, ECuratedLaunchError, 
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FCuratedStatWritten, ECuratedLaunchError, Error, const FString&, ResponseJson);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FCuratedOpenIdIdToken, ECuratedLaunchError, Error, const FString&, IdToken);
 
+/** Player decision for one in-game purchase authorization. Error is a Curated failure, not a denial. */
+UENUM(BlueprintType)
+enum class ECuratedMicroTxnStatus : uint8
+{
+	Authorized,
+	Denied,
+	Error
+};
+
+/** Result of AuthorizeTxn. The publisher key is never present. */
+USTRUCT(BlueprintType)
+struct CURATEDSDK_API FCuratedMicroTxnAuthorization
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Curated")
+	ECuratedMicroTxnStatus Status = ECuratedMicroTxnStatus::Error;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Curated")
+	int64 OrderId = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Curated")
+	int64 TransId = 0;
+
+	/** Steam-style errorcode when Status is Error. Zero when Curated did not send one. */
+	UPROPERTY(BlueprintReadOnly, Category = "Curated")
+	int32 ErrorCode = 0;
+
+	/** Steam-style errordesc when Status is Error. */
+	UPROPERTY(BlueprintReadOnly, Category = "Curated")
+	FString ErrorDescription;
+
+	/**
+	 * Launch-contract error when the call did not complete (not launched, network, hub, session).
+	 * None when the Steam-style envelope was read, including authorized, denied, and Failure.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Curated")
+	ECuratedLaunchError TransportError = ECuratedLaunchError::None;
+};
+
+DECLARE_DYNAMIC_DELEGATE_OneParam(FCuratedMicroTxnAuthorized, const FCuratedMicroTxnAuthorization&, Authorization);
+
 /**
  * Curated launcher integration (launch contract v1).
  * Call InitFromLauncher once at startup and wait for OnLaunchCompleted.
@@ -49,6 +91,14 @@ public:
 	/** Increment a player stat (POST .../stats/{api_name}/increment). */
 	UFUNCTION(BlueprintCallable, Category = "Curated")
 	void IncrementStat(const FString& ApiName, float Delta, FCuratedStatWritten OnWritten);
+
+	/**
+	 * Begin authorization for an order the game server created with InitTxn.
+	 * bAuthorized is the signed-in player's decision. Uses the player session.
+	 * Never sends a publisher key. The game server calls FinalizeTxn after authorization.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Curated")
+	void AuthorizeTxn(int64 OrderId, int64 TransId, bool bAuthorized, FCuratedMicroTxnAuthorized OnDone);
 
 	/**
 	 * Mint a short-lived OpenID Connect ID token for this session. Pass it only to the game's

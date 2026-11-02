@@ -34,8 +34,10 @@ void UMyGameInstance::Init()
 ```
 
 `CheckEntitlement` re-checks ownership; `UnlockAchievement` unlocks by API name.
-`RefreshStats` / `SetStat` / `IncrementStat` cover player stats; `GetOpenIdIdToken` mints an
-OpenID Connect ID token (never log it). Cloud Save, friends, and presence remain C#-only
+`RefreshStats` / `SetStat` / `IncrementStat` cover player stats. `AuthorizeTxn` begins
+in-game purchase authorization for an order the game server created and reports authorized,
+denied, or error. It uses the player session and never sends a publisher key.
+`GetOpenIdIdToken` mints an OpenID Connect ID token (never log it). Cloud Save, friends, and presence remain C#-only
 (use `Curated.Sdk` from a managed game layer, or call the same HTTP paths yourself).
 
 ## Game language

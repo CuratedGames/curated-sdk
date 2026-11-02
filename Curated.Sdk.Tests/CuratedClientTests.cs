@@ -117,6 +117,9 @@ public class CuratedClientTests : IDisposable
         Assert.Contains("Cloud", publicNames);
         Assert.Contains("Friends", publicNames);
         Assert.Contains("Presence", publicNames);
+        Assert.Contains("MicroTxn", publicNames);
+        Assert.Contains("MicroTxnAuthorization", publicNames);
+        Assert.Contains("MicroTxnAuthorizationStatus", publicNames);
         Assert.Contains("CuratedException", publicNames);
 
         Assert.DoesNotContain("HttpClientTransport", publicNames);
