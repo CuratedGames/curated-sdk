@@ -7,8 +7,9 @@ info:
     these operations only. Authenticate with the `CURATED_SESSION_TOKEN` the launcher sets on
     the game process (see ../launch-contract.md). That token is scoped to the launched app:
     it works only on these operations, returns 403 on another app's routes, and 401 on every
-    other Curated endpoint. Fields not listed here may appear in responses; bindings must
-    ignore unknown fields.
+    other Curated endpoint. In-game purchase authorization uses this same player session.
+    Games never send a publisher key. Fields not listed here may appear in responses; bindings
+    must ignore unknown fields.
 servers:
   - url: https://api.curated.games
     description: Production
@@ -21,6 +22,7 @@ tags:
   - name: stats
   - name: cloud-save
   - name: social
+  - name: microtransactions
 paths:
   /auth/me:
     get:
@@ -359,6 +361,40 @@ paths:
       responses:
         "200":
           description: OK
+  /ICuratedMicroTxn/AuthorizeTxn/v1/:
+    post:
+      operationId: authorizeMicroTxn
+      tags: [microtransactions]
+      summary: Authorize or deny a pending in-game purchase
+      description: |
+        Player-session call. The game server creates the order with InitTxn (publisher key,
+        which the game never has) and passes `orderid` and `transid` to the client. This call
+        records the signed-in player's decision. It does not capture the wallet reserve; the
+        game server calls FinalizeTxn after the player authorizes.
+
+        Authenticate with the launcher session bearer token only. Do not send a publisher
+        `key` query parameter or body field.
+
+        The body uses Steam's names (`orderid`, `transid`, `appid`). `authorized` true keeps
+        the reserve; false releases it and fails the order. The response envelope is Steam's:
+        `response.result` is `OK` or `Failure`, with `response.params` or `response.error`.
+        Both results use HTTP 200. `params.authorized` is `1`/`0` or a boolean; when it is
+        omitted on `OK`, the submitted decision stands.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizeTxnRequest"
+      responses:
+        "200":
+          description: Steam-style envelope. `result` is OK or Failure.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MicroTxnResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 components:
   securitySchemes:
     launcherSession:
@@ -776,3 +812,63 @@ components:
         app_id:
           type: [integer, "null"]
           format: int64
+    AuthorizeTxnRequest:
+      type: object
+      additionalProperties: false
+      required: [orderid, transid, appid, authorized]
+      properties:
+        orderid:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Order id returned by the game server's InitTxn call.
+        transid:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Transaction id returned by the game server's InitTxn call.
+        appid:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Curated app id of the initialized game. Not a publisher key.
+        authorized:
+          type: boolean
+          description: True to authorize (the reserve stays). False to deny (the reserve is released and the order fails).
+    MicroTxnResponse:
+      type: object
+      required: [response]
+      properties:
+        response:
+          type: object
+          required: [result]
+          properties:
+            result:
+              type: string
+              enum: [OK, Failure]
+            params:
+              type: object
+              properties:
+                orderid:
+                  oneOf:
+                    - type: integer
+                      format: int64
+                    - type: string
+                transid:
+                  oneOf:
+                    - type: integer
+                      format: int64
+                    - type: string
+                authorized:
+                  description: Present when Curated echoes the player decision. 1 or true means authorized.
+                  oneOf:
+                    - type: boolean
+                    - type: integer
+                      enum: [0, 1]
+            error:
+              type: object
+              properties:
+                errorcode:
+                  type: integer
+                errordesc:
+                  type: string

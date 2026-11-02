@@ -1,4 +1,4 @@
-// Entry point: Init once, then use Achievements / Cloud / Friends.
+// Entry point: Init once, then use Achievements / Cloud / Friends / MicroTxn.
 
 using System;
 using System.Collections.Generic;
@@ -344,7 +344,7 @@ public static class CuratedClient
 
     /// <summary>
     /// Initialized client that passed ownership verification. Game-scoped APIs use this so a
-    /// token-only bootstrap cannot reach achievements, stats, Cloud Save, friends, presence, or OpenID.
+    /// token-only bootstrap cannot reach achievements, stats, Cloud Save, friends, presence, OpenID, or purchases.
     /// </summary>
     internal static ClientState GameState
     {

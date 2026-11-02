@@ -89,6 +89,13 @@ test("checkEntitlement and unlock fail before a successful launch", async () => 
   assert.deepEqual(await Curated.refreshStats(), { ok: false, error: "not_launched_by_curated" });
   assert.deepEqual(await Curated.setStat("x", 1), { ok: false, error: "not_launched_by_curated" });
   assert.deepEqual(await Curated.getOpenIdIdToken(), { ok: false, error: "not_launched_by_curated" });
+  assert.deepEqual(await Curated.authorizeTxn(1, 2, true), {
+    ok: false,
+    status: "error",
+    error: "not_launched_by_curated",
+    orderId: 1,
+    transId: 2,
+  });
 });
 
 test("setStat and incrementStat hit the player stats routes", async () => {
@@ -125,6 +132,75 @@ test("setStat and incrementStat hit the player stats routes", async () => {
   assert.equal(inc.previousValue, 3);
   assert.equal(log.at(-1).line, "POST https://api.curated.games/games/app/1002/stats/CardsCreated/increment");
   assert.deepEqual(log.at(-1).body, { delta: 1 });
+});
+
+test("authorizeTxn posts the player decision and never a publisher key", async () => {
+  const log = [];
+  const transport = async (method, url, token, body) => {
+    log.push({ line: `${method} ${url}`, token, body });
+    const path = new URL(url).pathname;
+    if (path === "/auth/me") return { status: 200, text: '{"user_id":"u","username":"p","curated_id":"10000000000000001"}' };
+    if (path === "/library") return { status: 200, text: '[{"app_id":1002,"source":"grant"}]' };
+    if (path === "/ICuratedMicroTxn/AuthorizeTxn/v1/") {
+      const decision = body && body.authorized ? 1 : 0;
+      return {
+        status: 200,
+        text: JSON.stringify({
+          response: { result: "OK", params: { orderid: "55", transid: "77", authorized: decision } },
+        }),
+      };
+    }
+    return { status: 500, text: "" };
+  };
+  const env = {
+    CURATED_LAUNCHER: "1",
+    CURATED_CONTRACT_VERSION: "1",
+    CURATED_APP_ID: "1002",
+    CURATED_SESSION_TOKEN: "tok",
+  };
+  assert.equal((await Curated.initFromLauncher(1002, { env, transport })).ok, true);
+  const authorized = await Curated.authorizeTxn(55, 77, true);
+  assert.deepEqual(authorized, { ok: true, status: "authorized", orderId: 55, transId: 77 });
+  assert.equal(log.at(-1).line, "POST https://api.curated.games/ICuratedMicroTxn/AuthorizeTxn/v1/");
+  assert.equal(log.at(-1).token, "tok");
+  assert.deepEqual(log.at(-1).body, { orderid: 55, transid: 77, appid: 1002, authorized: true });
+  assert.equal("key" in log.at(-1).body, false);
+  assert.equal(JSON.stringify(log.at(-1).body).includes('"key"'), false);
+
+  const denied = await Curated.authorizeTxn(55, 77, false);
+  assert.deepEqual(denied, { ok: true, status: "denied", orderId: 55, transId: 77 });
+  assert.deepEqual(log.at(-1).body, { orderid: 55, transid: 77, appid: 1002, authorized: false });
+});
+
+test("authorizeTxn surfaces a Failure envelope as error", async () => {
+  const transport = async (_method, url) => {
+    const path = new URL(url).pathname;
+    if (path === "/auth/me") return { status: 200, text: '{"user_id":"u","username":"p","curated_id":"10000000000000001"}' };
+    if (path === "/library") return { status: 200, text: '[{"app_id":1002,"source":"grant"}]' };
+    return {
+      status: 200,
+      text: JSON.stringify({
+        response: { result: "Failure", error: { errorcode: 7, errordesc: "Order is not pending" } },
+      }),
+    };
+  };
+  const env = {
+    CURATED_LAUNCHER: "1",
+    CURATED_CONTRACT_VERSION: "1",
+    CURATED_APP_ID: "1002",
+    CURATED_SESSION_TOKEN: "tok",
+  };
+  assert.equal((await Curated.initFromLauncher(1002, { env, transport })).ok, true);
+  const failed = await Curated.authorizeTxn(55, 77, true);
+  assert.deepEqual(failed, {
+    ok: false,
+    status: "error",
+    error: "hub_error",
+    orderId: 55,
+    transId: 77,
+    errorCode: 7,
+    errorDescription: "Order is not pending",
+  });
 });
 
 test("getOpenIdIdToken posts app_id and returns id_token", async () => {

@@ -145,7 +145,7 @@ Copy `CuratedSDK.js` into `js/plugins/`, add it in the Plugin Manager, and set *
 The title screen waits for the ownership check. Unlock achievements with the
 **Unlock achievement** plugin command or `Curated.unlockAchievement("BOSS_1")`.
 
-## 6. C# features (Achievements, stats, Cloud Save, friends, presence, OpenID)
+## 6. C# features (Achievements, stats, Cloud Save, friends, presence, OpenID, purchases)
 
 After `InitFromLauncherAsync` (or `CuratedClient.Init` / `InitAsync` when you already have a
 session). Every init path verifies ownership; game-scoped APIs require `CuratedClient.IsEntitled`:
@@ -168,6 +168,12 @@ await Cloud.SyncOnQuitAsync(saveFolder, "saves/slot1.sav");
 foreach (var friend in await Friends.GetFriendsAsync()) { /* friend.Name, friend.IsOnline */ }
 await Presence.SetAsync("in_game", "Level 3");
 await Presence.HeartbeatAsync();
+
+// In-game purchase. InitTxn and FinalizeTxn stay on the game server (publisher key).
+// The client only authorizes with the player session and never sends that key.
+MicroTxnAuthorization purchase = await MicroTxn.AuthorizeAsync(938473, 374839, authorized: true);
+// purchase.Status is Authorized, Denied, or Error. Same call: Godot authorize_txn,
+// Unreal AuthorizeTxn, RPG Maker authorizeTxn.
 
 // Optional: Unity Authentication (or another OIDC consumer). Never log the token.
 string idToken = await CuratedClient.GetOpenIdIdTokenAsync();

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Player in-game purchase authorization in every engine binding (`MicroTxn.AuthorizeAsync`): begin authorization for an `orderid` / `transid` the game server created, and report authorized, denied, or error. The client calls `POST /ICuratedMicroTxn/AuthorizeTxn/v1/` with the player session. The publisher key is never sent.
+- Rebuilt Unity `Plugins/Curated.Sdk.dll` so the package includes in-game purchase authorization.
+
 ### Changed
 
 - Content Builder uploads depot files via file-level CAS (zstd or identity blobs) instead of packing a zip. `register_build` sends `delivery: cas_files` and per-file codec metadata. CLI flags are unchanged; staging lives under `build-output/.cas-staging` by default.

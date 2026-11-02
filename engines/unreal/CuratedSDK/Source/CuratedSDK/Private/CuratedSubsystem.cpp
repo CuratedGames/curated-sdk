@@ -286,6 +286,182 @@ void UCuratedSubsystem::SetStat(const FString& ApiName, float Value, FCuratedSta
 	}, Body);
 }
 
+namespace
+{
+	bool TryReadMicroTxnId(const TSharedPtr<FJsonObject>& Object, const TCHAR* Field, int64& Out)
+	{
+		if (!Object.IsValid() || !Object->HasField(Field))
+		{
+			return false;
+		}
+		FString Text;
+		if (Object->TryGetStringField(Field, Text))
+		{
+			if (Text.IsEmpty())
+			{
+				return false;
+			}
+			Out = FCString::Atoi64(*Text);
+			return Out > 0;
+		}
+		double Number = 0;
+		if (Object->TryGetNumberField(Field, Number) && Number > 0)
+		{
+			Out = static_cast<int64>(Number);
+			return true;
+		}
+		return false;
+	}
+
+	bool TryReadMicroTxnFlag(const TSharedPtr<FJsonValue>& Value, bool& Out)
+	{
+		if (!Value.IsValid())
+		{
+			return false;
+		}
+		if (Value->Type == EJson::Boolean)
+		{
+			Out = Value->AsBool();
+			return true;
+		}
+		if (Value->Type == EJson::Number)
+		{
+			const double Number = Value->AsNumber();
+			if (Number == 0.0 || Number == 1.0)
+			{
+				Out = Number == 1.0;
+				return true;
+			}
+		}
+		if (Value->Type == EJson::String)
+		{
+			const FString Text = Value->AsString();
+			if (Text == TEXT("0") || Text.Equals(TEXT("false"), ESearchCase::IgnoreCase))
+			{
+				Out = false;
+				return true;
+			}
+			if (Text == TEXT("1") || Text.Equals(TEXT("true"), ESearchCase::IgnoreCase))
+			{
+				Out = true;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	FCuratedMicroTxnAuthorization ReadMicroTxnAuthorization(
+		const FString& Body,
+		int64 OrderId,
+		int64 TransId,
+		bool bSubmitted)
+	{
+		FCuratedMicroTxnAuthorization Result;
+		Result.OrderId = OrderId;
+		Result.TransId = TransId;
+		Result.TransportError = ECuratedLaunchError::None;
+		TSharedPtr<FJsonObject> Root;
+		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Body);
+		const TSharedPtr<FJsonObject>* Response = nullptr;
+		if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid()
+			|| !Root->TryGetObjectField(TEXT("response"), Response) || Response == nullptr || !Response->IsValid())
+		{
+			Result.Status = ECuratedMicroTxnStatus::Error;
+			Result.ErrorDescription = TEXT("Curated returned an unreadable authorization response.");
+			return Result;
+		}
+		FString ResultText;
+		(*Response)->TryGetStringField(TEXT("result"), ResultText);
+		if (ResultText.Equals(TEXT("OK"), ESearchCase::IgnoreCase))
+		{
+			bool bDecision = bSubmitted;
+			const TSharedPtr<FJsonObject>* Params = nullptr;
+			if ((*Response)->TryGetObjectField(TEXT("params"), Params) && Params && Params->IsValid())
+			{
+				int64 Echoed = 0;
+				if (TryReadMicroTxnId(*Params, TEXT("orderid"), Echoed))
+				{
+					Result.OrderId = Echoed;
+				}
+				if (TryReadMicroTxnId(*Params, TEXT("transid"), Echoed))
+				{
+					Result.TransId = Echoed;
+				}
+				if ((*Params)->HasField(TEXT("authorized")))
+				{
+					if (!TryReadMicroTxnFlag((*Params)->TryGetField(TEXT("authorized")), bDecision))
+					{
+						Result.Status = ECuratedMicroTxnStatus::Error;
+						Result.ErrorDescription = TEXT("Curated returned an unreadable authorization response.");
+						return Result;
+					}
+				}
+			}
+			Result.Status = bDecision ? ECuratedMicroTxnStatus::Authorized : ECuratedMicroTxnStatus::Denied;
+			return Result;
+		}
+		Result.Status = ECuratedMicroTxnStatus::Error;
+		Result.ErrorDescription = TEXT("Curated could not authorize the order.");
+		const TSharedPtr<FJsonObject>* Error = nullptr;
+		if ((*Response)->TryGetObjectField(TEXT("error"), Error) && Error && Error->IsValid())
+		{
+			double Code = 0;
+			if ((*Error)->TryGetNumberField(TEXT("errorcode"), Code))
+			{
+				Result.ErrorCode = static_cast<int32>(Code);
+			}
+			FString Description;
+			if ((*Error)->TryGetStringField(TEXT("errordesc"), Description) && !Description.IsEmpty())
+			{
+				Result.ErrorDescription = Description;
+			}
+		}
+		return Result;
+	}
+}
+
+void UCuratedSubsystem::AuthorizeTxn(int64 OrderId, int64 TransId, bool bAuthorized, FCuratedMicroTxnAuthorized OnDone)
+{
+	ECuratedLaunchError ReadyError;
+	if (!RequireReady(ReadyError) || OrderId <= 0 || TransId <= 0)
+	{
+		FCuratedMicroTxnAuthorization Result;
+		Result.Status = ECuratedMicroTxnStatus::Error;
+		Result.OrderId = OrderId;
+		Result.TransId = TransId;
+		Result.TransportError = !bReady ? ReadyError : ECuratedLaunchError::HubError;
+		OnDone.ExecuteIfBound(Result);
+		return;
+	}
+	const FString Body = FString::Printf(
+		TEXT("{\"orderid\":%lld,\"transid\":%lld,\"appid\":%lld,\"authorized\":%s}"),
+		OrderId,
+		TransId,
+		Context.AppId,
+		bAuthorized ? TEXT("true") : TEXT("false"));
+	SendRequest(Context, TEXT("POST"), TEXT("/ICuratedMicroTxn/AuthorizeTxn/v1/"),
+		[OnDone, OrderId, TransId, bAuthorized](ECuratedLaunchError Error, const FString& ResponseBody)
+		{
+			FCuratedMicroTxnAuthorization Result = ReadMicroTxnAuthorization(ResponseBody, OrderId, TransId, bAuthorized);
+			if (Error != ECuratedLaunchError::None && Result.Status != ECuratedMicroTxnStatus::Error)
+			{
+				Result.Status = ECuratedMicroTxnStatus::Error;
+			}
+			if (Error != ECuratedLaunchError::None && Result.ErrorCode == 0 && Result.ErrorDescription.IsEmpty())
+			{
+				Result.TransportError = Error;
+				Result.Status = ECuratedMicroTxnStatus::Error;
+			}
+			else if (Error != ECuratedLaunchError::None && Result.Status == ECuratedMicroTxnStatus::Error
+				&& Result.ErrorDescription == TEXT("Curated returned an unreadable authorization response."))
+			{
+				Result.TransportError = Error;
+				Result.ErrorDescription.Reset();
+			}
+			OnDone.ExecuteIfBound(Result);
+		}, Body);
+}
+
 void UCuratedSubsystem::IncrementStat(const FString& ApiName, float Delta, FCuratedStatWritten OnWritten)
 {
 	const FString Trimmed = ApiName.TrimStartAndEnd();

@@ -99,6 +99,10 @@ public class EntitlementGateTests : IDisposable
             CuratedClient.GetOpenIdIdTokenAsync());
         Assert.Equal(CuratedLaunchError.NotEntitled, openId.Error);
 
+        var purchase = await Assert.ThrowsAsync<CuratedLaunchException>(() =>
+            MicroTxn.AuthorizeAsync(1, 2, true));
+        Assert.Equal(CuratedLaunchError.NotEntitled, purchase.Error);
+
         var setStat = Assert.Throws<CuratedLaunchException>(() => Stats.SetStat("CardsCreated", 1));
         Assert.Equal(CuratedLaunchError.NotEntitled, setStat.Error);
 

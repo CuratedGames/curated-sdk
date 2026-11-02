@@ -18,7 +18,8 @@ the check.
 - Event command **Plugin Command > CuratedSDK > Unlock achievement** (MZ), with the
   achievement's API name.
 - Script calls: `Curated.unlockAchievement("BOSS_1");`, `Curated.setStat("CardsCreated", 10);`,
-  `Curated.incrementStat("CardsCreated", 1);`, `Curated.refreshStats();`
+  `Curated.incrementStat("CardsCreated", 1);`, `Curated.refreshStats();`,
+  `Curated.authorizeTxn(orderId, transId, true);` (player session only; never a publisher key).
 
 `Curated.session` holds `userId`, `curatedId`, `username`, `language` (raw launcher value),
 `gameLanguage`, and `entitlement` once the check succeeds. `Curated.checkEntitlement()`

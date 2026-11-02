@@ -147,6 +147,11 @@ foreach (var friend in await Friends.GetFriendsAsync())
 }
 await Presence.SetAsync("in_game", "Level 3");
 
+// In-game purchase. The game server created the order with InitTxn.
+// The publisher key never enters the client. FinalizeTxn stays on the server.
+MicroTxnAuthorization purchase = await MicroTxn.AuthorizeAsync(938473, 374839, authorized: true);
+// purchase.Status: Authorized, Denied, or Error
+
 Entitlement current = await Entitlements.CheckAsync();
 
 string language = CuratedClient.GetCurrentGameLanguage(); // "en", "es", "it", ...
@@ -159,7 +164,8 @@ Public types: `CuratedClient`, `CuratedSession` (includes `CuratedId`), `Entitle
 `Entitlements`, `LaunchContext`, `GameLanguages`, `GameLanguage`, `CuratedLaunchException`,
 `CuratedLaunchError`, `Achievement`, `Achievements`, `Stat`, `Stats`, `StatUpdate`,
 `StatWriteResult`, `StatStoreResult`, `Cloud`, `CloudSyncResult`, `Friends`,
-`Friend`, `Presence`, `CuratedException`, `LocalAccountSession`. Transport and wire models stay
+`Friend`, `Presence`, `MicroTxn`, `MicroTxnAuthorization`, `MicroTxnAuthorizationStatus`,
+`CuratedException`, `LocalAccountSession`. Transport and wire models stay
 internal. `Curated.Sdk.dll` targets netstandard2.1 and net8.0 and has no third-party
 dependencies.
 
@@ -167,7 +173,10 @@ dependencies.
 holds a session token. Both verify the session and ownership (same as
 `InitFromLauncherAsync`) and leave Curated shut down with `not_entitled` /
 `session_invalid` on failure. Game-scoped APIs (achievements, stats, Cloud Save, friends,
-presence, OpenID) refuse to run until that check succeeds (`CuratedClient.IsEntitled`).
+presence, OpenID, purchase authorization) refuse to run until that check succeeds
+(`CuratedClient.IsEntitled`). `MicroTxn.AuthorizeAsync` posts the player's decision for an
+`orderid` / `transid` the game server created. It uses the player session and never sends a
+publisher key.
 
 ## Content Builder CLI
 
