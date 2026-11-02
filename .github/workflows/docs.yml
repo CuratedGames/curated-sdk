@@ -1,0 +1,61 @@
+# Deploys docs.curated.games (VitePress in docs/) to GitHub Pages.
+# Runs on every push to main and after "Release Curated.Sdk" finishes, so the site always
+# shows the latest release (version and changelog come from GitHub Releases at build time).
+# Needs Settings > Pages > Source = "GitHub Actions". Until that is set, the deploy job fails;
+# it is not part of the CI workflow, so PR checks stay green.
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["Release Curated.Sdk"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - name: Install
+        working-directory: docs
+        run: npm ci
+      - name: Build
+        working-directory: docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build
+      - name: Built site has versions filled in and every snippet
+        run: python3 scripts/check-docs-snippets.py --dist docs/.vitepress/dist
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/.vitepress/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -33,6 +33,8 @@ jobs:
         run: node --test engines/rpgmaker/CuratedSDK.test.mjs
       - name: Check game language tables in every binding
         run: python3 scripts/check-game-languages.py
+      - name: Check public API manifest matches every binding
+        run: python3 scripts/check-public-api.py
       - name: Pack engine bindings
         run: |
           bash scripts/pack-unity-zip.sh "${RUNNER_TEMP}/sdk-unity"
@@ -62,3 +64,31 @@ jobs:
         run: python3 -m unittest test_release_changelog.py test_engine_changelogs.py -v
       - name: Check engine package changelogs are in sync
         run: python3 scripts/engine_changelogs.py --check
+
+  # docs.curated.games: builds on every PR (VitePress fails on dead links) and checks for
+  # hardcoded SDK versions. The "docs updated with API changes" check is docs-required.yml.
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - name: Public API manifest matches every binding
+        run: python3 scripts/check-public-api.py
+      - name: No hardcoded SDK versions in docs
+        run: python3 scripts/check-docs-versions.py
+      - name: Snippet imports point at existing files and regions
+        run: python3 scripts/check-docs-snippets.py
+      - name: Install
+        working-directory: docs
+        run: npm ci
+      - name: Build (generates reference pages, fails on dead links)
+        working-directory: docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build
+      - name: Built site has versions filled in and every snippet
+        run: python3 scripts/check-docs-snippets.py --dist docs/.vitepress/dist

@@ -1,0 +1,223 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Curated.Sdk.Internal;
+using Xunit;
+
+namespace Curated.Sdk.Tests;
+
+/// <summary>
+/// Code shown on docs.curated.games. The docs import the #region blocks below, so every
+/// snippet on the site compiles and runs here. Keep regions short and free of test-only calls.
+/// </summary>
+public class DocsSnippetsTests : IDisposable
+{
+    private const long AppId = 1002;
+
+    public DocsSnippetsTests() => CuratedClient.Shutdown();
+
+    public void Dispose() => CuratedClient.Shutdown();
+
+    private static async Task<string> InitFromLauncher()
+    {
+        // The docs show the launcher path; tests swap the environment for a recorded transport.
+        try
+        {
+            #region init-from-launcher
+            CuratedSession session = await CuratedClient.InitFromLauncherAsync(1002);
+            Console.WriteLine($"Signed in as {session.Username} ({session.CuratedId})");
+            #endregion init-from-launcher
+            return "ok";
+        }
+        catch (CuratedLaunchException e)
+        {
+            #region launch-error
+            // e.Code: not_launched_by_curated, not_entitled, session_invalid, ...
+            Console.WriteLine($"Curated: {e.Code}");
+            #endregion launch-error
+            return e.Code;
+        }
+    }
+
+    [Fact]
+    public async Task Init_snippet_reports_contract_code_outside_the_launcher()
+    {
+        var saved = Environment.GetEnvironmentVariable(LaunchContext.LauncherVariable);
+        Environment.SetEnvironmentVariable(LaunchContext.LauncherVariable, null);
+        try
+        {
+            Assert.Equal("not_launched_by_curated", await InitFromLauncher());
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(LaunchContext.LauncherVariable, saved);
+        }
+    }
+
+    [Fact]
+    public async Task Achievements_snippet_runs()
+    {
+        var transport = new RecordingTransport();
+        CuratedClient.InitForTests(AppId, transport);
+
+        #region achievements
+        await Achievements.RefreshAsync();
+        bool newlyUnlocked = await new Achievement("win_level_1").TriggerAsync();
+        // Or: await Achievements.TriggerAsync("win_level_1");
+        #endregion achievements
+
+        Assert.True(newlyUnlocked);
+        Assert.Contains(transport.Calls, c => c.RelativePath == "/games/app/1002/achievements/win_level_1/unlock");
+    }
+
+    [Fact]
+    public async Task Stats_snippet_runs()
+    {
+        var transport = new RecordingTransport();
+        CuratedClient.InitForTests(AppId, transport);
+
+        #region stats
+        await Stats.RefreshAsync();
+
+        // Steam-style: change local values, then store them in one call.
+        Stats.SetStat("CardsCreated", 10);
+        await Stats.StoreStatsAsync();
+
+        // Or write one stat right away.
+        await Stats.SetStatAsync("CardsCreated", 10);
+        await Stats.IncrementStatAsync("CardsCreated", 1);
+        #endregion stats
+
+        Assert.Contains(transport.Calls, c => c.RelativePath.EndsWith("/stats/CardsCreated/increment", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Cloud_save_snippet_runs()
+    {
+        var transport = new RecordingTransport();
+        CuratedClient.InitForTests(AppId, transport);
+        var saveFolder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "curated-docs-" + Guid.NewGuid().ToString("N"));
+        System.IO.Directory.CreateDirectory(System.IO.Path.Combine(saveFolder, "saves"));
+        System.IO.File.WriteAllText(System.IO.Path.Combine(saveFolder, "saves", "slot1.sav"), "save");
+        try
+        {
+            #region cloud-save
+            // On launch: download newer Cloud Save files into the local save folder.
+            await Cloud.SyncOnLaunchAsync(saveFolder);
+
+            // On quit: upload the files that changed, relative to the same folder.
+            CloudSyncResult uploaded = await Cloud.SyncOnQuitAsync(saveFolder, "saves/slot1.sav");
+            #endregion cloud-save
+
+            Assert.Contains("saves/slot1.sav", uploaded.TransferredPaths);
+        }
+        finally
+        {
+            System.IO.Directory.Delete(saveFolder, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Friends_and_presence_snippet_runs()
+    {
+        CuratedClient.InitForTests(AppId, new RecordingTransport());
+
+        #region friends-presence
+        foreach (Friend friend in await Friends.GetFriendsAsync())
+        {
+            Console.WriteLine($"{friend.Name}: {friend.PresenceStatus}");
+        }
+
+        await Presence.SetAsync("in_game", "Level 3");
+        await Presence.HeartbeatAsync();
+        #endregion friends-presence
+    }
+
+    [Fact]
+    public async Task Entitlement_snippet_runs()
+    {
+        CuratedClient.InitForTests(AppId, new RecordingTransport((method, path, body) =>
+            "[{\"app_id\":1002,\"source\":\"primary\"}]"));
+
+        #region entitlement
+        Entitlement current = await Entitlements.CheckAsync();
+        if (!current.IsEntitled)
+        {
+            // Refunded or revoked during the session.
+        }
+        #endregion entitlement
+
+        Assert.True(current.IsEntitled);
+    }
+
+    [Fact]
+    public async Task Purchase_snippet_runs()
+    {
+        CuratedClient.InitForTests(AppId, new RecordingTransport((method, path, body) => """
+            { "response": { "result": "OK", "params": { "orderid": "938473", "transid": "374839", "authorized": 1 } } }
+            """));
+
+        #region microtxn
+        // The game server created the order with InitTxn and sent orderId / transId to the client.
+        MicroTxnAuthorization purchase = await MicroTxn.AuthorizeAsync(938473, 374839, authorized: true);
+        switch (purchase.Status)
+        {
+            case MicroTxnAuthorizationStatus.Authorized:
+                // Tell the game server; it calls FinalizeTxn with the publisher key.
+                break;
+            case MicroTxnAuthorizationStatus.Denied:
+                break;
+            case MicroTxnAuthorizationStatus.Error:
+                Console.WriteLine($"{purchase.ErrorCode} {purchase.ErrorDescription}");
+                break;
+        }
+        #endregion microtxn
+
+        Assert.Equal(MicroTxnAuthorizationStatus.Authorized, purchase.Status);
+    }
+
+    [Fact]
+    public async Task OpenId_snippet_runs()
+    {
+        CuratedClient.InitForTests(AppId, new RecordingTransport());
+
+        #region openid
+        // Pass it only to your own OpenID Connect consumer. Never log it.
+        string idToken = await CuratedClient.GetOpenIdIdTokenAsync();
+        // Unity: await AuthenticationService.Instance.SignInWithOpenIdConnectAsync("oidc-curated", idToken);
+        #endregion openid
+
+        Assert.False(string.IsNullOrEmpty(idToken));
+    }
+
+    [Fact]
+    public void Game_language_snippet_runs()
+    {
+        #region game-language
+        string language = CuratedClient.GetCurrentGameLanguage();        // "en", "es", "it", "pt-br", ...
+        string steamName = CuratedClient.GetCurrentGameLanguageSteamApiName(); // "english", "spanish", ...
+        #endregion game-language
+
+        #region steam-names
+        string? curated = GameLanguages.FromSteamApiName("latam");   // "es-419"
+        string? steam = GameLanguages.ToSteamApiName("pt-br");       // "brazilian"
+        #endregion steam-names
+
+        Assert.False(string.IsNullOrEmpty(language));
+        Assert.False(string.IsNullOrEmpty(steamName));
+        Assert.Equal("es-419", curated);
+        Assert.Equal("brazilian", steam);
+    }
+
+    [Fact]
+    public void Shutdown_snippet_runs()
+    {
+        CuratedClient.InitForTests(AppId, new RecordingTransport());
+
+        #region shutdown
+        CuratedClient.Shutdown(); // on quit
+        #endregion shutdown
+
+        Assert.False(CuratedClient.IsValid);
+    }
+}

@@ -279,3 +279,50 @@ test("session carries the normalized game language", async () => {
   const without = await Curated.initFromLauncher(1002, { env, transport });
   assert.equal(without.session.gameLanguage, "en");
 });
+
+// Script calls shown on docs.curated.games. The docs import the #region blocks, so every
+// snippet there runs here first.
+test("docs snippets: script calls after the launch check", async () => {
+  const log = [];
+  const transport = async (method, url, _token, body) => {
+    log.push(`${method} ${new URL(url).pathname}`);
+    const path = new URL(url).pathname;
+    if (path === "/auth/me") return { status: 200, text: '{"user_id":"u","username":"p","curated_id":"10000000000000001"}' };
+    if (path === "/library") return { status: 200, text: '[{"app_id":1002,"source":"grant"}]' };
+    if (path.endsWith("/unlock")) return { status: 200, text: '{"newly_unlocked":true}' };
+    if (path.endsWith("/stats/progress")) return { status: 200, text: '{"stats":[]}' };
+    if (path.includes("/stats/")) return { status: 200, text: '{"stat":{"api_name":"CardsCreated","value":10},"previous_value":0}' };
+    if (path === "/ICuratedMicroTxn/AuthorizeTxn/v1/") {
+      return { status: 200, text: JSON.stringify({ response: { result: "OK", params: { orderid: "938473", transid: "374839", authorized: body.authorized ? 1 : 0 } } }) };
+    }
+    return { status: 500, text: "" };
+  };
+  const env = { CURATED_LAUNCHER: "1", CURATED_CONTRACT_VERSION: "1", CURATED_APP_ID: "1002", CURATED_SESSION_TOKEN: "tok" };
+  const ready = await Curated.initFromLauncher(1002, { env, transport });
+  assert.equal(ready.ok, true);
+
+  // #region script-calls
+  const unlocked = await Curated.unlockAchievement("BOSS_1"); // { ok, newlyUnlocked }
+  await Curated.refreshStats(); // { ok, stats }
+  await Curated.setStat("CardsCreated", 10);
+  await Curated.incrementStat("CardsCreated", 1);
+  // #endregion script-calls
+  assert.deepEqual(unlocked, { ok: true, newlyUnlocked: true });
+
+  // #region session
+  const { username, curatedId, gameLanguage } = Curated.session;
+  // #endregion session
+  assert.equal(username, "p");
+  assert.equal(curatedId, "10000000000000001");
+  assert.equal(gameLanguage, "en");
+
+  // #region purchase
+  // orderId and transId come from your game server, which created the order with InitTxn.
+  const purchase = await Curated.authorizeTxn(938473, 374839, true);
+  if (purchase.status === "authorized") {
+    // Tell your game server; it calls FinalizeTxn with the publisher key.
+  }
+  // #endregion purchase
+  assert.equal(purchase.status, "authorized");
+  assert.ok(log.includes("POST /games/app/1002/stats/CardsCreated/increment"));
+});

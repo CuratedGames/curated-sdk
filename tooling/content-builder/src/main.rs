@@ -29,14 +29,17 @@ enum Commands {
         /// Email or username (alias of --email / --username).
         #[arg(long, env = "CURATED_LOGIN")]
         login: Option<String>,
+        /// Email to sign in with (same as --login).
         #[arg(long, env = "CURATED_EMAIL")]
         email: Option<String>,
+        /// Username to sign in with (same as --login).
         #[arg(long, env = "CURATED_USERNAME")]
         username: Option<String>,
         /// Account password. Omit this flag to type it at a prompt.
         /// Bash history-expands ! inside double quotes before this program starts; single quotes pass ! through.
         #[arg(long, env = "CURATED_PASSWORD")]
         password: Option<String>,
+        /// Curated API origin.
         #[arg(long, env = "CURATED_API_BASE", default_value = DEFAULT_API_BASE)]
         api_base: String,
     },
@@ -46,10 +49,13 @@ enum Commands {
     Whoami,
     /// List depots for an app you own.
     ListDepots {
+        /// App id to list depots for. You must own the app.
         #[arg(long)]
         app_id: i64,
+        /// Curated API origin. Default: the one saved by login.
         #[arg(long, env = "CURATED_API_BASE")]
         api_base: Option<String>,
+        /// Session token. Default: the one saved by login.
         #[arg(long, env = "CURATED_TOKEN")]
         token: Option<String>,
     },
@@ -58,19 +64,25 @@ enum Commands {
         /// Path to a TOML build script (see examples/simple_app_build.toml).
         #[arg(long)]
         script: Option<PathBuf>,
+        /// App id to upload to. Required unless set in --script.
         #[arg(long)]
         app_id: Option<i64>,
+        /// Folder with the game files. Required unless set in --script.
         #[arg(long)]
         content: Option<PathBuf>,
+        /// Build version label shown in admin Game Build > Builds. Required unless set in --script.
         #[arg(long)]
         version: Option<String>,
         /// Depot ID `<app_id>_<NN>` (see list-depots). Default: the base depot `<app_id>_00`.
         #[arg(long, env = "CURATED_DEPOT_ID")]
         depot_id: Option<String>,
+        /// Build description.
         #[arg(long)]
         desc: Option<String>,
+        /// File name recorded with the build when it is registered (optional).
         #[arg(long)]
         filename: Option<String>,
+        /// Staging folder; blobs go under `<build-output>/.cas-staging`. Default: `output` next to --content.
         #[arg(long)]
         build_output: Option<PathBuf>,
         /// Chunk size in bytes (64 KiB..32 MiB). Default: adaptive from a short bandwidth probe.
@@ -79,8 +91,10 @@ enum Commands {
         /// Parallel chunk PUTs (1..8). Default: adaptive from measured bandwidth.
         #[arg(long)]
         concurrency: Option<usize>,
+        /// Curated API origin. Default: the one saved by login.
         #[arg(long, env = "CURATED_API_BASE")]
         api_base: Option<String>,
+        /// Session token. Default: the one saved by login.
         #[arg(long, env = "CURATED_TOKEN")]
         token: Option<String>,
     },

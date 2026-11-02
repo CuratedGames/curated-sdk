@@ -6,18 +6,25 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct BuildScript {
+    /// App id to upload to (required).
     pub app_id: i64,
+    /// Build description.
     #[serde(default)]
     pub desc: Option<String>,
+    /// Folder with the game files (required).
     pub content_root: PathBuf,
+    /// Staging folder for upload blobs.
     #[serde(default)]
     pub build_output: Option<PathBuf>,
+    /// Build version label (required).
     pub version: String,
     /// Depot ID `<app_id>_<NN>` (defaults to the base depot `<app_id>_00`).
     #[serde(default)]
     pub depot_id: Option<String>,
+    /// File name recorded with the build (optional).
     #[serde(default)]
     pub filename: Option<String>,
+    /// Depot mappings. The first entry's depot_id is used when the top-level one is missing.
     #[serde(default)]
     pub depots: Vec<DepotMapping>,
 }
@@ -27,10 +34,13 @@ pub struct DepotMapping {
     /// Depot ID `<app_id>_<NN>`.
     #[serde(default)]
     pub depot_id: Option<String>,
+    /// Accepted for script compatibility. The whole content_root is uploaded.
     #[serde(default = "default_local_path")]
     pub local_path: String,
+    /// Accepted for script compatibility. Files keep their paths under content_root.
     #[serde(default = "default_depot_path")]
     pub depot_path: String,
+    /// Accepted for script compatibility. Subfolders are always included.
     #[serde(default = "default_true")]
     pub recursive: bool,
 }
@@ -169,6 +179,16 @@ recursive = true
         let path = dir.path().join("app_build.toml");
         fs::write(&path, body).unwrap();
         (dir, path)
+    }
+
+    /// docs.curated.games shows this example script; keep it loadable.
+    #[test]
+    fn example_script_loads() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/simple_app_build.toml");
+        let script = load_build_script(&path).unwrap();
+        assert_eq!(script.app_id, 1000);
+        assert_eq!(script.depot_id.as_deref(), Some("1000_00"));
+        assert_eq!(script.version, "1.0.0");
     }
 
     #[test]
