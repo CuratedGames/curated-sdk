@@ -1,221 +1,42 @@
 # Curated SDK
 
-Integrate games with [Curated](https://curated.games) on any engine. Full documentation:
-**[docs.curated.games](https://docs.curated.games)**. When the Curated launcher
-starts a game, the game can sign the player in, confirm they own it, and use achievements,
-stats, Cloud Save, friends, and presence. The SDK also includes the Content Builder CLI for depot uploads.
+Integrate games with [Curated](https://curated.games). When the Curated launcher starts a game, the SDK signs the player in, confirms they own the game, and exposes achievements, stats, Cloud Save, friends, presence, and in-game purchases. It includes bindings for Unity, .NET, Godot 4, Unreal Engine 5, and RPG Maker MZ / MV, plus the Content Builder CLI for depot uploads.
 
-This repository is **source-available under the [Curated SDK License](LICENSE.md)**. It is **not**
-an open-source license: you may use the official packages in your game, but you may not republish
-the SDK source as your own toolkit or competing middleware. See [LICENSE.md](LICENSE.md).
+Guides, install steps, and the API reference are at **[docs.curated.games](https://docs.curated.games)**.
 
-## Download and install
+This repository is source-available under the [Curated SDK License](LICENSE.md). It is not an open-source license. See [License](#license).
 
-| Engine | Install |
-|--------|---------|
-| Unity 2021.3+ | Add `com.curatedgames.sdk` from this GitHub repo via Package Manager ([details](engines/unity/com.curatedgames.sdk)) |
-| Godot 4 | Download `curated-godot-<version>.zip` from [Releases](https://github.com/CuratedGames/curated-sdk/releases), unzip into the project root, enable the plugin ([details](engines/godot)) |
-| Unreal Engine 5 | Download `curated-unreal-<version>.zip` from Releases, unzip into `Plugins/` ([details](engines/unreal)) |
-| RPG Maker MZ / MV | Copy `CuratedSDK.js` from Releases (or `engines/rpgmaker/`) into `js/plugins/` ([details](engines/rpgmaker)) |
-| .NET (Godot C#, MonoGame, Stride, tools) | Download `Curated.Sdk.<version>.nupkg` or `Curated.Sdk.dll` from Releases, or build [Curated.Sdk](Curated.Sdk) |
-| Any other engine | Implement [contracts](contracts) yourself |
-| Depot uploads | Content Builder binary from Releases, or build [tooling/content-builder](tooling/content-builder) |
+## Documentation
 
-There is no nuget.org package and no private package feed.
+| Topic | Page |
+| --- | --- |
+| Install and what every binding does | [SDK overview](https://docs.curated.games/guide/) |
+| Unity | [Unity](https://docs.curated.games/guide/unity) |
+| .NET (C#) | [.NET](https://docs.curated.games/guide/dotnet) |
+| Godot 4 | [Godot 4](https://docs.curated.games/guide/godot) |
+| Unreal Engine 5 | [Unreal Engine 5](https://docs.curated.games/guide/unreal) |
+| RPG Maker MZ / MV | [RPG Maker](https://docs.curated.games/guide/rpgmaker) |
+| Launch contract and error codes | [Launch contract](https://docs.curated.games/guide/launch-contract) |
+| Testing outside the launcher | [Testing outside the launcher](https://docs.curated.games/guide/testing) |
+| Dedicated server builds | [Unity](https://docs.curated.games/guide/unity#dedicated-server-and-webgl), [Godot 4](https://docs.curated.games/guide/godot#dedicated-servers), [Unreal Engine 5](https://docs.curated.games/guide/unreal#install) |
+| Achievements and stats | [Achievements and stats](https://docs.curated.games/guide/achievements-stats) |
+| Game language | [Game language](https://docs.curated.games/guide/game-language) |
+| Cloud Save, friends, and presence | [Cloud Save, friends, presence](https://docs.curated.games/guide/cloud-friends-presence) |
+| In-game purchases | [In-game purchases](https://docs.curated.games/guide/purchases) |
+| OpenID Connect | [OpenID Connect](https://docs.curated.games/guide/openid) |
+| Migrating from Steam | [Migrating from Steam](https://docs.curated.games/guide/migrating-from-steam) |
+| Content Builder | [Content Builder](https://docs.curated.games/guide/content-builder) |
+| API reference | [Overview](https://docs.curated.games/reference/) |
+| .NET API | [.NET reference](https://docs.curated.games/reference/dotnet) |
+| Unity API | [Unity reference](https://docs.curated.games/reference/unity) |
+| Godot API | [Godot reference](https://docs.curated.games/reference/godot) |
+| Unreal API | [Unreal reference](https://docs.curated.games/reference/unreal) |
+| RPG Maker API | [RPG Maker reference](https://docs.curated.games/reference/rpgmaker) |
+| Content Builder CLI | [CLI reference](https://docs.curated.games/reference/content-builder) |
+| Language codes | [Game languages](https://docs.curated.games/reference/languages) |
+| Release notes | [Changelog](https://docs.curated.games/changelog) |
 
-### Unity (Git URL)
-
-In `Packages/manifest.json` (replace the `#` fragment with a tag, branch, or commit):
-
-```json
-{
-  "dependencies": {
-    "com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.4.0"
-  }
-}
-```
-
-Or **Window > Package Manager > + > Add package from git URL…** and paste that same URL.
-See [engines/unity/com.curatedgames.sdk](engines/unity/com.curatedgames.sdk) for tarball and usage details.
-
-## How it works
-
-The Curated launcher starts the game with a few environment variables
-([launch contract v1](contracts/launch-contract.md)): app id, the player's session, the API
-address, and the player's language. The SDK reads them, calls `GET /auth/me` to verify the
-session and `GET /library` to confirm ownership, and returns a session or a stable error code:
-
-| Code | Meaning | Typical handling |
-|------|---------|------------------|
-| `not_launched_by_curated` | Started outside the launcher | Show "Start from Curated" and quit |
-| `unsupported_contract_version` | Contract below the game minimum, or invalid | Update the launcher, or the game after an old contract is retired |
-| `app_mismatch` | Launched for a different app id | Quit |
-| `session_invalid` | Session expired or signed out | Ask the player to sign in again in Curated |
-| `not_entitled` | Player does not own the game | Quit |
-| `network_error` | Curated unreachable | Retry or allow offline play |
-| `hub_error` | Unexpected server response | Retry later |
-
-Every binding is checked against the same fixtures,
-[contracts/fixtures/conformance.v1.json](contracts/fixtures/conformance.v1.json) and
-[contracts/fixtures/game-language.v1.json](contracts/fixtures/game-language.v1.json).
-
-### Game language
-
-Every binding returns the game language the player selected in the Curated launcher: the
-launcher's client language, the same language the launcher uses to download language depots, as
-a lowercase Curated code (`en`, `es`, `it`, `pt-br`, …). It returns `en` when the game runs
-outside the launcher. Call it before or without `InitFromLauncher`.
-
-| Binding | Method |
-|---------|--------|
-| .NET / Unity | `CuratedClient.GetCurrentGameLanguage()` / `CuratedUnity.GetCurrentGameLanguage()` |
-| Godot | `Curated.get_current_game_language()` |
-| Unreal | `UCuratedSubsystem::GetCurrentGameLanguage()` |
-| RPG Maker | `Curated.getCurrentGameLanguage()` |
-
-If you are porting a game that already uses Steam language API names, see
-[Migrating from Steam](#migrating-from-steam).
-
-## Getting started
-
-Unity:
-
-```csharp
-#if !UNITY_SERVER && !UNITY_WEBGL
-try
-{
-    CuratedSession session = await CuratedUnity.InitFromLauncherAsync(1002);
-    // session.Username, session.CuratedId, session.Entitlement
-}
-catch (CuratedLaunchException e)
-{
-    Debug.LogWarning(e.Code);
-    Application.Quit();
-}
-#endif
-```
-
-In the Unity Editor, `InitFromLauncherAsync` can use the account signed in to a running Curated
-launcher when launch variables are missing. Player builds still return `not_launched_by_curated`.
-
-Godot:
-
-```gdscript
-var result: Dictionary = await Curated.init_from_launcher(1002)
-```
-
-Unreal (C++ or Blueprint): `GetSubsystem<UCuratedSubsystem>()->InitFromLauncher(1002)`, then
-handle `OnLaunchCompleted`.
-
-RPG Maker: add `CuratedSDK.js` in the Plugin Manager and set the app id.
-
-.NET:
-
-```csharp
-CuratedSession session = await CuratedClient.InitFromLauncherAsync(1002);
-// ...
-CuratedClient.Shutdown();
-```
-
-Each engine folder has a README with details. To test outside the launcher, set the variables
-from the [launch contract](contracts/launch-contract.md#development-without-the-launcher) yourself.
-
-### Dedicated servers
-
-Curated code is never built into dedicated servers: the Unity DLL and helper assembly carry
-`!UNITY_SERVER`, the Unreal module denies `Server` targets, and the Godot addon does nothing
-in `dedicated_server` exports.
-
-## C# API (.NET and Unity)
-
-```csharp
-await Achievements.RefreshAsync();
-await new Achievement("win_level_1").TriggerAsync();
-
-await Stats.RefreshAsync();
-Stats.SetStat("CardsCreated", 10);          // local (Steam-style)
-await Stats.StoreStatsAsync();              // POST /stats/store
-// Or write immediately:
-await Stats.SetStatAsync("CardsCreated", 10);
-await Stats.IncrementStatAsync("CardsCreated", 1);
-
-await Cloud.SyncOnLaunchAsync(saveFolder);
-await Cloud.SyncOnQuitAsync(saveFolder, "saves/slot1.sav");
-
-foreach (var friend in await Friends.GetFriendsAsync())
-{
-    Console.WriteLine($"{friend.Name}: {friend.PresenceStatus}");
-}
-await Presence.SetAsync("in_game", "Level 3");
-
-// In-game purchase. The game server created the order with InitTxn.
-// The publisher key never enters the client. FinalizeTxn stays on the server.
-MicroTxnAuthorization purchase = await MicroTxn.AuthorizeAsync(938473, 374839, authorized: true);
-// purchase.Status: Authorized, Denied, or Error
-
-Entitlement current = await Entitlements.CheckAsync();
-
-string language = CuratedClient.GetCurrentGameLanguage(); // "en", "es", "it", ...
-
-// Optional: Unity Authentication (provider oidc-curated). Never log the token.
-string idToken = await CuratedClient.GetOpenIdIdTokenAsync();
-```
-
-Public types: `CuratedClient`, `CuratedSession` (includes `CuratedId`), `Entitlement`,
-`Entitlements`, `LaunchContext`, `GameLanguages`, `GameLanguage`, `CuratedLaunchException`,
-`CuratedLaunchError`, `Achievement`, `Achievements`, `Stat`, `Stats`, `StatUpdate`,
-`StatWriteResult`, `StatStoreResult`, `Cloud`, `CloudSyncResult`, `Friends`,
-`Friend`, `Presence`, `MicroTxn`, `MicroTxnAuthorization`, `MicroTxnAuthorizationStatus`,
-`CuratedException`, `LocalAccountSession`. Transport and wire models stay
-internal. `Curated.Sdk.dll` targets netstandard2.1 and net8.0 and has no third-party
-dependencies.
-
-`CuratedClient.Init(appId, sessionToken)` / `InitAsync` are available when the game already
-holds a session token. Both verify the session and ownership (same as
-`InitFromLauncherAsync`) and leave Curated shut down with `not_entitled` /
-`session_invalid` on failure. Game-scoped APIs (achievements, stats, Cloud Save, friends,
-presence, OpenID, purchase authorization) refuse to run until that check succeeds
-(`CuratedClient.IsEntitled`). `MicroTxn.AuthorizeAsync` posts the player's decision for an
-`orderid` / `transid` the game server created. It uses the player session and never sends a
-publisher key.
-
-## Content Builder CLI
-
-Windows-first tool to upload depot builds for apps you own. Prefer the prebuilt binary from
-Releases, or build it:
-
-```bat
-cd tooling\content-builder
-cargo build --release
-curated-content-builder.exe login --login you@studio.com --password "..."
-curated-content-builder.exe list-depots --app-id 1000
-curated-content-builder.exe upload --app-id 1000 --depot-id 1000_00 --content C:\game\content --version 1.2.3
-```
-
-Depots use depot ID `<app_id>_<NN>` (`1000_00` is the base depot; see `list-depots` or admin
-**Game Build > Depots**). `--depot-key` is no longer accepted.
-
-See [tooling/content-builder/README.md](tooling/content-builder/README.md) and [Agents.md](Agents.md).
-
-## Migrating from Steam
-
-Curated language codes are short tags such as `en`, `es`, `it`, `pt-br`. Steam's client API uses
-different names (`english`, `spanish`, `italian`, `brazilian`, …). If you already call Steam's
-`GetCurrentGameLanguage` (or keep tables keyed by those names), use the Steam-name helpers instead
-of maintaining your own mapping:
-
-| Binding | Steam-compatible name |
-|---------|------------------------|
-| .NET / Unity | `CuratedClient.GetCurrentGameLanguageSteamApiName()` |
-| Godot | `Curated.get_current_game_language_steam_api_name()` |
-| Unreal | `UCuratedSubsystem::GetCurrentGameLanguageSteamApiName()` |
-| RPG Maker | `Curated.getCurrentGameLanguageSteamApiName()` |
-
-In C#, `GameLanguages.ToSteamApiName("pt-br")` is `brazilian`, and
-`GameLanguages.FromSteamApiName("latam")` is `es-419`. Keep other storefront SDKs behind your
-existing compile flags and add Curated in parallel.
-
-## Build, test, pack
+## Developing this package
 
 ```bash
 dotnet test Curated.Sdk.sln --configuration Release
@@ -229,30 +50,21 @@ bash scripts/pack-engines.sh artifacts/sdk-unity/publish/Curated.Sdk.dll artifac
 cd tooling/content-builder && cargo test && cargo build --release
 ```
 
-Godot and Unreal tests run inside the engine (see their READMEs).
+Godot and Unreal tests run inside the engine. See [Godot 4](https://docs.curated.games/guide/godot#tests) and [Unreal Engine 5](https://docs.curated.games/guide/unreal#tests).
 
-## Documentation site
+### Documentation site
 
-[docs.curated.games](https://docs.curated.games) is built with VitePress from [`docs/`](docs).
-It shows the latest release only and is deployed to GitHub Pages by
-[`.github/workflows/docs.yml`](.github/workflows/docs.yml) on every push to `main` and after each
-release.
+[docs.curated.games](https://docs.curated.games) is VitePress built from [`docs/`](docs). It shows the latest release only and is deployed by [`.github/workflows/docs.yml`](.github/workflows/docs.yml) on every push to `main` and after each release.
 
 ```bash
 cd docs && npm install && npm run dev   # http://localhost:5173
 ```
 
-`npm run build` first runs `scripts/docs_gen.py`, which writes the pages nobody edits by hand
-(they are gitignored): the API reference (from `contracts/public-api.v1.json`), the Content
-Builder CLI reference (parsed from `tooling/content-builder/src`), the language table (from the
-fixture), the changelog (from GitHub Releases, or `CHANGELOG.md` offline), and the SDK version.
+`npm run build` runs `scripts/docs_gen.py` first. That script writes the pages nobody edits by hand (they are gitignored): the API reference (from `contracts/public-api.v1.json`), the Content Builder CLI reference (parsed from `tooling/content-builder/src`), the language table (from the fixture), the changelog (from GitHub Releases, or `CHANGELOG.md` offline), and the SDK version.
 
-Write `%SDK_VERSION%` / `%SDK_TAG%` instead of a version number. Import code from files CI runs
-(`<<< @/../Curated.Sdk.Tests/DocsSnippetsTests.cs#region-name`) instead of pasting it. Embed
-videos with `<VideoEmbed src="https://www.youtube.com/watch?v=..." title="..." />` (YouTube or an
-MP4/WebM URL; never commit video files).
+Write `%SDK_VERSION%` / `%SDK_TAG%` instead of a version number. Import code from files CI runs (`<<< @/../Curated.Sdk.Tests/DocsSnippetsTests.cs#region-name`) instead of pasting it. Embed videos with `<VideoEmbed src="https://www.youtube.com/watch?v=..." title="..." />` (YouTube or an MP4/WebM URL; never commit video files).
 
-### What fails CI when docs drift
+#### What fails CI when docs drift
 
 | Check | Fails when | Fix |
 |-------|------------|-----|
@@ -265,43 +77,28 @@ MP4/WebM URL; never commit video files).
 | `check-admin-docs.mjs` in CuratedGames/curated | A **bold** UI label in `docs/admin` is gone from the admin app, or an admin route has no docs page | Update `docs/admin` here (merge first), then the route map there |
 | `check-docs-brand.mjs` in CuratedGames/curated | A store color token, font, or brand file differs from `docs/.vitepress/theme/brand.css` or `docs/public/brand` | In curated run `node scripts/check-docs-brand.mjs --docs ../curated-sdk/docs --write`, then open a PR here |
 
-Godot and Unreal snippets are not compiled in CI (no engine install). Their public functions are
-still checked by the manifest, and their language tables by `check-game-languages.py`.
+Godot and Unreal snippets are not compiled in CI (no engine install). Their public functions are still checked by the manifest, and their language tables by `check-game-languages.py`.
 
-## Changelog
+### Changelog
 
-Releases follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) in
-[CHANGELOG.md](CHANGELOG.md). When you bump `<Version>` in `Curated.Sdk.csproj` (and the
-matching Unity `package.json`) and merge to `main`, the Release workflow:
+Releases follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) in [CHANGELOG.md](CHANGELOG.md). Published notes are on the [changelog](https://docs.curated.games/changelog).
 
-1. Promotes any bullets under `[Unreleased]`, or if that section is empty, generates entries
-   from commits since the previous `v*` tag with [git-cliff](https://github.com/orhun/git-cliff)
-   (`cliff.toml`).
-2. Writes the version section into `CHANGELOG.md` and attaches those notes to the GitHub
-   Release for `v<version>`.
-3. Regenerates each engine package `CHANGELOG.md` (Unity, Godot, Unreal, RPG Maker) via
-   `scripts/engine_changelogs.py`, filtering to engine-specific and shared SDK notes so Unity
-   Package Manager can show version history. Content Builder / tooling-only bullets are omitted
-   unless they affect that package.
+When you bump `<Version>` in `Curated.Sdk.csproj` (and the matching Unity `package.json`) and merge to `main`, the Release workflow:
+
+1. Promotes any bullets under `[Unreleased]`, or if that section is empty, generates entries from commits since the previous `v*` tag with [git-cliff](https://github.com/orhun/git-cliff) (`cliff.toml`).
+2. Writes the version section into `CHANGELOG.md` and attaches those notes to the GitHub Release for `v<version>`.
+3. Regenerates each engine package `CHANGELOG.md` (Unity, Godot, Unreal, RPG Maker) via `scripts/engine_changelogs.py`, filtering to engine-specific and shared SDK notes so Unity Package Manager can show version history. Content Builder / tooling-only bullets are omitted unless they affect that package.
 
 **How to add notes for the next release**
 
-- Preferred for features and fixes: put a Keep a Changelog bullet under `## [Unreleased]` in
-  `CHANGELOG.md` (use `### Added` / `### Changed` / `### Fixed` / …).
-- Or name the PR / commit with a prefix the cliff parsers understand: `[Feature]`,
-  `[Bugfix]`, `[Docs]`, `[Chore]`, or conventional `feat:` / `fix:` / `docs:` / `chore:`.
-- Do not hand-edit `engines/**/CHANGELOG.md`; CI checks they match the filter. Regenerate with
-  `python3 scripts/engine_changelogs.py --write`.
+- Preferred for features and fixes: put a Keep a Changelog bullet under `## [Unreleased]` in `CHANGELOG.md` (use `### Added` / `### Changed` / `### Fixed` / …).
+- Or name the PR / commit with a prefix the cliff parsers understand: `[Feature]`, `[Bugfix]`, `[Docs]`, `[Chore]`, or conventional `feat:` / `fix:` / `docs:` / `chore:`.
+- Do not hand-edit `engines/**/CHANGELOG.md`; CI checks they match the filter. Regenerate with `python3 scripts/engine_changelogs.py --write`.
 
-Do not hand-edit past released sections unless you are correcting a mistake. Version tags stay
-`vMAJOR.MINOR.PATCH` (Unity Git URL installs use that fragment).
+Do not hand-edit past released sections unless you are correcting a mistake. Version tags stay `vMAJOR.MINOR.PATCH`.
 
 ## License
 
-See [LICENSE.md](LICENSE.md). Ship the official packages (DLL, NuGet `.nupkg` from Releases, and
-the engine bindings in `engines/`) only as part of your game. Never log or store the player's
-session token, and send it only to the Curated API address the launcher provides.
+See [LICENSE.md](LICENSE.md). Ship the official packages (DLL, NuGet `.nupkg` from Releases, and the engine bindings in `engines/`) only as part of your game. Never log or store the player's session token, and send it only to the Curated API address the launcher provides.
 
-Copyright (c) Margherita Roncone, licensed to Fatum Games SL (Business ID: B21832985), Calle
-Mediodia 7, 35015, Las Palmas De Gran Canaria, Las Palmas, Spain. Curated and Curated Games are
-trademarks of Margherita Roncone, licensed to Fatum Games SL. Support: support@curated.games.
+Copyright (c) Margherita Roncone, licensed to Fatum Games SL (Business ID: B21832985), Calle Mediodia 7, 35015, Las Palmas De Gran Canaria, Las Palmas, Spain. Curated and Curated Games are trademarks of Margherita Roncone, licensed to Fatum Games SL. Support: support@curated.games.
