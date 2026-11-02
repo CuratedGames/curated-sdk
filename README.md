@@ -263,6 +263,7 @@ MP4/WebM URL; never commit video files).
 | `scripts/check-docs-snippets.py` (`docs` job) | An imported snippet file or `#region` is gone, or the built site still has a `%SDK_VERSION%` token | Fix the import or restore the region |
 | `dotnet test`, `node --test`, `cargo test` | A docs snippet no longer compiles or runs | Fix the code in the test file; the page updates itself |
 | `check-admin-docs.mjs` in CuratedGames/curated | A **bold** UI label in `docs/admin` is gone from the admin app, or an admin route has no docs page | Update `docs/admin` here (merge first), then the route map there |
+| `check-docs-brand.mjs` in CuratedGames/curated | A store color token, font, or brand file differs from `docs/.vitepress/theme/brand.css` or `docs/public/brand` | In curated run `node scripts/check-docs-brand.mjs --docs ../curated-sdk/docs --write`, then open a PR here |
 
 Godot and Unreal snippets are not compiled in CI (no engine install). Their public functions are
 still checked by the manifest, and their language tables by `check-game-languages.py`.
