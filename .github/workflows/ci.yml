@@ -78,18 +78,18 @@ jobs:
         run: python3 scripts/check-public-api.py
       - name: No hardcoded SDK versions in docs
         run: python3 scripts/check-docs-versions.py
+      - name: Snippet imports point at existing files and regions
+        run: python3 scripts/check-docs-snippets.py
       - name: Install
         working-directory: docs
         run: if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
-      - name: Upload resolved lockfile
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: docs-package-lock
-          path: docs/package-lock.json
-          if-no-files-found: ignore
+      - name: Print resolved lockfile (one-off, to commit it)
+        working-directory: docs
+        run: echo "LOCKFILE_B64_BEGIN"; gzip -c package-lock.json | base64 -w0; echo; echo "LOCKFILE_B64_END"
       - name: Build (generates reference pages, fails on dead links)
         working-directory: docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build
+      - name: Built site has versions filled in and every snippet
+        run: python3 scripts/check-docs-snippets.py --dist docs/.vitepress/dist

@@ -259,7 +259,8 @@ MP4/WebM URL; never commit video files).
 | `scripts/check-public-api.py` (`engines`, `docs` jobs) | A binding has a public member missing from `contracts/public-api.v1.json`, the manifest lists a member that no longer exists, or a description is empty | `python3 scripts/check-public-api.py --write`, then replace each `TODO` |
 | `scripts/check-docs-updated.py` (`Docs required` workflow) | A PR changes a public API signature or a Content Builder command/flag/script field but touches neither `docs/` nor the manifest | Update the docs, or add the `docs-not-needed` label |
 | `scripts/check-docs-versions.py` (`docs` job) | An authored docs page contains a released version or a `vX.Y.Z` tag | Use `%SDK_VERSION%` / `%SDK_TAG%` |
-| `npm run build` (`docs` job) | A link points at a missing page, or an imported `#region` is gone | Fix the link or the region |
+| `npm run build` (`docs` job) | A link points at a missing page | Fix the link |
+| `scripts/check-docs-snippets.py` (`docs` job) | An imported snippet file or `#region` is gone, or the built site still has a `%SDK_VERSION%` token | Fix the import or restore the region |
 | `dotnet test`, `node --test`, `cargo test` | A docs snippet no longer compiles or runs | Fix the code in the test file; the page updates itself |
 | `check-admin-docs.mjs` in CuratedGames/curated | A **bold** UI label in `docs/admin` is gone from the admin app, or an admin route has no docs page | Update `docs/admin` here (merge first), then the route map there |
 
