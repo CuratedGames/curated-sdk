@@ -69,7 +69,7 @@ See [.NET](./dotnet#features) for tested examples, and:
 
 - [Achievements and stats](./achievements-stats)
 - [Game language](./game-language): `CuratedUnity.GetCurrentGameLanguage()`
-- [In-game purchases](./purchases)
+- [In-app purchases / Microtransactions](./purchases)
 - [OpenID Connect](./openid): `CuratedUnity.GetOpenIdIdTokenAsync()` for Unity Authentication
 
 ## Dedicated server and WebGL
