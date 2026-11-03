@@ -10,7 +10,56 @@ The samples under [Game client](#game-client) are that overlay handoff. Which Cu
 
 The player, the game, your server, and Curated each do a different job.
 
-    The game client asks the server to start an order, the server calls `InitTxn` with the publisher key on either the live or sandbox base, the client asks the Curated launcher overlay to confirm the purchase, and the launcher calls AuthorizeTxn on that same live or sandbox path. Then the server calls FinalizeTxn on the same base it used to start the order. Live orders move wallet funds. Sandbox orders do not.Game clientGame serverCuratedPlayer decides herePublisher key stays hereLive or sandbox base1. Start orderNo publisher key2. InitTxnKey + chosen base3. orderId and transId4. Overlay purchase handoff.5. Authorized, denied, or error6. FinalizeTxnSame base as InitTxnLive: wallet reserved at InitTxn, captured at FinalizeTxn.Sandbox: same statuses, no wallet movement.
+<div class="purchase-flow">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 560" role="img" aria-labelledby="purchase-flow-title purchase-flow-desc">
+  <title id="purchase-flow-title">In-app purchase flow across the game client, the game server, and Curated</title>
+  <desc id="purchase-flow-desc">The game client asks the server to start an order, the server calls InitTxn with the publisher key on either the live or sandbox base, the client asks the Curated launcher overlay to confirm the purchase, and the launcher calls AuthorizeTxn on that same live or sandbox path. Then the server calls FinalizeTxn on the same base it used to start the order. Live orders move wallet funds. Sandbox orders do not.</desc>
+  <style>
+    .pf-box { fill: var(--curated-bg-deep); stroke: var(--curated-line-soft); }
+    .pf-title { fill: var(--curated-fg-bright); font: 600 15px "Source Sans 3", sans-serif; }
+    .pf-line { stroke: var(--curated-faint); stroke-width: 1.5; }
+    .pf-arrow { stroke: var(--curated-accent); stroke-width: 1.6; fill: none; }
+    .pf-label { fill: var(--curated-fg); font: 13px "Source Sans 3", sans-serif; }
+    .pf-note { fill: var(--curated-muted); font: 12px "Source Sans 3", sans-serif; }
+  </style>
+  <rect class="pf-box" x="16" y="16" width="200" height="40" rx="8"/>
+  <rect class="pf-box" x="280" y="16" width="200" height="40" rx="8"/>
+  <rect class="pf-box" x="544" y="16" width="200" height="40" rx="8"/>
+  <text class="pf-title" x="116" y="42" text-anchor="middle">Game client</text>
+  <text class="pf-title" x="380" y="42" text-anchor="middle">Game server</text>
+  <text class="pf-title" x="644" y="42" text-anchor="middle">Curated</text>
+  <line class="pf-line" x1="116" y1="64" x2="116" y2="500"/>
+  <line class="pf-line" x1="380" y1="64" x2="380" y2="500"/>
+  <line class="pf-line" x1="644" y1="64" x2="644" y2="500"/>
+  <text class="pf-note" x="116" y="84" text-anchor="middle">Player decides here</text>
+  <text class="pf-note" x="380" y="84" text-anchor="middle">Publisher key stays here</text>
+  <text class="pf-note" x="644" y="84" text-anchor="middle">Live or sandbox base</text>
+  <polyline class="pf-arrow" points="124,118 368,118" marker-end="url(#pf-head)"/>
+  <text class="pf-label" x="246" y="110" text-anchor="middle">1. Start order</text>
+  <text class="pf-note" x="246" y="136" text-anchor="middle">No publisher key</text>
+  <polyline class="pf-arrow" points="388,176 632,176" marker-end="url(#pf-head)"/>
+  <text class="pf-label" x="510" y="168" text-anchor="middle">2. InitTxn</text>
+  <text class="pf-note" x="510" y="194" text-anchor="middle">Key + chosen base</text>
+  <polyline class="pf-arrow" points="632,236 388,236" marker-end="url(#pf-head)"/>
+  <polyline class="pf-arrow" points="368,268 124,268" marker-end="url(#pf-head)"/>
+  <text class="pf-label" x="380" y="258" text-anchor="middle">3. orderId and transId</text>
+  <polyline class="pf-arrow" points="124,330 632,330" marker-end="url(#pf-head)"/>
+  <text class="pf-label" x="378" y="322" text-anchor="middle">4. Overlay purchase handoff</text>
+  <text class="pf-note" x="378" y="348" text-anchor="middle">Not an HTTP call. Not the sandbox switch.</text>
+  <polyline class="pf-arrow" points="124,392 368,392" marker-end="url(#pf-head)"/>
+  <text class="pf-label" x="246" y="384" text-anchor="middle">5. Authorized, denied, or error</text>
+  <polyline class="pf-arrow" points="388,444 632,444" marker-end="url(#pf-head)"/>
+  <text class="pf-label" x="510" y="436" text-anchor="middle">6. FinalizeTxn</text>
+  <text class="pf-note" x="510" y="462" text-anchor="middle">Same base as InitTxn</text>
+  <text class="pf-note" x="380" y="520" text-anchor="middle">Live: wallet reserved at InitTxn, captured at FinalizeTxn.</text>
+  <text class="pf-note" x="380" y="538" text-anchor="middle">Sandbox: same statuses, no wallet movement.</text>
+  <defs>
+    <marker id="pf-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.2 L 9 5 L 0 8.8 z" fill="var(--curated-accent)"/>
+    </marker>
+  </defs>
+</svg>
+</div>
 
 GetUserInfo, QueryTxn, and RefundTxn are further server calls on that same base. They are not
 part of the client samples.
