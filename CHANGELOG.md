@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Document that InitTxn accepts one listed currency and converts it into the player's wallet currency. `MicroTxn.AuthorizeAsync` still only reports the player's decision for that converted reserve.
+
 ## [1.6.0] - 2026-11-02
 
 ### Added

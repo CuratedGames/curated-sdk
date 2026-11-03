@@ -368,9 +368,11 @@ paths:
       summary: Authorize or deny a pending in-game purchase
       description: |
         Player-session call. The game server creates the order with InitTxn (publisher key,
-        which the game never has) and passes `orderid` and `transid` to the client. This call
-        records the signed-in player's decision. It does not capture the wallet reserve; the
-        game server calls FinalizeTxn after the player authorizes.
+        which the game never has) and passes `orderid` and `transid` to the client. InitTxn
+        takes one listed currency. When that is not the player's wallet currency, Curated
+        converts the amount with the automatic regional rates and reserves the converted
+        price. This call records the signed-in player's decision. It does not capture the
+        wallet reserve; the game server calls FinalizeTxn after the player authorizes.
 
         Authenticate with the launcher session bearer token only. Do not send a publisher
         `key` query parameter or body field.

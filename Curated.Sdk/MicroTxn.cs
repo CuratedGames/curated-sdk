@@ -69,7 +69,8 @@ public static class MicroTxn
     /// <remarks>
     /// Calls <c>POST /ICuratedMicroTxn/AuthorizeTxn/v1/</c> with the player session bearer token.
     /// There is no publisher <c>key</c> parameter. The game server still calls FinalizeTxn after
-    /// the player authorizes.
+    /// the player authorizes. InitTxn may have converted the game's listed price into the
+    /// player's wallet currency; this call confirms that converted reserve.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">
     /// <paramref name="orderId"/> or <paramref name="transId"/> is not positive.

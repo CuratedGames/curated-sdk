@@ -107,6 +107,10 @@ The server holds the publisher key and chooses the API base.
 Both bases have the same methods: GetUserInfo, InitTxn, AuthorizeTxn, FinalizeTxn, QueryTxn, and
 RefundTxn. Call them from the server. The in-game samples above do not call the sandbox base.
 
+### Currency
+
+List each item in one currency. Send that ISO code as `currency` and the price as `amount[0]` in that currency's minor units: cents for USD and EUR, whole units for COP and JPY. Curated charges that amount when it is already the player's wallet currency. When it is not, InitTxn converts it with the same automatic regional rates as store prices and reserves the converted amount in the wallet currency. The InitTxn response includes that charge as `currency` and `amount`. A US$5.99 item (`currency=USD`, `amount[0]=599`) stays 599 US cents for a US wallet, becomes the euro equivalent for a euro wallet, and becomes the peso equivalent for a Colombian wallet. Do not send a second price table.
+
 ### Sandbox
 
 Use the sandbox for integration tests. The sandbox base is a server setting: point InitTxn,
@@ -171,7 +175,8 @@ public class CuratedPurchases
     {
         Secret key = await gameApiClient.SecretManager.GetSecret(context, "CURATED_PUBLISHER_KEY");
         string url = "https://api.curated.games" + BasePath + "/InitTxn/v1/";
-        // POST url. Authenticate with key.Value and send the item for sku.
+        // POST url with key.Value, the player's curatedid, and the item amount in one currency.
+        // When that currency is not the wallet currency, the response amount is the converted charge.
         // Read orderid and transid from the response. Do not log or return the key.
         return await InitTxn(url, key.Value, sku);
     }
