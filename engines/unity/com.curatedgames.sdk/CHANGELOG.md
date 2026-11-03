@@ -11,6 +11,10 @@ they affect this package.
 
 ## [Unreleased]
 
+### Fixed
+
+- Unity 6 has no internal editor web view, so the Game view overlay is the launcher's own window placed on the Game view rectangle (`editor_frame`). Leaving play mode or quitting the game sends `game_closed`. The launcher cancels the microtransaction that game started and drops the editor session.
+
 ## [1.7.3] - 2026-11-03
 
 ### Fixed

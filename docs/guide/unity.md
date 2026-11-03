@@ -60,8 +60,9 @@ after `InitFromLauncherAsync` uses the `Curated.Sdk` API, whose examples on the
 
 In the Unity Editor, `InitFromLauncherAsync` sends `editor_attach` to a running Curated launcher
 with the account signed in there. The launcher does not have to start Unity, and the Editor
-does not need `CURATED_LAUNCHER`. On success, play mode opens the launcher overlay page in a panel over the Game view.
-That page is the purchase and achievement UI. A successful attach initializes the session, so
+does not need `CURATED_LAUNCHER`. On success, the launcher draws its overlay on the Game view.
+That window is the purchase and achievement UI. Leaving play mode cancels a purchase that
+session started. A successful attach initializes the session, so
 editor play does not fail with `not_launched_by_curated`. If the launcher is not signed in, the
 reply is `not_signed_in` and that session is not started. Player builds still return
 `not_launched_by_curated` when the launcher did not start them. A player build does not

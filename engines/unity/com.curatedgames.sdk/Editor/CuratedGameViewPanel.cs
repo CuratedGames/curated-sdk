@@ -6,100 +6,131 @@ using UnityEngine;
 namespace Curated.Unity.Editor
 {
     /// <summary>
-    /// Loads the launcher overlay page in a panel that tracks the Game view while the Editor
-    /// is playing. That page is the purchase and achievement UI. The URL holds the overlay token
-    /// in its fragment and is never logged. Only a loopback http(s) URL is loaded.
-    /// A player build does not include this file.
+    /// Tells the running launcher where the Game view is, in screen pixels, while the Editor is
+    /// playing. Unity 6 has no internal web view, so the launcher draws its own overlay window on
+    /// that rectangle, the same way it covers a launched game. Leaving play mode closes the session
+    /// so a purchase that play session started is cancelled. A player build does not include this file.
     /// </summary>
     [InitializeOnLoad]
     static class CuratedGameViewPanel
     {
         const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-        static CuratedOverlayWindow window;
         static bool loggedMissing;
-        static bool loggedInitFailed;
-        static bool pageReady;
+        static bool loggedRect;
+        static int lastX;
+        static int lastY;
+        static int lastWidth;
+        static int lastHeight;
+        static bool hasLast;
 
         static CuratedGameViewPanel()
         {
-            CuratedEditorOverlay.UrlReady += _ => Sync();
             EditorApplication.update += Sync;
             EditorApplication.playModeStateChanged += OnPlayMode;
         }
 
         static void OnPlayMode(PlayModeStateChange state)
         {
-            if (state == PlayModeStateChange.ExitingPlayMode || state == PlayModeStateChange.EnteredEditMode)
+            if (state != PlayModeStateChange.ExitingPlayMode)
             {
-                CuratedEditorOverlay.Clear();
-                pageReady = false;
-                CloseWindow();
+                return;
             }
+
+            hasLast = false;
+            CuratedEditorOverlay.ClosePlaySession();
         }
 
         static void Sync()
         {
-            var url = CuratedEditorOverlay.CurrentUrl;
-            if (!EditorApplication.isPlaying || string.IsNullOrEmpty(url) || !IsLoopbackHttp(url))
+            if (!EditorApplication.isPlaying || string.IsNullOrEmpty(CuratedEditorOverlay.CurrentUrl))
             {
-                if (!EditorApplication.isPlaying)
-                {
-                    pageReady = false;
-                    CloseWindow();
-                }
-
+                hasLast = false;
                 return;
             }
 
-            if (WebViewType() == null)
+            if (!TryGameViewScreenRect(out var x, out var y, out var width, out var height))
             {
                 return;
             }
 
+            if (hasLast && x == lastX && y == lastY && width == lastWidth && height == lastHeight)
+            {
+                return;
+            }
+
+            lastX = x;
+            lastY = y;
+            lastWidth = width;
+            lastHeight = height;
+            hasLast = true;
+            if (!loggedRect)
+            {
+                loggedRect = true;
+                Debug.Log("[Curated] Game view overlay " + width + "x" + height + " at " + x + "," + y);
+            }
+
+            CuratedEditorOverlay.ReportGameView(x, y, width, height);
+        }
+
+        static bool TryGameViewScreenRect(out int x, out int y, out int width, out int height)
+        {
+            x = 0;
+            y = 0;
+            width = 0;
+            height = 0;
             var gameView = FindGameView();
             if (gameView == null || !IsVisibleTab(gameView))
             {
-                pageReady = false;
-                CloseWindow();
-                return;
+                return false;
             }
 
-            var rect = ContentScreenRect(gameView);
-            if (rect.width < 2f || rect.height < 2f)
+            // Unity 6 GUIView.nativeHandle is a native object pointer, not a window handle.
+            // EditorWindow.position is the Game view in points. The rendered game starts under its toolbar.
+            var screen = gameView.position;
+            if (screen.width < 2f || screen.height < 2f)
             {
-                return;
+                screen = ReadRect(ParentOf(gameView), "screenPosition");
             }
 
-            if (window == null)
+            if (screen.width < 2f || screen.height < 2f)
             {
-                window = ScriptableObject.CreateInstance<CuratedOverlayWindow>();
-                window.titleContent = new GUIContent("Curated");
-                window.ShowUtility();
-                window.position = rect;
-                pageReady = false;
-            }
-            else if (window.position != rect)
-            {
-                window.position = rect;
+                LogMissing();
+                return false;
             }
 
-            if (!pageReady || window.position != rect)
-            {
-                window.Repaint();
-            }
+            var scale = PixelsPerPoint();
+            var inset = (int)(ToolbarHeight() * scale);
+            return ApplyInset(
+                (int)(screen.x * scale),
+                (int)(screen.y * scale),
+                (int)(screen.width * scale),
+                (int)(screen.height * scale),
+                inset,
+                out x,
+                out y,
+                out width,
+                out height);
         }
 
-        static void CloseWindow()
+        static bool ApplyInset(int originX, int originY, int fullWidth, int fullHeight, int inset, out int x, out int y, out int width, out int height)
         {
-            if (window == null)
+            if (inset > 0 && inset * 2 >= fullHeight)
             {
-                return;
+                inset = 0;
             }
 
-            var open = window;
-            window = null;
-            open.Close();
+            x = originX;
+            y = originY + inset;
+            width = fullWidth;
+            height = fullHeight - inset;
+            if (width < 2 || height < 2)
+            {
+                LogMissing();
+                return false;
+            }
+
+            return true;
         }
 
         static EditorWindow FindGameView()
@@ -162,22 +193,6 @@ namespace Curated.Unity.Editor
             }
         }
 
-        static Rect ContentScreenRect(EditorWindow gameView)
-        {
-            var parent = ParentOf(gameView);
-            var screen = ReadRect(parent, "screenPosition");
-            if (screen.width < 2f || screen.height < 2f)
-            {
-                screen = gameView.position;
-            }
-
-            var chrome = ToolbarHeight();
-            // Dock tabs, then the Game view toolbar, sit above the rendered game.
-            screen.y += chrome * 2f;
-            screen.height = Mathf.Max(1f, screen.height - chrome * 2f);
-            return screen;
-        }
-
         static Rect ReadRect(object target, string propertyName)
         {
             if (target == null)
@@ -215,6 +230,24 @@ namespace Curated.Unity.Editor
             return field == null ? null : field.GetValue(view);
         }
 
+        static float PixelsPerPoint()
+        {
+            try
+            {
+                var scale = EditorGUIUtility.pixelsPerPoint;
+                if (scale > 0.5f)
+                {
+                    return scale;
+                }
+            }
+            catch (Exception)
+            {
+                // The editor skin is not ready yet.
+            }
+
+            return 1f;
+        }
+
         static float ToolbarHeight()
         {
             try
@@ -233,27 +266,6 @@ namespace Curated.Unity.Editor
             return 21f;
         }
 
-        static Type webViewType;
-        static bool webViewTypeSearched;
-
-        internal static Type WebViewType()
-        {
-            if (webViewTypeSearched)
-            {
-                return webViewType;
-            }
-
-            webViewTypeSearched = true;
-            var editor = typeof(UnityEditor.Editor).Assembly;
-            webViewType = editor.GetType("UnityEditor.WebView") ?? editor.GetType("UnityEditor.Web.WebView");
-            if (webViewType == null)
-            {
-                LogMissing();
-            }
-
-            return webViewType;
-        }
-
         static void LogMissing()
         {
             if (loggedMissing)
@@ -262,206 +274,7 @@ namespace Curated.Unity.Editor
             }
 
             loggedMissing = true;
-            Debug.LogWarning(
-                "[Curated] This Unity editor has no internal web view, so the launcher overlay page cannot be shown over the Game view.");
-        }
-
-        static void LogInitFailed()
-        {
-            if (loggedInitFailed)
-            {
-                return;
-            }
-
-            loggedInitFailed = true;
-            Debug.LogWarning(
-                "[Curated] The editor web view did not attach to the Game view panel, so the launcher overlay page is not visible.");
-        }
-
-        static bool IsLoopbackHttp(string url)
-        {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            {
-                return false;
-            }
-
-            if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
-            {
-                return false;
-            }
-
-            if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            return System.Net.IPAddress.TryParse(uri.Host, out var address) && System.Net.IPAddress.IsLoopback(address);
-        }
-
-        sealed class CuratedOverlayWindow : EditorWindow
-        {
-            ScriptableObject webView;
-            string loadedUrl;
-
-            void OnGUI()
-            {
-                var url = CuratedEditorOverlay.CurrentUrl;
-                if (string.IsNullOrEmpty(url) || !IsLoopbackHttp(url))
-                {
-                    return;
-                }
-
-                if (Event.current.type != EventType.Repaint && webView != null)
-                {
-                    return;
-                }
-
-                var parent = ParentOf(this);
-                if (parent == null || position.width < 2f || position.height < 2f)
-                {
-                    return;
-                }
-
-                var type = WebViewType();
-                if (type == null)
-                {
-                    return;
-                }
-
-                var width = Mathf.Max(1, (int)position.width);
-                var height = Mathf.Max(1, (int)position.height);
-                if (webView == null)
-                {
-                    if (Event.current.type != EventType.Repaint)
-                    {
-                        return;
-                    }
-
-                    var created = ScriptableObject.CreateInstance(type);
-                    if (!Call(created, "InitWebView", parent, 0, 0, width, height, false)
-                        && !Call(created, "InitWebView", parent, new Rect(0f, 0f, width, height), false, 0)
-                        && !Call(created, "InitWebView", parent, new Rect(0f, 0f, width, height), false))
-                    {
-                        DestroyImmediate(created);
-                        LogInitFailed();
-                        return;
-                    }
-
-                    webView = created;
-                    loadedUrl = null;
-                    pageReady = false;
-                }
-
-                Call(webView, "SetHostView", parent);
-                Call(webView, "SetSizeAndPosition", 0, 0, width, height);
-                Call(webView, "Show");
-                if (string.Equals(loadedUrl, url, StringComparison.Ordinal))
-                {
-                    pageReady = true;
-                    return;
-                }
-
-                if (!Call(webView, "LoadURL", url) && !Call(webView, "LoadURL", url, false) && !Call(webView, "LoadUrl", url))
-                {
-                    return;
-                }
-
-                loadedUrl = url;
-                pageReady = true;
-                Call(webView, "Show");
-                Call(webView, "SetFocus", true);
-            }
-
-            void OnDestroy()
-            {
-                pageReady = false;
-                if (webView != null)
-                {
-                    Call(webView, "Hide");
-                    DestroyImmediate(webView);
-                    webView = null;
-                }
-
-                if (window == this)
-                {
-                    window = null;
-                }
-            }
-        }
-
-        static System.Collections.Generic.IEnumerable<MethodInfo> Methods(Type type)
-        {
-            while (type != null)
-            {
-                foreach (var method in type.GetMethods(Flags | BindingFlags.DeclaredOnly))
-                {
-                    yield return method;
-                }
-
-                type = type.BaseType;
-            }
-        }
-
-        static bool Call(object target, string name, params object[] args)
-        {
-            if (target == null)
-            {
-                return false;
-            }
-
-            foreach (var method in Methods(target.GetType()))
-            {
-                if (!string.Equals(method.Name, name, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                var parameters = method.GetParameters();
-                if (parameters.Length != args.Length)
-                {
-                    continue;
-                }
-
-                var matches = true;
-                for (var i = 0; i < parameters.Length; i++)
-                {
-                    if (args[i] == null)
-                    {
-                        if (parameters[i].ParameterType.IsValueType)
-                        {
-                            matches = false;
-                            break;
-                        }
-
-                        continue;
-                    }
-
-                    var parameterType = parameters[i].ParameterType;
-                    var argumentType = args[i].GetType();
-                    if (parameterType != argumentType && !parameterType.IsAssignableFrom(argumentType))
-                    {
-                        matches = false;
-                        break;
-                    }
-                }
-
-                if (!matches)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    method.Invoke(target, args);
-                    return true;
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
-            }
-
-            return false;
+            Debug.LogWarning("[Curated] The Game view window could not be measured, so the launcher overlay cannot cover it.");
         }
     }
 }

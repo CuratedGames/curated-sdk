@@ -15,8 +15,8 @@ namespace Curated.Unity
         /// Verify the Curated launcher session and ownership of <paramref name="appId"/>, and shut
         /// Curated down automatically when the application quits.
         /// In the Unity Editor, send editor_attach to a running launcher without requiring
-        /// <c>CURATED_LAUNCHER</c> or a process the launcher started. On success, load the launcher
-        /// overlay page in the Game view and do not throw <c>not_launched_by_curated</c>.
+        /// <c>CURATED_LAUNCHER</c> or a process the launcher started. On success, the launcher draws
+        /// its overlay on the Game view and this call does not throw <c>not_launched_by_curated</c>.
         /// </summary>
         /// <exception cref="CuratedLaunchException">Contract error code in <see cref="CuratedLaunchException.Code"/>.</exception>
         public static async Task<CuratedSession> InitFromLauncherAsync(long appId, CancellationToken cancellationToken = default)
@@ -82,7 +82,7 @@ namespace Curated.Unity
         /// <summary>
         /// Same checks as <see cref="InitFromLauncherAsync(long, CancellationToken)"/> for an account
         /// session read by the Editor. The token is sent only to the Curated API.
-        /// In the Editor, editor_attach also loads the launcher overlay page in the Game view when
+        /// In the Editor, editor_attach also lets the launcher draw its overlay on the Game view when
         /// the launcher accepts the signed-in account.
         /// </summary>
         public static async Task<CuratedSession> InitWithAccountSessionAsync(
@@ -114,7 +114,7 @@ namespace Curated.Unity
         {
             EditorLauncherBridge.Apply(attach);
             CuratedEditorOverlay.Show(attach.OverlayUrl);
-            Debug.Log("[Curated] Connected the Editor to the Curated launcher. The Game view shows the launcher overlay.");
+            Debug.Log("[Curated] Connected the Editor to the Curated launcher. Purchases use the launcher overlay on the Game view.");
         }
 #endif
 

@@ -107,8 +107,9 @@ catch (CuratedLaunchException e)
 
 In the Unity Editor, `InitFromLauncherAsync` sends `editor_attach` to a running Curated launcher
 with the signed-in account, even when the launcher did not start Unity and `CURATED_LAUNCHER`
-is unset. On success the Game view loads the launcher overlay page, which is the purchase and
-achievement UI, and the call does not return `not_launched_by_curated`. Player builds still
+is unset. On success the launcher draws its overlay on the Game view, which is the purchase and
+achievement UI, and the call does not return `not_launched_by_curated`. Leaving play mode cancels
+a purchase that session started. Player builds still
 return `not_launched_by_curated`. Do not reimplement that connection in the game.
 
 Dedicated server and WebGL: `Curated.Sdk.dll` and the `Curated.Unity` assembly carry the define

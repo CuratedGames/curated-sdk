@@ -60,4 +60,18 @@ public class OverlayNotifierTests
     {
         Assert.False(OverlayNotifier.TryParseEndpoint(raw, out _, out _));
     }
+
+    [Fact]
+    public void GameView_and_closed_payloads_use_the_overlay_token()
+    {
+        var frame = OverlayNotifier.BuildGameViewPayload("ov", -8, 20, 800, 600);
+        Assert.Contains("\"type\":\"editor_frame\"", frame);
+        Assert.Contains("\"token\":\"ov\"", frame);
+        Assert.Contains("\"x\":-8", frame);
+        Assert.Contains("\"width\":800", frame);
+        Assert.Contains("\"height\":600", frame);
+        var closed = OverlayNotifier.BuildGameClosedPayload("a\"b");
+        Assert.Contains("\"type\":\"game_closed\"", closed);
+        Assert.Contains("\\\"", closed);
+    }
 }

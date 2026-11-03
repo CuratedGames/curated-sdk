@@ -47,7 +47,7 @@ public class GameLanguageTests : IDisposable
             Assert.Equal(e.GetProperty("name").GetString(), actual.EnglishName);
             Assert.Equal(e.GetProperty("steam").GetString(), actual.SteamApiName);
             Assert.Equal(
-                e.GetProperty("aliases").EnumerateArray().Select(a => a.GetString()).ToList(),
+                e.GetProperty("aliases").EnumerateArray().Select(a => a.GetString() ?? "").ToList(),
                 actual.Aliases.ToList());
         }
     }

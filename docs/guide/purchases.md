@@ -98,7 +98,8 @@ posting the game's boolean.
 
 Unity Editor play can still reach the overlay. On init, the Editor sends `editor_attach` to a
 running launcher with the signed-in account, without the launcher having started Unity. The
-A panel over the Game view loads the overlay page from that reply. That page is the purchase and achievement UI.
+launcher then draws its purchase window on the Game view. Leaving play mode, or quitting a
+player build, sends `game_closed` and the launcher cancels that game's microtransaction.
 The launcher still calls AuthorizeTxn. A player build without the launcher returns error, as
 above. `not_signed_in` does not start an editor session.
 
