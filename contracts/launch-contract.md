@@ -127,9 +127,10 @@ The launcher replies with one JSON line. Success includes `endpoint`, `overlay_t
 `http://127.0.0.1:{port}/overlay.html?editor=1#{overlay_token}`. The HTTP port may differ from
 `endpoint`. The fragment is the overlay token. The SDK adopts `endpoint`, `overlay_token`, and
 `overlay_url` in memory. Achievement and purchase messages use that adopted endpoint and token
-ahead of `CURATED_OVERLAY_ENDPOINT` and `CURATED_OVERLAY_TOKEN`. The Game view loads
-`overlay_url` in a transparent panel. That page is the purchase and achievement UI. The SDK
-does not draw its own purchase or achievement controls. After this success, init uses the same
+ahead of `CURATED_OVERLAY_ENDPOINT` and `CURATED_OVERLAY_TOKEN`. The Editor loads `overlay_url`
+in a panel over the Game view. That page is the purchase and achievement UI. The SDK does not
+draw its own purchase or achievement controls, and it does not force a transparent web view
+background (that left the page blank). After this success, init uses the same
 account token when launch variables are absent, so the call does not fail with
 `not_launched_by_curated`.
 

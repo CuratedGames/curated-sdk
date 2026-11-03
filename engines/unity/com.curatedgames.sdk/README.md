@@ -80,11 +80,11 @@ If you are porting from Steam and need Steam language API names (`english`, `ita
 
 In the Unity Editor, `InitFromLauncherAsync` sends `editor_attach` to a running Curated launcher
 with the account signed in there. The launcher does not have to start Unity. On success the
-Game view loads the launcher overlay page, which is the purchase and achievement UI, and init
-does not return `not_launched_by_curated`. The launcher still authorizes the purchase. If the
-launcher is not signed in, the reply is `not_signed_in`. Player builds return
-`not_launched_by_curated` when the launcher did not start them. The session token is sent only
-to the Curated API.
+A panel over the Game view loads the launcher overlay page, which is the purchase and achievement
+UI, and init does not return `not_launched_by_curated`. The launcher still authorizes the purchase.
+If the launcher is not signed in, the reply is `not_signed_in`. Player builds do not send
+`editor_attach` and return `not_launched_by_curated` when the launcher did not start them. The
+session token is sent only to the Curated API.
 
 `CuratedUnity.InitFromLauncherAsync` shuts Curated down on `Application.quitting`. Achievements,
 stats, Cloud Save, friends, presence, and in-game purchase authorization are on the
@@ -113,7 +113,7 @@ assembly with the same constraints) so server builds still compile.
 ## Editor and development builds
 
 The bootstrap component keeps playing in the Editor when the launcher is not running. It still
-connects when a signed-in launcher is open, and the Game view loads the launcher overlay page.
+connects when a signed-in launcher is open, and a panel over the Game view loads the launcher overlay page.
 To test a player build, set the launch variables from `contracts/launch-contract.md`.
 
 ## Migrating from Steam

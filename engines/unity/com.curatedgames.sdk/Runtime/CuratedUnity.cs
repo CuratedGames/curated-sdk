@@ -55,6 +55,9 @@ namespace Curated.Unity
                 }
             }
 #endif
+            // Player builds compile only the path below. They do not send editor_attach and they
+            // do not skip not_launched_by_curated. They use the launcher process: CURATED_LAUNCHER
+            // and the overlay variables.
             try
             {
                 var session = await CuratedClient.InitFromLauncherAsync(appId, cancellationToken);
