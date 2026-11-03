@@ -23,15 +23,10 @@ func _ready() -> void:
 	print("Signed in as %s" % result.session.username)
 ```
 
-::: info Not compiled in CI
-Godot is not installed in CI, so GDScript snippets are checked by review. CI does check that the
-addon's language table matches the fixture (`scripts/check-game-languages.py`), and that every
-public function is listed in the [API reference](/reference/godot).
-:::
-
-`Curated.session` holds `user_id`, `curated_id`, `username`, `language` (raw launcher value),
-`game_language`, and `entitlement` after a successful init. The `launch_completed` signal fires
-with the same result.
+`Curated.session` holds `user_id`, `curated_id`, `username`, `game_language`, and `entitlement`
+after a successful init. `language` is the launcher's original value. Use `game_language`, or
+[`get_current_game_language()`](./game-language). The `launch_completed` signal fires with the
+same result.
 
 ## Features
 
@@ -47,22 +42,14 @@ func _on_boss_defeated() -> void:
 - `get_openid_id_token()` for [OpenID Connect](./openid).
 - `get_current_game_language()` for the [game language](./game-language).
 
-Cloud Save, friends, and presence are C# only (`Curated.Sdk.dll`).
+Cloud Save, friends, and presence are C# only. See
+[Cloud Save, friends, presence](./cloud-friends-presence).
 
 ## Dedicated servers
 
 `init_from_launcher` returns `not_launched_by_curated` without touching the network when the
 export has the `dedicated_server` feature. Skip your own calls there with
 `if not OS.has_feature("dedicated_server")`.
-
-## Tests
-
-From a Godot 4 project containing the addon:
-
-```bash
-godot --headless --script res://addons/curated/tests/run_conformance.gd -- /path/to/contracts/fixtures/conformance.v1.json
-godot --headless --script res://addons/curated/tests/run_game_language.gd -- /path/to/contracts/fixtures/game-language.v1.json
-```
 
 ## Reference
 

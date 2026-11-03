@@ -47,12 +47,6 @@ void UMyGameInstance::Init()
 #endif
 ```
 
-::: info Not compiled in CI
-Unreal is not installed in CI, so C++ snippets are checked by review. CI does check the plugin's
-language table and its automation test cases against the fixture, and that every public
-`UFUNCTION` is listed in the [API reference](/reference/unreal).
-:::
-
 ## Features
 
 - `CheckEntitlement` re-checks ownership.
@@ -62,13 +56,8 @@ language table and its automation test cases against the fixture, and that every
 - `GetOpenIdIdToken` for [OpenID Connect](./openid).
 - `GetCurrentGameLanguage` (static) for the [game language](./game-language).
 
-Cloud Save, friends, and presence are C# only. Use `Curated.Sdk` from a managed layer, or call
-the same HTTP paths yourself.
-
-## Tests
-
-Automation tests live under **Curated.LaunchContract** in **Tools > Session Frontend >
-Automation**.
+Cloud Save, friends, and presence are C# only. See
+[Cloud Save, friends, presence](./cloud-friends-presence).
 
 ## Reference
 

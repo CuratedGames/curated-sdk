@@ -7,7 +7,9 @@ without a binding, or want to know what the SDK does.
 The full specification lives in the repository:
 [`contracts/launch-contract.md`](https://github.com/CuratedGames/curated-sdk/blob/main/contracts/launch-contract.md),
 with an [OpenAPI subset](https://github.com/CuratedGames/curated-sdk/blob/main/contracts/openapi/game-sdk.v1.yaml)
-and the [conformance fixture](https://github.com/CuratedGames/curated-sdk/blob/main/contracts/fixtures/conformance.v1.json).
+and the fixtures
+[conformance.v1.json](https://github.com/CuratedGames/curated-sdk/blob/main/contracts/fixtures/conformance.v1.json)
+and [game-language.v1.json](https://github.com/CuratedGames/curated-sdk/blob/main/contracts/fixtures/game-language.v1.json).
 
 ## Environment variables
 

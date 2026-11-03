@@ -27,19 +27,12 @@ After the check succeeds, `Curated.session` holds the player:
 
 <<< @/../engines/rpgmaker/CuratedSDK.test.mjs#session{js}
 
-::: tip Tested code
-These blocks are imported from
-[`CuratedSDK.test.mjs`](https://github.com/CuratedGames/curated-sdk/blob/main/engines/rpgmaker/CuratedSDK.test.mjs),
-which CI runs with `node --test`.
-:::
-
 `Curated.checkEntitlement()` re-checks ownership. `Curated.getOpenIdIdToken()` mints an
 [OpenID Connect](./openid) ID token. For purchases see [In-app purchases / Microtransactions](./purchases).
 
 ## Game language
 
-`Curated.getCurrentGameLanguage()` returns the launcher language (`"en"`, `"es"`, `"it"`, ...),
-or `"en"` outside the launcher. See [Game language](./game-language).
+`Curated.getCurrentGameLanguage()` reads the [game language](./game-language).
 
 ## Reference
 

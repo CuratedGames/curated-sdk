@@ -38,16 +38,12 @@ There is no nuget.org package and no private feed.
 | `network_error` | Curated unreachable | Retry or allow offline play |
 | `hub_error` | Unexpected server response | Retry later |
 
-All bindings are tested against the same fixtures:
-[`conformance.v1.json`](https://github.com/CuratedGames/curated-sdk/blob/main/contracts/fixtures/conformance.v1.json)
-and [`game-language.v1.json`](https://github.com/CuratedGames/curated-sdk/blob/main/contracts/fixtures/game-language.v1.json).
-
 ## Rules
 
 - Never log, store, or forward `CURATED_SESSION_TOKEN`. Send it only to `CURATED_API_BASE`.
 - Keep Curated out of dedicated server builds. Each engine guide shows how.
-- If the game also ships on other stores, keep their SDKs behind your existing compile flags and
-  add Curated in parallel.
+- If the game also ships on other stores, add Curated beside that SDK. See
+  [Migrating from Steam](./migrating-from-steam).
 
 ## Before you submit
 
