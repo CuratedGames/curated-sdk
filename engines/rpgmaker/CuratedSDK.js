@@ -535,15 +535,13 @@
 
     /**
      * Ask the Curated launcher overlay to confirm an order the game server created with InitTxn.
-     * `authorized` is ignored and kept so existing callers still compile. The overlay collects
-     * the decision. Resolves { ok, status, orderId, transId } where status is "authorized" or
-     * "denied", or { ok: false, status: "error", error, errorCode, errorDescription }.
+     * The overlay collects the decision. Resolves { ok, status, orderId, transId } where status
+     * is "authorized" or "denied", or { ok: false, status: "error", error, errorCode, errorDescription }.
      * Sends one TCP line to CURATED_OVERLAY_ENDPOINT and reads microtxn_purchase_result.
-     * Does not POST the player's boolean. Outside the launcher the result is error.
+     * Outside the launcher the result is error.
      * The game server calls FinalizeTxn after the player authorizes.
      */
-    async authorizeTxn(orderId, transId, authorized) {
-      void authorized;
+    async authorizeTxn(orderId, transId) {
       const order = Number(orderId);
       const trans = Number(transId);
       if (!this._context) {

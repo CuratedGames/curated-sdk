@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- In-game purchase confirmation no longer takes a decision from the game. Unity `MicroTxn.AuthorizeAsync`, Godot `authorize_txn`, Unreal `AuthorizeTxn`, and RPG Maker `authorizeTxn` take the order id and transaction id, and the launcher overlay collects the decision. InitTxn no longer reads `language` or `format`.
+
 ### Fixed
 
 - Unity 6 has no internal editor web view, so the Game view overlay is the launcher's own window placed on the Game view rectangle (`editor_frame`). Leaving play mode or quitting the game sends `game_closed`. The launcher cancels the microtransaction that game started and drops the editor session.

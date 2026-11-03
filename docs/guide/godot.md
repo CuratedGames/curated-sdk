@@ -43,7 +43,7 @@ func _on_boss_defeated() -> void:
 
 - `check_entitlement()` re-checks ownership during long sessions.
 - `refresh_stats()`, `set_stat()`, `increment_stat()`, `store_stats()` for player stats.
-- `authorize_txn(order_id, trans_id, authorized)` for [in-app purchases](./purchases).
+- `authorize_txn(order_id, trans_id)` for [in-app purchases](./purchases).
 - `get_openid_id_token()` for [OpenID Connect](./openid).
 - `get_current_game_language()` for the [game language](./game-language).
 

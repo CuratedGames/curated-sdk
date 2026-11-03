@@ -11,6 +11,10 @@ they affect this package.
 
 ## [Unreleased]
 
+### Changed
+
+- In-game purchase confirmation no longer takes a decision from the game. Unity `MicroTxn.AuthorizeAsync`, Godot `authorize_txn`, Unreal `AuthorizeTxn`, and RPG Maker `authorizeTxn` take the order id and transaction id, and the launcher overlay collects the decision. InitTxn no longer reads `language` or `format`.
+
 ## [1.7.1] - 2026-11-03
 
 ### Changed

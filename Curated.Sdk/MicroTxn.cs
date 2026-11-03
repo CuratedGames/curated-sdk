@@ -50,10 +50,10 @@ public sealed class MicroTxnAuthorization
     /// <summary>Transaction id from InitTxn. Echoed from the response when Curated sends one.</summary>
     public long TransId { get; }
 
-    /// <summary>Steam-style <c>errorcode</c> when <see cref="Status"/> is error; otherwise null.</summary>
+    /// <summary>Curated <c>errorcode</c> when <see cref="Status"/> is error; otherwise null.</summary>
     public int? ErrorCode { get; }
 
-    /// <summary>Steam-style <c>errordesc</c> when <see cref="Status"/> is error; otherwise null.</summary>
+    /// <summary>Curated <c>errordesc</c> when <see cref="Status"/> is error; otherwise null.</summary>
     public string? ErrorDescription { get; }
 }
 
@@ -71,7 +71,6 @@ public static class MicroTxn
     /// When <c>CURATED_OVERLAY_ENDPOINT</c> and <c>CURATED_OVERLAY_TOKEN</c> are set, opens one
     /// TCP connection, sends a <c>microtxn_purchase</c> line, and maps the overlay
     /// <c>microtxn_purchase_result</c> status to authorized, denied, or error.
-    /// <paramref name="authorized"/> is ignored and kept so existing callers still compile.
     /// The launcher calls AuthorizeTxn. If the overlay variables are missing, the result is
     /// <see cref="MicroTxnAuthorizationStatus.Error"/> and this method does not POST.
     /// Purchases only proceed inside the Curated launcher. InitTxn may have converted the
@@ -87,7 +86,6 @@ public static class MicroTxn
     public static Task<MicroTxnAuthorization> AuthorizeAsync(
         long orderId,
         long transId,
-        bool authorized,
         CancellationToken cancellationToken = default)
     {
         if (orderId <= 0)
@@ -104,7 +102,6 @@ public static class MicroTxn
             CuratedClient.GameState,
             orderId,
             transId,
-            authorized,
             cancellationToken);
     }
 }

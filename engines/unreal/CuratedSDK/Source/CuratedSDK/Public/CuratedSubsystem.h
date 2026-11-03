@@ -36,11 +36,11 @@ struct CURATEDSDK_API FCuratedMicroTxnAuthorization
 	UPROPERTY(BlueprintReadOnly, Category = "Curated")
 	int64 TransId = 0;
 
-	/** Steam-style errorcode when Status is Error. Zero when Curated did not send one. */
+	/** Curated errorcode when Status is Error. Zero when Curated did not send one. */
 	UPROPERTY(BlueprintReadOnly, Category = "Curated")
 	int32 ErrorCode = 0;
 
-	/** Steam-style errordesc when Status is Error. */
+	/** Curated errordesc when Status is Error. */
 	UPROPERTY(BlueprintReadOnly, Category = "Curated")
 	FString ErrorDescription;
 
@@ -94,12 +94,11 @@ public:
 
 	/**
 	 * Ask the Curated launcher overlay to confirm an order the game server created with InitTxn.
-	 * bAuthorized is ignored and kept for source compatibility. The overlay collects the decision.
-	 * Does not POST the player's boolean. Outside the launcher the result is Error.
+	 * The overlay collects the decision. Outside the launcher the result is Error.
 	 * The game server calls FinalizeTxn after authorization.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Curated")
-	void AuthorizeTxn(int64 OrderId, int64 TransId, bool bAuthorized, FCuratedMicroTxnAuthorized OnDone);
+	void AuthorizeTxn(int64 OrderId, int64 TransId, FCuratedMicroTxnAuthorized OnDone);
 
 	/**
 	 * Mint a short-lived OpenID Connect ID token for this session. Pass it only to the game's

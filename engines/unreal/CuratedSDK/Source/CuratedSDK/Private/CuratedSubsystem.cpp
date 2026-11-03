@@ -532,10 +532,8 @@ namespace
 	}
 }
 
-void UCuratedSubsystem::AuthorizeTxn(int64 OrderId, int64 TransId, bool bAuthorized, FCuratedMicroTxnAuthorized OnDone)
+void UCuratedSubsystem::AuthorizeTxn(int64 OrderId, int64 TransId, FCuratedMicroTxnAuthorized OnDone)
 {
-	// The overlay collects the decision. bAuthorized stays for source compatibility.
-	(void)bAuthorized;
 	ECuratedLaunchError ReadyError;
 	if (!RequireReady(ReadyError) || OrderId <= 0 || TransId <= 0)
 	{
