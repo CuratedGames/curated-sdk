@@ -96,6 +96,12 @@ scripts keep compiling, and the binding ignores it. The launcher calls Authorize
 If those overlay variables are missing, the call returns error. It does not fall back to
 posting the game's boolean.
 
+Unity Editor play can still reach the overlay. On init, the Editor sends `editor_attach` to a
+running launcher with the signed-in account, without the launcher having started Unity. The
+Game view loads the overlay page from that reply. That page is the purchase and achievement UI.
+The launcher still calls AuthorizeTxn. A player build without the launcher returns error, as
+above. `not_signed_in` does not start an editor session.
+
 1. The game server calls InitTxn and sends `orderId` and `transId` to the client.
 2. The client calls the binding's authorize call. The launcher overlay collects the decision.
 3. On authorized, the game server calls FinalizeTxn.

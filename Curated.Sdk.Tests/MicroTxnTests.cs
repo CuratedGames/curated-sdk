@@ -138,6 +138,29 @@ public class MicroTxnTests : IDisposable
     }
 
     [Fact]
+    public async Task AuthorizeAsync_uses_the_adopted_overlay_when_env_is_empty()
+    {
+        string? seen = null;
+        using var server = await StartOverlay(line =>
+        {
+            seen = line;
+            return """{"v":1,"type":"microtxn_purchase_result","authorized":true,"status":"Authorized","order_id":4,"trans_id":5,"error_code":null,"error_description":null}""";
+        });
+        var endpoint = Environment.GetEnvironmentVariable(LaunchContext.OverlayEndpointVariable);
+        Assert.False(string.IsNullOrEmpty(endpoint));
+        OverlayChannel.Adopt(endpoint!, "channel-token", "http://127.0.0.1:1/overlay.html?editor=1#channel-token");
+        Environment.SetEnvironmentVariable(LaunchContext.OverlayEndpointVariable, null);
+        Environment.SetEnvironmentVariable(LaunchContext.OverlayTokenVariable, null);
+        CuratedClient.InitForTests(3, new RecordingTransport((_, _, _) => throw new InvalidOperationException("client must not POST")));
+
+        var result = await MicroTxn.AuthorizeAsync(4, 5, authorized: false);
+
+        Assert.Equal(MicroTxnAuthorizationStatus.Authorized, result.Status);
+        Assert.Contains("\"token\":\"channel-token\"", seen);
+        Assert.DoesNotContain("overlay-token", seen);
+    }
+
+    [Fact]
     public async Task AuthorizeAsync_requires_init_and_positive_ids()
     {
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -209,6 +232,7 @@ public class MicroTxnTests : IDisposable
     {
         Environment.SetEnvironmentVariable(LaunchContext.OverlayEndpointVariable, null);
         Environment.SetEnvironmentVariable(LaunchContext.OverlayTokenVariable, null);
+        OverlayChannel.Clear();
     }
 
     private sealed class OverlayServer : IDisposable

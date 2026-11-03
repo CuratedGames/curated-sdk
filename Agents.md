@@ -75,10 +75,10 @@ ordinary command-line arguments. Credentials are never on the command line.
 1. Add the package from this repository with a Git URL. In `Packages/manifest.json`:
 
 ```json
-"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.7.0"
+"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.7.1"
 ```
 
-Replace `v1.7.0` with a release tag, `main`, or a commit SHA. Or use
+Replace `v1.7.1` with a release tag, `main`, or a commit SHA. Or use
 **Window > Package Manager > + > Add package from git URL…** with the same URL.
 Use **v1.3.1 or newer** (or `main`). Older tags such as `v1.3.0` still have the previous
 folder name `games.curated.sdk` and fail with a pathspec error.
@@ -105,9 +105,11 @@ catch (CuratedLaunchException e)
 #endif
 ```
 
-In the Unity Editor, `InitFromLauncherAsync` falls back to the account signed in to a running
-Curated launcher when the launch variables are missing. Player builds still return
-`not_launched_by_curated`. Do not reimplement that fallback in the game.
+In the Unity Editor, `InitFromLauncherAsync` sends `editor_attach` to a running Curated launcher
+with the signed-in account, even when the launcher did not start Unity and `CURATED_LAUNCHER`
+is unset. On success the Game view loads the launcher overlay page, which is the purchase and
+achievement UI, and the call does not return `not_launched_by_curated`. Player builds still
+return `not_launched_by_curated`. Do not reimplement that connection in the game.
 
 Dedicated server and WebGL: `Curated.Sdk.dll` and the `Curated.Unity` assembly carry the define
 constraint `!UNITY_SERVER` and exclude WebGL. Reference `Curated.Unity` only from assemblies with

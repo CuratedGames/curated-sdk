@@ -21,7 +21,7 @@ namespace Curated.Unity
         [SerializeField]
         long appId;
 
-        [Tooltip("Skip the launcher check in the Unity Editor so you can play without the Curated launcher.")]
+        [Tooltip("In the Editor, connect to a running Curated launcher when possible, and keep playing if that connection fails.")]
         [SerializeField]
         bool skipInEditor = true;
 
@@ -43,6 +43,22 @@ namespace Curated.Unity
         {
             if (Application.isEditor && skipInEditor)
             {
+                if (appId > 0)
+                {
+                    try
+                    {
+                        await CuratedUnity.InitFromLauncherAsync(appId, destroyed.Token);
+                    }
+                    catch (CuratedLaunchException e)
+                    {
+                        Debug.LogWarning($"[Curated] Editor play without a launcher session: {e.Code}");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                }
+
                 onReady.Invoke();
                 return;
             }

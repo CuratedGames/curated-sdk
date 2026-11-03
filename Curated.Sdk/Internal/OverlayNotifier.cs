@@ -12,8 +12,6 @@ namespace Curated.Sdk.Internal;
 /// </summary>
 internal static class OverlayNotifier
 {
-    private const string EndpointVariable = "CURATED_OVERLAY_ENDPOINT";
-    private const string TokenVariable = "CURATED_OVERLAY_TOKEN";
     private const int ConnectTimeoutMs = 750;
 
     public static void NotifyAchievementUnlocked(
@@ -29,20 +27,18 @@ internal static class OverlayNotifier
             return;
         }
 
-        var endpoint = Environment.GetEnvironmentVariable(EndpointVariable);
-        var token = Environment.GetEnvironmentVariable(TokenVariable);
-        if (string.IsNullOrWhiteSpace(endpoint) || string.IsNullOrWhiteSpace(token))
+        if (!OverlayChannel.TryResolve(out var endpoint, out var token))
         {
             return;
         }
 
-        if (!TryParseEndpoint(endpoint.Trim(), out var host, out var port))
+        if (!TryParseEndpoint(endpoint, out var host, out var port))
         {
             return;
         }
 
         var payload = BuildPayload(
-            token.Trim(),
+            token,
             appId,
             apiName.Trim(),
             displayName ?? "",

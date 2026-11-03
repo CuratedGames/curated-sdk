@@ -62,18 +62,53 @@ public static class LocalAccountSession
         return value.Length == 0 ? null : value;
     }
 
-    private static string? ReadRunningLauncherToken()
+    private static string? ReadRunningLauncherToken() =>
+        ReadFromRunningLauncher(directory =>
+            ReadTokenField(Path.Combine(directory, "Config", "session.json")));
+
+    /// <summary>
+    /// Text of <c>Config/&lt;fileName&gt;</c> beside a running Curated launcher executable.
+    /// Null when the launcher is not running or the file is missing.
+    /// </summary>
+    internal static string? TryReadRunningLauncherConfig(string fileName)
     {
-        var fromCurated = ReadProcessSession("Curated");
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return null;
+        }
+
+        return ReadFromRunningLauncher(directory =>
+        {
+            var path = Path.Combine(directory, "Config", fileName);
+            if (!File.Exists(path))
+            {
+                return null;
+            }
+
+            try
+            {
+                var text = File.ReadAllText(path);
+                return string.IsNullOrWhiteSpace(text) ? null : text;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        });
+    }
+
+    private static string? ReadFromRunningLauncher(Func<string, string?> readDirectory)
+    {
+        var fromCurated = ReadProcessValue("Curated", readDirectory);
         if (!string.IsNullOrEmpty(fromCurated))
         {
             return fromCurated;
         }
 
-        return ReadProcessSession("curated-launcher");
+        return ReadProcessValue("curated-launcher", readDirectory);
     }
 
-    private static string? ReadProcessSession(string processName)
+    private static string? ReadProcessValue(string processName, Func<string, string?> readDirectory)
     {
         Process[] processes;
         try
@@ -98,10 +133,10 @@ public static class LocalAccountSession
                         continue;
                     }
 
-                    var token = ReadTokenField(Path.Combine(directory, "Config", "session.json"));
-                    if (!string.IsNullOrEmpty(token))
+                    var value = readDirectory(directory);
+                    if (!string.IsNullOrEmpty(value))
                     {
-                        return token;
+                        return value;
                     }
                 }
                 catch (Exception)
@@ -120,12 +155,16 @@ public static class LocalAccountSession
         return null;
     }
 
-    private static string? ReadCredentialsToken()
+    /// <summary>
+    /// Raw credentials file the content builder writes. Null when it is missing.
+    /// Callers must not log the contents.
+    /// </summary>
+    internal static string? TryReadCredentialsJson()
     {
         var overridePath = Environment.GetEnvironmentVariable("CURATED_CREDENTIALS_PATH");
         if (!string.IsNullOrWhiteSpace(overridePath))
         {
-            return ReadTokenField(overridePath.Trim());
+            return ReadAll(overridePath.Trim());
         }
 
         var home = Environment.GetEnvironmentVariable("USERPROFILE");
@@ -139,7 +178,31 @@ public static class LocalAccountSession
             return null;
         }
 
-        return ReadTokenField(Path.Combine(home, ".curated", "credentials.json"));
+        return ReadAll(Path.Combine(home, ".curated", "credentials.json"));
+    }
+
+    private static string? ReadCredentialsToken()
+    {
+        var json = TryReadCredentialsJson();
+        return string.IsNullOrEmpty(json) ? null : ReadJsonString(json, "token");
+    }
+
+    private static string? ReadAll(string path)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            var text = File.ReadAllText(path);
+            return string.IsNullOrWhiteSpace(text) ? null : text;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     private static string? ReadTokenField(string path)
