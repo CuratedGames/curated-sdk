@@ -17,6 +17,7 @@ public static class CuratedClient
     private static readonly object Gate = new();
     private static ClientState? _state;
     private static CuratedSession? _session;
+    private static bool _closeOverlayOnShutdown;
 
     /// <summary>Default Curated hub used when Init is called without an explicit URL.</summary>
     public static readonly Uri DefaultHubUrl = new("https://api.curated.games");
@@ -197,6 +198,7 @@ public static class CuratedClient
                 {
                     state.EntitlementVerified = true;
                     _session = session;
+                    _closeOverlayOnShutdown = OverlayChannel.TryResolve(out _, out _);
                 }
             }
 
@@ -267,13 +269,20 @@ public static class CuratedClient
     /// <summary>Shut down Curated and release network resources. Safe to call more than once.</summary>
     public static void Shutdown()
     {
-        OverlayNotifier.NotifyGameClosed();
+        bool closeOverlay;
         ClientState? old;
         lock (Gate)
         {
+            closeOverlay = _closeOverlayOnShutdown;
+            _closeOverlayOnShutdown = false;
             old = _state;
             _state = null;
             _session = null;
+        }
+
+        if (closeOverlay)
+        {
+            OverlayNotifier.NotifyGameClosed();
         }
 
         Stats.ResetCache();
