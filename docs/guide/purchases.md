@@ -212,6 +212,9 @@ A sandbox order still moves through pending, authorized, captured, and refunded.
 are reserved, captured, or refunded. On the live base, InitTxn reserves funds and FinalizeTxn
 captures them. RefundTxn returns them.
 
+Use a [Stripe test card](https://docs.stripe.com/testing#cards) for a sandbox order. Test cards
+are for the sandbox endpoint only.
+
 ### Unity Cloud Code
 
 [Unity Cloud Code](https://docs.unity.com/en-us/cloud-code/modules/how-to-guides/module-structure)
