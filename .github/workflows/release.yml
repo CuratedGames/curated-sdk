@@ -6,6 +6,8 @@ on:
     branches: [main]
     # README.md is omitted: a docs edit is not a version bump.
     # This workflow file is omitted so editing that filter does not republish the current tag.
+    # Generated engine CHANGELOG.md files are omitted for the same reason: syncing them is not a
+    # version bump, and a push that only updates them must not republish the current tag.
     # Use workflow_dispatch when a workflow edit should ship artifacts.
     paths:
       - "Curated.Sdk/**"
@@ -14,6 +16,8 @@ on:
       - "scripts/**"
       - "contracts/**"
       - "engines/**"
+      - "!engines/**/CHANGELOG.md"
+      - "!engines/**/CHANGELOG.md.meta"
       - "Curated.Sdk.sln"
       - "LICENSE.md"
       - "Agents.md"

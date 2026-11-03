@@ -11,6 +11,10 @@ they affect this package.
 
 ## [Unreleased]
 
+### Changed
+
+- Document that InitTxn accepts one listed currency and converts it into the player's wallet currency. The launcher overlay confirms that converted reserve.
+
 ## [1.7.0] - 2026-11-02
 
 ### Changed
