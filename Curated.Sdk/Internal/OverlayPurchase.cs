@@ -28,11 +28,8 @@ internal static class OverlayPurchase
         long transId,
         CancellationToken cancellationToken)
     {
-        var endpoint = Environment.GetEnvironmentVariable(LaunchContext.OverlayEndpointVariable);
-        var token = Environment.GetEnvironmentVariable(LaunchContext.OverlayTokenVariable);
-        if (string.IsNullOrWhiteSpace(endpoint)
-            || string.IsNullOrWhiteSpace(token)
-            || !OverlayNotifier.TryParseEndpoint(endpoint.Trim(), out var host, out var port))
+        if (!OverlayChannel.TryResolve(out var endpoint, out var token)
+            || !OverlayNotifier.TryParseEndpoint(endpoint, out var host, out var port))
         {
             return Error(orderId, transId, null, "Purchases require the Curated launcher overlay.");
         }

@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Curated.Sdk;
+using Curated.Sdk.Internal;
 using UnityEngine;
 
 namespace Curated.Unity
@@ -13,10 +14,47 @@ namespace Curated.Unity
         /// <summary>
         /// Verify the Curated launcher session and ownership of <paramref name="appId"/>, and shut
         /// Curated down automatically when the application quits.
+        /// In the Unity Editor, send editor_attach to a running launcher without requiring
+        /// <c>CURATED_LAUNCHER</c> or a process the launcher started. On success, load the launcher
+        /// overlay page in the Game view and do not throw <c>not_launched_by_curated</c>.
         /// </summary>
         /// <exception cref="CuratedLaunchException">Contract error code in <see cref="CuratedLaunchException.Code"/>.</exception>
         public static async Task<CuratedSession> InitFromLauncherAsync(long appId, CancellationToken cancellationToken = default)
         {
+#if UNITY_EDITOR
+            CuratedEditorOverlay.CaptureMainThread();
+            var attach = await EditorLauncherBridge.TryAttachAsync(appId, LocalAccountSession.TryReadToken(), cancellationToken);
+            if (attach != null && attach.Succeeded)
+            {
+                AdoptEditorOverlay(attach);
+                try
+                {
+                    var launched = await CuratedClient.InitFromLauncherAsync(appId, cancellationToken);
+                    RegisterQuitHook();
+                    return launched;
+                }
+                catch (CuratedLaunchException exception) when (exception.Error == CuratedLaunchError.NotLaunchedByCurated)
+                {
+                    var session = await CuratedClient.InitWithAccountSessionAsync(appId, attach.AccountToken, cancellationToken);
+                    RegisterQuitHook();
+                    return session;
+                }
+            }
+
+            if (attach != null && attach.NotSignedIn)
+            {
+                try
+                {
+                    var launched = await CuratedClient.InitFromLauncherAsync(appId, cancellationToken);
+                    RegisterQuitHook();
+                    return launched;
+                }
+                catch (CuratedLaunchException exception) when (exception.Error == CuratedLaunchError.NotLaunchedByCurated)
+                {
+                    throw;
+                }
+            }
+#endif
             try
             {
                 var session = await CuratedClient.InitFromLauncherAsync(appId, cancellationToken);
@@ -41,16 +79,41 @@ namespace Curated.Unity
         /// <summary>
         /// Same checks as <see cref="InitFromLauncherAsync(long, CancellationToken)"/> for an account
         /// session read by the Editor. The token is sent only to the Curated API.
+        /// In the Editor, editor_attach also loads the launcher overlay page in the Game view when
+        /// the launcher accepts the signed-in account.
         /// </summary>
         public static async Task<CuratedSession> InitWithAccountSessionAsync(
             long appId,
             string sessionToken,
             CancellationToken cancellationToken = default)
         {
+#if UNITY_EDITOR
+            CuratedEditorOverlay.CaptureMainThread();
+            var accountToken = LocalAccountSession.TryReadToken();
+            if (string.IsNullOrEmpty(accountToken))
+            {
+                accountToken = sessionToken;
+            }
+
+            var attach = await EditorLauncherBridge.TryAttachAsync(appId, accountToken, cancellationToken);
+            if (attach != null && attach.Succeeded)
+            {
+                AdoptEditorOverlay(attach);
+            }
+#endif
             var session = await CuratedClient.InitWithAccountSessionAsync(appId, sessionToken, cancellationToken);
             RegisterQuitHook();
             return session;
         }
+
+#if UNITY_EDITOR
+        static void AdoptEditorOverlay(EditorLauncherBridge.EditorAttachResult attach)
+        {
+            EditorLauncherBridge.Apply(attach);
+            CuratedEditorOverlay.Show(attach.OverlayUrl);
+            Debug.Log("[Curated] Connected the Editor to the Curated launcher. The Game view shows the launcher overlay.");
+        }
+#endif
 
         static void RegisterQuitHook()
         {

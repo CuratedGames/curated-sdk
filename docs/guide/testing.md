@@ -20,9 +20,11 @@ out of builds you share.
 
 ## Engine shortcuts
 
-- **Unity**: in the Editor, `CuratedUnity.InitFromLauncherAsync` falls back to the account signed
-  in to a running Curated launcher when the variables are missing. The bootstrap component can
-  skip the check in the Editor.
+- **Unity**: in the Editor, `CuratedUnity.InitFromLauncherAsync` sends `editor_attach` to a
+  running Curated launcher with the signed-in account. The launcher does not have to start
+  Unity, and `CURATED_LAUNCHER` is not required. The Game view loads the launcher overlay page,
+  which is the purchase and achievement UI. The bootstrap can keep playing if that connection
+  fails. `not_signed_in` does not start the session.
 - **RPG Maker**: test play from the editor skips the check.
 - **Godot, Unreal, .NET**: set the variables above.
 

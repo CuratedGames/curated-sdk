@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-11-03
+
+### Added
+
+- Unity Editor play sends `editor_attach` when `CuratedUnity` initializes, with the account signed in on the launcher, without `CURATED_LAUNCHER` and without the launcher having started Unity. On success the Game view loads the launcher overlay page (`overlay_url`), which is the purchase and achievement UI, and init does not return `not_launched_by_curated`. A launcher that is not signed in replies `not_signed_in`.
+- Rebuilt Unity `Plugins/Curated.Sdk.dll` so Editor play can attach to the launcher overlay.
+
 ### Changed
 
 - Document that InitTxn accepts one listed currency and converts it into the player's wallet currency. The launcher overlay confirms that converted reserve.
@@ -123,7 +130,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial Curated.Sdk public API: launcher auth, entitlements, achievements, Cloud Save, friends and presence
 
-[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.1...HEAD
+[1.7.1]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.1...v1.5.2

@@ -101,6 +101,56 @@ The launcher calls `POST /ICuratedMicroTxn/AuthorizeTxn/v1/` (or the sandbox bas
 purchase result is an error and the game does not fall back to posting its own boolean. Purchases
 only proceed inside the Curated launcher. Never log the overlay token.
 
+### Unity Editor attach
+
+Unity Editor play is not a process the launcher started. It does not need `CURATED_LAUNCHER=1`
+and it does not need the launcher to have spawned Unity.
+
+When `CuratedUnity` initializes in the Editor, the SDK reads the account token already signed
+in on the launcher and the editor bridge port, then writes one JSON line to that loopback port:
+
+```json
+{"v":1,"type":"editor_attach","app_id":1002,"token":"<account session>"}
+```
+
+`app_id` is greater than 0. `token` is the account signed in on the launcher. The SDK does not
+log it.
+
+The launcher replies with one JSON line. Success includes `endpoint`, `overlay_token`, and
+`overlay_url`:
+
+```json
+{"v":1,"type":"editor_attach_result","endpoint":"127.0.0.1:4050","overlay_token":"<secret>","overlay_url":"http://127.0.0.1:4060/overlay.html?editor=1#<secret>"}
+```
+
+`endpoint` is `host:port` on loopback. `overlay_url` is
+`http://127.0.0.1:{port}/overlay.html?editor=1#{overlay_token}`. The HTTP port may differ from
+`endpoint`. The fragment is the overlay token. The SDK adopts `endpoint`, `overlay_token`, and
+`overlay_url` in memory. Achievement and purchase messages use that adopted endpoint and token
+ahead of `CURATED_OVERLAY_ENDPOINT` and `CURATED_OVERLAY_TOKEN`. The Game view loads
+`overlay_url` in a transparent panel. That page is the purchase and achievement UI. The SDK
+does not draw its own purchase or achievement controls. After this success, init uses the same
+account token when launch variables are absent, so the call does not fail with
+`not_launched_by_curated`.
+
+When the launcher is not signed in:
+
+```json
+{"v":1,"type":"editor_attach_result","error":"not_signed_in"}
+```
+
+That reply is not success. The SDK does not adopt an overlay and does not initialize with the
+rejected token. A process the launcher actually started still uses its launch variables.
+
+The bridge port is loopback only. The SDK checks, in order: `CURATED_EDITOR_BRIDGE`,
+`~/.curated/editor-bridge.json` (`editor_endpoint`, then `endpoint`), `Config/editor-bridge.json`
+beside the launcher executable, then those same keys on `Config/session.json` and
+`~/.curated/credentials.json`.
+
+Player builds do not send `editor_attach`. Purchases and achievements there still use the
+overlay variables the launcher put on the process, and the launcher window is the UI. The
+purchase reply is `microtxn_purchase_result`, as above.
+
 ### Game language
 
 Bindings expose the current game language (for example `CuratedClient.GetCurrentGameLanguage()` in

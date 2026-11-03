@@ -129,6 +129,17 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Refuse to republish an existing tag
+        id: existing_tag
+        run: |
+          VERSION="${{ needs.sdk.outputs.version }}"
+          if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag v${VERSION} already exists. Leaving that tag and its GitHub Release untouched."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          fi
       - name: Download SDK artifacts
         uses: actions/download-artifact@v4
         with:
@@ -150,12 +161,13 @@ jobs:
           tool: git-cliff@2.14.2
       - name: Update CHANGELOG and release notes
         id: changelog
+        if: steps.existing_tag.outputs.exists != 'true'
         run: |
           python3 scripts/release_changelog.py \
             --version "${{ needs.sdk.outputs.version }}" \
             --write-notes "${RUNNER_TEMP}/release-notes.md"
       - name: Open changelog pull request when updated
-        if: steps.changelog.outputs.changed == 'true'
+        if: steps.existing_tag.outputs.exists != 'true' && steps.changelog.outputs.changed == 'true'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -178,16 +190,14 @@ jobs:
               --title "docs: CHANGELOG for ${{ needs.sdk.outputs.version }}" \
               --body "main is protected, so this changelog update (root + filtered engine package CHANGELOG.md files for UPM and other bindings) is opened as a pull request. The GitHub Release is published without waiting on it."
           fi
-      - name: Resolve tag commit
-        id: tag_commit
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Publish GitHub Release
+        if: steps.existing_tag.outputs.exists != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.sdk.outputs.version }}
           name: Curated.Sdk ${{ needs.sdk.outputs.version }}
           body_path: ${{ runner.temp }}/release-notes.md
-          target_commitish: ${{ steps.tag_commit.outputs.sha }}
+          target_commitish: ${{ steps.existing_tag.outputs.sha }}
           files: |
             release-assets/Curated.Sdk.${{ needs.sdk.outputs.version }}.nupkg
             release-assets/Curated.Sdk.${{ needs.sdk.outputs.version }}.snupkg
