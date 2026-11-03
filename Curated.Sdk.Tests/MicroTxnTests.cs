@@ -55,7 +55,7 @@ public class MicroTxnTests : IDisposable
         var transport = new RecordingTransport((_, _, _) => throw new InvalidOperationException("client must not POST"));
         CuratedClient.InitForTests(1002, transport);
 
-        var result = await MicroTxn.AuthorizeAsync(55, 77, authorized: true);
+        var result = await MicroTxn.AuthorizeAsync(55, 77);
 
         Assert.Empty(transport.Calls);
         Assert.Equal(
@@ -75,7 +75,7 @@ public class MicroTxnTests : IDisposable
             """{"v":1,"type":"microtxn_purchase_result","authorized":true,"status":"Authorized","order_id":9,"trans_id":8,"error_code":null,"error_description":null}""");
         CuratedClient.InitForTests(3, new RecordingTransport());
 
-        var result = await MicroTxn.AuthorizeAsync(9, 8, authorized: false);
+        var result = await MicroTxn.AuthorizeAsync(9, 8);
 
         Assert.Equal(MicroTxnAuthorizationStatus.Authorized, result.Status);
         Assert.Equal(9, result.OrderId);
@@ -89,7 +89,7 @@ public class MicroTxnTests : IDisposable
             """{"v":1,"type":"microtxn_purchase_result","authorized":false,"status":"Error","order_id":11,"trans_id":12,"error_code":7,"error_description":"Order is not pending"}""");
         CuratedClient.InitForTests(3, new RecordingTransport());
 
-        var result = await MicroTxn.AuthorizeAsync(11, 12, authorized: true);
+        var result = await MicroTxn.AuthorizeAsync(11, 12);
 
         Assert.Equal(MicroTxnAuthorizationStatus.Error, result.Status);
         Assert.Equal(7, result.ErrorCode);
@@ -104,7 +104,7 @@ public class MicroTxnTests : IDisposable
         var transport = new RecordingTransport((_, _, _) => throw new InvalidOperationException("client must not POST"));
         CuratedClient.InitForTests(3, transport);
 
-        var result = await MicroTxn.AuthorizeAsync(1, 2, authorized: true);
+        var result = await MicroTxn.AuthorizeAsync(1, 2);
 
         Assert.Empty(transport.Calls);
         Assert.Equal(MicroTxnAuthorizationStatus.Error, result.Status);
@@ -118,7 +118,7 @@ public class MicroTxnTests : IDisposable
         using var server = await StartOverlay(_ => "not-json");
         CuratedClient.InitForTests(3, new RecordingTransport());
 
-        var result = await MicroTxn.AuthorizeAsync(4, 5, authorized: true);
+        var result = await MicroTxn.AuthorizeAsync(4, 5);
 
         Assert.Equal(MicroTxnAuthorizationStatus.Error, result.Status);
         Assert.Equal("Curated overlay returned an unreadable purchase result.", result.ErrorDescription);
@@ -131,7 +131,7 @@ public class MicroTxnTests : IDisposable
         using var server = await StartOverlay(_ => null);
         CuratedClient.InitForTests(3, new RecordingTransport());
 
-        var result = await MicroTxn.AuthorizeAsync(1, 2, authorized: false);
+        var result = await MicroTxn.AuthorizeAsync(1, 2);
 
         Assert.Equal(MicroTxnAuthorizationStatus.Error, result.Status);
         Assert.Equal("Curated overlay did not answer.", result.ErrorDescription);
@@ -153,7 +153,7 @@ public class MicroTxnTests : IDisposable
         Environment.SetEnvironmentVariable(LaunchContext.OverlayTokenVariable, null);
         CuratedClient.InitForTests(3, new RecordingTransport((_, _, _) => throw new InvalidOperationException("client must not POST")));
 
-        var result = await MicroTxn.AuthorizeAsync(4, 5, authorized: false);
+        var result = await MicroTxn.AuthorizeAsync(4, 5);
 
         Assert.Equal(MicroTxnAuthorizationStatus.Authorized, result.Status);
         Assert.Contains("\"token\":\"channel-token\"", seen);
@@ -164,13 +164,13 @@ public class MicroTxnTests : IDisposable
     public async Task AuthorizeAsync_requires_init_and_positive_ids()
     {
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            MicroTxn.AuthorizeAsync(1, 2, true));
+            MicroTxn.AuthorizeAsync(1, 2));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            MicroTxn.AuthorizeAsync(0, 2, true).GetAwaiter().GetResult());
+            MicroTxn.AuthorizeAsync(0, 2).GetAwaiter().GetResult());
 
         CuratedClient.InitForTestsWithoutEntitlement(1002, new RecordingTransport());
         var ex = await Assert.ThrowsAsync<CuratedLaunchException>(() =>
-            MicroTxn.AuthorizeAsync(1, 2, true));
+            MicroTxn.AuthorizeAsync(1, 2));
         Assert.Equal(CuratedLaunchError.NotEntitled, ex.Error);
     }
 

@@ -174,9 +174,9 @@ await Presence.SetAsync("in_game", "Level 3");
 await Presence.HeartbeatAsync();
 
 // In-game purchase. InitTxn and FinalizeTxn stay on the game server (publisher key).
-// The client asks the Curated launcher overlay. `authorized` is ignored.
+// The client asks the Curated launcher overlay.
 // Outside the launcher the status is Error. The client does not POST.
-MicroTxnAuthorization purchase = await MicroTxn.AuthorizeAsync(938473, 374839, authorized: true);
+MicroTxnAuthorization purchase = await MicroTxn.AuthorizeAsync(938473, 374839);
 // purchase.Status is Authorized, Denied, or Error. Same call: Godot authorize_txn,
 // Unreal AuthorizeTxn, RPG Maker authorizeTxn.
 

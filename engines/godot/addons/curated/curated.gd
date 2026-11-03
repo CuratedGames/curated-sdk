@@ -211,15 +211,12 @@ func increment_stat(api_name: String, delta: float = 1.0) -> Dictionary:
 
 
 ## Ask the Curated launcher overlay to confirm an order the game server created with InitTxn.
-## `authorized` is ignored and kept so existing callers still compile. The overlay collects
-## the decision. Returns { ok, status, order_id, trans_id } where status is "authorized" or
-## "denied", or { ok = false, status = "error", error, ... }.
+## The overlay collects the decision. Returns { ok, status, order_id, trans_id } where status
+## is "authorized" or "denied", or { ok = false, status = "error", error, ... }.
 ## Sends one TCP line to CURATED_OVERLAY_ENDPOINT and reads microtxn_purchase_result.
-## Does not POST the player's boolean. Outside the launcher the result is error.
+## Outside the launcher the result is error.
 ## The game server calls FinalizeTxn after the player authorizes.
-func authorize_txn(order_id: int, trans_id: int, authorized: bool) -> Dictionary:
-	# The overlay collects the decision. The argument stays for source compatibility.
-	var _overlay_ignores_game_decision := authorized
+func authorize_txn(order_id: int, trans_id: int) -> Dictionary:
 	if _context.is_empty():
 		return _microtxn_error(order_id, trans_id, Contract.ERR_NOT_LAUNCHED, 0, "")
 	if order_id <= 0 or trans_id <= 0:

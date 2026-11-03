@@ -19,8 +19,7 @@ the check.
   achievement's API name.
 - Script calls: `Curated.unlockAchievement("BOSS_1");`, `Curated.setStat("CardsCreated", 10);`,
   `Curated.incrementStat("CardsCreated", 1);`, `Curated.refreshStats();`,
-  `Curated.authorizeTxn(orderId, transId, true);` (asks the launcher overlay; the boolean is ignored;
-  the client does not POST).
+  `Curated.authorizeTxn(orderId, transId);` (asks the launcher overlay; the client does not POST).
 
 `Curated.session` holds `userId`, `curatedId`, `username`, `language` (raw launcher value),
 `gameLanguage`, and `entitlement` once the check succeeds. `Curated.checkEntitlement()`

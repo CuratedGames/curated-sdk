@@ -95,7 +95,7 @@ It reads one line:
 ```
 
 `status` is `Authorized`, `Denied`, or `Error`. Map that status onto the binding's result. The
-`authorized` argument on the game call is ignored and kept only so existing callers still compile.
+game call does not send a decision.
 The launcher calls `POST /ICuratedMicroTxn/AuthorizeTxn/v1/` (or the sandbox base) with
 `x-curated-overlay-decision`. The game does not. If either overlay variable is missing, the
 purchase result is an error and the game does not fall back to posting its own boolean. Purchases

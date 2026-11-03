@@ -187,15 +187,18 @@ public class DocsSnippetsTests : IDisposable
         });
 
         #region microtxn
-        // The game server created the order with InitTxn and sent orderId / transId.
-        // This asks the Curated launcher overlay (CURATED_OVERLAY_ENDPOINT). The authorized
-        // argument is ignored. The overlay returns Authorized, Denied, or Error.
-        // Outside the launcher this is Error. The client does not POST.
-        MicroTxnAuthorization purchase = await MicroTxn.AuthorizeAsync(938473, 374839, authorized: true);
+        // StartCuratedIAP already called InitTxn and returned these ids as strings.
+        // Parse them, then ask the Curated launcher overlay (CURATED_OVERLAY_ENDPOINT).
+        // The overlay returns Authorized, Denied, or Error.
+        // Outside the launcher this is Error. The client does not POST and never sees the publisher key.
+        long orderId = 938473;
+        long transId = 374839;
+        MicroTxnAuthorization purchase = await MicroTxn.AuthorizeAsync(orderId, transId);
         switch (purchase.Status)
         {
             case MicroTxnAuthorizationStatus.Authorized:
-                // Tell the game server; it calls FinalizeTxn with the publisher key.
+                // Call FinalizeCuratedIAP with the order id string. The server calls FinalizeTxn,
+                // then grants the catalogue qty. Do not grant from the client.
                 break;
             case MicroTxnAuthorizationStatus.Denied:
                 break;

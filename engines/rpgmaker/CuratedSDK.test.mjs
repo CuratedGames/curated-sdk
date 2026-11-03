@@ -90,7 +90,7 @@ test("checkEntitlement and unlock fail before a successful launch", async () => 
   assert.deepEqual(await Curated.refreshStats(), { ok: false, error: "not_launched_by_curated" });
   assert.deepEqual(await Curated.setStat("x", 1), { ok: false, error: "not_launched_by_curated" });
   assert.deepEqual(await Curated.getOpenIdIdToken(), { ok: false, error: "not_launched_by_curated" });
-  assert.deepEqual(await Curated.authorizeTxn(1, 2, true), {
+  assert.deepEqual(await Curated.authorizeTxn(1, 2), {
     ok: false,
     status: "error",
     error: "not_launched_by_curated",
@@ -152,7 +152,7 @@ function listenOverlay(handler) {
   });
 }
 
-test("authorizeTxn asks the overlay and ignores the game boolean", async () => {
+test("authorizeTxn asks the overlay", async () => {
   const log = [];
   let seen = "";
   const overlay = await listenOverlay((line) => {
@@ -190,7 +190,7 @@ test("authorizeTxn asks the overlay and ignores the game boolean", async () => {
   process.env.CURATED_OVERLAY_TOKEN = "overlay-token";
   try {
     assert.equal((await Curated.initFromLauncher(1002, { env, transport })).ok, true);
-    const denied = await Curated.authorizeTxn(55, 77, true);
+    const denied = await Curated.authorizeTxn(55, 77);
     assert.deepEqual(denied, { ok: true, status: "denied", orderId: 55, transId: 77 });
     assert.equal(
       seen,
@@ -199,7 +199,7 @@ test("authorizeTxn asks the overlay and ignores the game boolean", async () => {
     assert.equal(log.some((entry) => String(entry.line).includes("AuthorizeTxn")), false);
 
     process.env.CURATED_OVERLAY_ENDPOINT = "";
-    const missing = await Curated.authorizeTxn(55, 77, false);
+    const missing = await Curated.authorizeTxn(55, 77);
     assert.equal(missing.status, "error");
     assert.equal(missing.ok, false);
     assert.equal(missing.errorDescription, "Purchases require the Curated launcher overlay.");
@@ -244,7 +244,7 @@ test("authorizeTxn maps an overlay error result", async () => {
   process.env.CURATED_OVERLAY_TOKEN = "overlay-token";
   try {
     assert.equal((await Curated.initFromLauncher(1002, { env, transport })).ok, true);
-    const failed = await Curated.authorizeTxn(55, 77, true);
+    const failed = await Curated.authorizeTxn(55, 77);
     assert.deepEqual(failed, {
       ok: false,
       status: "error",
@@ -392,9 +392,9 @@ test("docs snippets: script calls after the launch check", async () => {
   try {
     // #region purchase
     // orderId and transId come from your game server, which created the order with InitTxn.
-    // This asks the Curated launcher overlay. `true` is ignored. Outside the launcher
-    // the status is "error". The client does not POST.
-    const purchase = await Curated.authorizeTxn(938473, 374839, true);
+    // This asks the Curated launcher overlay. Outside the launcher the status is "error".
+    // The client does not POST.
+    const purchase = await Curated.authorizeTxn(938473, 374839);
     if (purchase.status === "authorized") {
       // Tell your game server; it calls FinalizeTxn with the publisher key.
     }
