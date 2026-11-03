@@ -30,8 +30,9 @@ func _on_boss_defeated() -> void:
 
 `Curated.check_entitlement()` re-checks ownership during long sessions. After a successful
 `init_from_launcher`, call `refresh_stats` / `set_stat` / `increment_stat` / `store_stats`,
-`authorize_txn(order_id, trans_id, authorized)` for an in-game purchase the game server
-created (player session only; never a publisher key), or `get_openid_id_token` (never log the
+`authorize_txn(order_id, trans_id, authorized)` to ask the Curated launcher overlay to
+confirm an in-game purchase the game server created (`authorized` is ignored; the client does
+not POST), or `get_openid_id_token` (never log the
 token). Cloud Save, friends, and presence stay on
 `Curated.Sdk.dll` for C# projects. `Curated.session` holds `user_id`, `curated_id`,
 `username`, `language` (raw launcher value), `game_language`, and `entitlement` after init.

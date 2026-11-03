@@ -210,76 +210,111 @@ func increment_stat(api_name: String, delta: float = 1.0) -> Dictionary:
 	}
 
 
-## Begin authorization for an order the game server created with InitTxn.
-## `authorized` is the signed-in player's decision: true keeps the wallet reserve, false
-## releases it and fails the order. Returns { ok, status, order_id, trans_id } where status
-## is "authorized" or "denied", or { ok = false, status = "error", error, ... }.
-## POST /ICuratedMicroTxn/AuthorizeTxn/v1/ with the player session. Never sends a publisher key.
+## Ask the Curated launcher overlay to confirm an order the game server created with InitTxn.
+## `authorized` is ignored and kept so existing callers still compile. The overlay collects
+## the decision. Returns { ok, status, order_id, trans_id } where status is "authorized" or
+## "denied", or { ok = false, status = "error", error, ... }.
+## Sends one TCP line to CURATED_OVERLAY_ENDPOINT and reads microtxn_purchase_result.
+## Does not POST the player's boolean. Outside the launcher the result is error.
 ## The game server calls FinalizeTxn after the player authorizes.
 func authorize_txn(order_id: int, trans_id: int, authorized: bool) -> Dictionary:
+	# The overlay collects the decision. The argument stays for source compatibility.
+	var _overlay_ignores_game_decision := authorized
 	if _context.is_empty():
 		return _microtxn_error(order_id, trans_id, Contract.ERR_NOT_LAUNCHED, 0, "")
 	if order_id <= 0 or trans_id <= 0:
 		return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "")
-	var payload := {
-		"orderid": order_id,
-		"transid": trans_id,
-		"appid": int(_context.app_id),
-		"authorized": authorized,
-	}
-	var res := await _call(_context, HTTPClient.METHOD_POST, "/ICuratedMicroTxn/AuthorizeTxn/v1/", payload)
-	if not res.ok:
-		return _microtxn_error(order_id, trans_id, str(res.get("error", Contract.ERR_HUB)), 0, "")
-	return _microtxn_result(res.body, order_id, trans_id, authorized)
+	return await _overlay_purchase(int(_context.app_id), order_id, trans_id)
 
 
-func _microtxn_result(body, order_id: int, trans_id: int, authorized: bool) -> Dictionary:
-	var response: Dictionary = {}
-	if typeof(body) == TYPE_DICTIONARY and typeof(body.get("response", null)) == TYPE_DICTIONARY:
-		response = body.response
-	var result := str(response.get("result", "")).strip_edges().to_lower()
-	if result == "ok":
-		var params: Dictionary = {}
-		if typeof(response.get("params", null)) == TYPE_DICTIONARY:
-			params = response.params
-		var decision := authorized
-		if params.has("authorized"):
-			var flag = _microtxn_flag(params.authorized)
-			if flag == null:
-				return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "Curated returned an unreadable authorization response.")
-			decision = flag
+func _overlay_purchase(app_id: int, order_id: int, trans_id: int) -> Dictionary:
+	var endpoint := OS.get_environment("CURATED_OVERLAY_ENDPOINT").strip_edges()
+	var token := OS.get_environment("CURATED_OVERLAY_TOKEN").strip_edges()
+	if endpoint.is_empty() or token.is_empty():
+		return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "Purchases require the Curated launcher overlay.")
+	if endpoint.begins_with("http://"):
+		endpoint = endpoint.substr("http://".length()).strip_edges()
+	var colon := endpoint.rfind(":")
+	if colon <= 0:
+		return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "Purchases require the Curated launcher overlay.")
+	var host := endpoint.substr(0, colon).strip_edges()
+	var port := int(endpoint.substr(colon + 1).strip_edges())
+	if host.is_empty() or port <= 0 or port > 65535:
+		return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "Purchases require the Curated launcher overlay.")
+	var peer := StreamPeerTCP.new()
+	if peer.connect_to_host(host, port) != OK:
+		return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "Curated overlay did not answer.")
+	var started := Time.get_ticks_msec()
+	while peer.get_status() == StreamPeerTCP.STATUS_CONNECTING:
+		if Time.get_ticks_msec() - started > 2000:
+			peer.disconnect_from_host()
+			return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "Curated overlay did not answer.")
+		peer.poll()
+		await _overlay_wait_tick()
+	if peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+		peer.disconnect_from_host()
+		return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "Curated overlay did not answer.")
+	var line := "{\"v\":1,\"token\":%s,\"type\":\"microtxn_purchase\",\"app_id\":%d,\"order_id\":%d,\"trans_id\":%d}\n" % [JSON.stringify(token), app_id, order_id, trans_id]
+	if peer.put_data(line.to_utf8_buffer()) != OK:
+		peer.disconnect_from_host()
+		return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "Curated overlay did not answer.")
+	var buffer := ""
+	var deadline := Time.get_ticks_msec() + 600000
+	while Time.get_ticks_msec() < deadline:
+		peer.poll()
+		var available := peer.get_available_bytes()
+		if available > 0:
+			buffer += peer.get_utf8_string(available)
+			var nl := buffer.find("\n")
+			if nl >= 0:
+				peer.disconnect_from_host()
+				return _parse_overlay_purchase(buffer.substr(0, nl).strip_edges(), order_id, trans_id)
+			if buffer.length() > 65536:
+				break
+		if peer.get_status() != StreamPeerTCP.STATUS_CONNECTED and peer.get_available_bytes() == 0:
+			break
+		await _overlay_wait_tick()
+	peer.disconnect_from_host()
+	return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "Curated overlay did not answer.")
+
+
+func _overlay_wait_tick() -> void:
+	if is_inside_tree():
+		await get_tree().process_frame
+	else:
+		OS.delay_msec(10)
+
+
+func _parse_overlay_purchase(line: String, order_id: int, trans_id: int) -> Dictionary:
+	var parsed = JSON.parse_string(line)
+	if typeof(parsed) != TYPE_DICTIONARY or str(parsed.get("type", "")) != "microtxn_purchase_result":
+		return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, 0, "Curated overlay returned an unreadable purchase result.")
+	var echoed_order := int(parsed.get("order_id", order_id))
+	var echoed_trans := int(parsed.get("trans_id", trans_id))
+	if echoed_order <= 0:
+		echoed_order = order_id
+	if echoed_trans <= 0:
+		echoed_trans = trans_id
+	var status := str(parsed.get("status", "")).strip_edges().to_lower()
+	if status == "authorized" or status == "denied":
 		return {
 			"ok": true,
-			"status": "authorized" if decision else "denied",
-			"order_id": int(params.get("orderid", order_id)),
-			"trans_id": int(params.get("transid", trans_id)),
+			"status": status,
+			"order_id": echoed_order,
+			"trans_id": echoed_trans,
 		}
 	var error_code := 0
+	if parsed.get("error_code") != null:
+		error_code = int(parsed.get("error_code"))
 	var error_description := ""
-	if typeof(response.get("error", null)) == TYPE_DICTIONARY:
-		error_code = int(response.error.get("errorcode", 0))
-		error_description = str(response.error.get("errordesc", ""))
+	if parsed.get("error_description") != null:
+		error_description = str(parsed.get("error_description"))
 	if error_description.is_empty():
 		error_description = "Curated could not authorize the order."
-	return _microtxn_error(order_id, trans_id, Contract.ERR_HUB, error_code, error_description)
-
-
-func _microtxn_flag(value):
-	match typeof(value):
-		TYPE_BOOL:
-			return value
-		TYPE_INT, TYPE_FLOAT:
-			if int(value) == 0:
-				return false
-			if int(value) == 1:
-				return true
-	if typeof(value) == TYPE_STRING:
-		var text := str(value).strip_edges().to_lower()
-		if text == "0" or text == "false":
-			return false
-		if text == "1" or text == "true":
-			return true
-	return null
+	if status != "error":
+		error_description = "Curated overlay returned an unreadable purchase result."
+		error_code = 0
+	return _microtxn_error(echoed_order, echoed_trans, Contract.ERR_HUB, error_code, error_description)
 
 
 func _microtxn_error(order_id: int, trans_id: int, error: String, error_code: int, error_description: String) -> Dictionary:

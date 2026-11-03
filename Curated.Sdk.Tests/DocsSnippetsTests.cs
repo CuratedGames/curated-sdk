@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
 using Curated.Sdk.Internal;
 using Xunit;
@@ -10,13 +13,19 @@ namespace Curated.Sdk.Tests;
 /// Code shown on docs.curated.games. The docs import the #region blocks below, so every
 /// snippet on the site compiles and runs here. Keep regions short and free of test-only calls.
 /// </summary>
+[Collection(OverlayEnvCollection.Name)]
 public class DocsSnippetsTests : IDisposable
 {
     private const long AppId = 1002;
 
     public DocsSnippetsTests() => CuratedClient.Shutdown();
 
-    public void Dispose() => CuratedClient.Shutdown();
+    public void Dispose()
+    {
+        Environment.SetEnvironmentVariable(LaunchContext.OverlayEndpointVariable, null);
+        Environment.SetEnvironmentVariable(LaunchContext.OverlayTokenVariable, null);
+        CuratedClient.Shutdown();
+    }
 
     private static async Task<string> InitFromLauncher()
     {
@@ -153,12 +162,35 @@ public class DocsSnippetsTests : IDisposable
     [Fact]
     public async Task Purchase_snippet_runs()
     {
-        CuratedClient.InitForTests(AppId, new RecordingTransport((method, path, body) => """
-            { "response": { "result": "OK", "params": { "orderid": "938473", "transid": "374839", "authorized": 1 } } }
-            """));
+        var transport = new RecordingTransport();
+        CuratedClient.InitForTests(AppId, transport);
+        using var overlay = new TcpListener(IPAddress.Loopback, 0);
+        overlay.Start();
+        var port = ((IPEndPoint)overlay.LocalEndpoint).Port;
+        Environment.SetEnvironmentVariable(LaunchContext.OverlayEndpointVariable, "127.0.0.1:" + port);
+        Environment.SetEnvironmentVariable(LaunchContext.OverlayTokenVariable, "overlay-token");
+        var accepted = Task.Run(async () =>
+        {
+            using var client = await overlay.AcceptTcpClientAsync();
+            using var stream = client.GetStream();
+            var buffer = new byte[1024];
+            var text = "";
+            while (!text.Contains("\n"))
+            {
+                var read = await stream.ReadAsync(buffer, 0, buffer.Length);
+                text += Encoding.UTF8.GetString(buffer, 0, read);
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(
+                "{\"v\":1,\"type\":\"microtxn_purchase_result\",\"authorized\":true,\"status\":\"Authorized\",\"order_id\":938473,\"trans_id\":374839,\"error_code\":null,\"error_description\":null}\n");
+            await stream.WriteAsync(bytes, 0, bytes.Length);
+        });
 
         #region microtxn
-        // The game server created the order with InitTxn and sent orderId / transId to the client.
+        // The game server created the order with InitTxn and sent orderId / transId.
+        // This asks the Curated launcher overlay (CURATED_OVERLAY_ENDPOINT). The authorized
+        // argument is ignored. The overlay returns Authorized, Denied, or Error.
+        // Outside the launcher this is Error. The client does not POST.
         MicroTxnAuthorization purchase = await MicroTxn.AuthorizeAsync(938473, 374839, authorized: true);
         switch (purchase.Status)
         {
@@ -173,7 +205,10 @@ public class DocsSnippetsTests : IDisposable
         }
         #endregion microtxn
 
+        await accepted;
+        overlay.Stop();
         Assert.Equal(MicroTxnAuthorizationStatus.Authorized, purchase.Status);
+        Assert.DoesNotContain(transport.Calls, call => call.RelativePath.Contains("AuthorizeTxn"));
     }
 
     [Fact]
