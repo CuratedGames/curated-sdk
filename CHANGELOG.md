@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.3] - 2026-11-03
+
+### Fixed
+
+- Unity Editor play shows the launcher overlay page over the Game view for purchases and achievements. The page is hosted in its own editor panel that tracks the Game view. The previous host attached Unity's internal web view under the Game view window, which did not paint, and it forced a transparent background that left the page blank. Player builds still do not send `editor_attach` and still require the launcher process (`CURATED_LAUNCHER` and the overlay variables).
+
 ## [1.7.2] - 2026-11-03
 
 ### Fixed
@@ -140,7 +146,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial Curated.Sdk public API: launcher auth, entitlements, achievements, Cloud Save, friends and presence
 
-[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.2...HEAD
+[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.3...HEAD
+[1.7.3]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.2...v1.7.3
 [1.7.2]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.6.0...v1.7.0

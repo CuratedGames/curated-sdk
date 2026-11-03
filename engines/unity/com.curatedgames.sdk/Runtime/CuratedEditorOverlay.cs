@@ -8,7 +8,7 @@ namespace Curated.Unity
 {
 #if UNITY_EDITOR
     /// <summary>
-    /// Hands the launcher overlay page URL to the Editor assembly, which hosts it in the Game view.
+    /// Hands the launcher overlay page URL to the Editor assembly, which hosts it over the Game view.
     /// The URL contains the overlay token in its fragment and must not be logged.
     /// </summary>
     internal static class CuratedEditorOverlay

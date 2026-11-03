@@ -75,10 +75,10 @@ ordinary command-line arguments. Credentials are never on the command line.
 1. Add the package from this repository with a Git URL. In `Packages/manifest.json`:
 
 ```json
-"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.7.2"
+"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.7.3"
 ```
 
-Replace `v1.7.2` with a release tag, `main`, or a commit SHA. Or use
+Replace `v1.7.3` with a release tag, `main`, or a commit SHA. Or use
 **Window > Package Manager > + > Add package from git URL…** with the same URL.
 Use **v1.3.1 or newer** (or `main`). Older tags such as `v1.3.0` still have the previous
 folder name `games.curated.sdk` and fail with a pathspec error.

@@ -6,26 +6,25 @@ using UnityEngine;
 namespace Curated.Unity.Editor
 {
     /// <summary>
-    /// Loads the launcher overlay page inside the Game view. That page is the purchase and
-    /// achievement UI. The page URL contains the overlay token, so this type never logs it.
-    /// Only loopback http(s) URLs are loaded.
+    /// Loads the launcher overlay page in a panel that tracks the Game view while the Editor
+    /// is playing. That page is the purchase and achievement UI. The URL holds the overlay token
+    /// in its fragment and is never logged. Only a loopback http(s) URL is loaded.
+    /// A player build does not include this file.
     /// </summary>
     [InitializeOnLoad]
     static class CuratedGameViewPanel
     {
         const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-        static ScriptableObject webView;
-        static object host;
-        static bool ready;
+        static CuratedOverlayWindow window;
         static bool loggedMissing;
-        static string loadedUrl;
-        static Rect placed;
+        static bool loggedInitFailed;
+        static bool pageReady;
 
         static CuratedGameViewPanel()
         {
-            CuratedEditorOverlay.UrlReady += _ => TryShow();
-            EditorApplication.update += TryShow;
+            CuratedEditorOverlay.UrlReady += _ => Sync();
+            EditorApplication.update += Sync;
             EditorApplication.playModeStateChanged += OnPlayMode;
         }
 
@@ -34,145 +33,73 @@ namespace Curated.Unity.Editor
             if (state == PlayModeStateChange.ExitingPlayMode || state == PlayModeStateChange.EnteredEditMode)
             {
                 CuratedEditorOverlay.Clear();
-                Hide();
+                pageReady = false;
+                CloseWindow();
             }
         }
 
-        static void TryShow()
+        static void Sync()
         {
             var url = CuratedEditorOverlay.CurrentUrl;
-            if (string.IsNullOrEmpty(url) || !EditorApplication.isPlaying)
+            if (!EditorApplication.isPlaying || string.IsNullOrEmpty(url) || !IsLoopbackHttp(url))
             {
                 if (!EditorApplication.isPlaying)
                 {
-                    Hide();
+                    pageReady = false;
+                    CloseWindow();
                 }
 
                 return;
             }
 
-            if (!IsLoopbackHttp(url))
+            if (WebViewType() == null)
             {
                 return;
             }
 
             var gameView = FindGameView();
-            if (gameView == null || !EnsureWebView(gameView))
+            if (gameView == null || !IsVisibleTab(gameView))
+            {
+                pageReady = false;
+                CloseWindow();
+                return;
+            }
+
+            var rect = ContentScreenRect(gameView);
+            if (rect.width < 2f || rect.height < 2f)
             {
                 return;
             }
 
-            var rect = ContentRect(gameView);
-            if (rect != placed)
+            if (window == null)
             {
-                Call(webView, "SetSizeAndPosition", (int)rect.x, (int)rect.y, (int)rect.width, (int)rect.height);
-                placed = rect;
+                window = ScriptableObject.CreateInstance<CuratedOverlayWindow>();
+                window.titleContent = new GUIContent("Curated");
+                window.ShowUtility();
+                window.position = rect;
+                pageReady = false;
+            }
+            else if (window.position != rect)
+            {
+                window.position = rect;
             }
 
-            if (string.Equals(loadedUrl, url, StringComparison.Ordinal))
+            if (!pageReady || window.position != rect)
             {
-                return;
-            }
-
-            if (!Call(webView, "LoadURL", url) && !Call(webView, "LoadURL", url, false))
-            {
-                LogMissing();
-                return;
-            }
-
-            loadedUrl = url;
-            Call(webView, "Show");
-            TryTransparent();
-        }
-
-        static bool EnsureWebView(EditorWindow gameView)
-        {
-            var parent = ParentOf(gameView);
-            if (parent == null)
-            {
-                return false;
-            }
-
-            var type = FindWebViewType();
-            if (type == null)
-            {
-                LogMissing();
-                return false;
-            }
-
-            if (webView == null)
-            {
-                webView = ScriptableObject.CreateInstance(type);
-                webView.hideFlags = HideFlags.HideAndDontSave;
-            }
-
-            if (ready && ReferenceEquals(host, parent))
-            {
-                return true;
-            }
-
-            var rect = ContentRect(gameView);
-            var opened = Call(
-                    webView,
-                    "InitWebView",
-                    parent,
-                    (int)rect.x,
-                    (int)rect.y,
-                    (int)rect.width,
-                    (int)rect.height,
-                    false)
-                || Call(webView, "InitWebView", parent, rect, false, 0)
-                || Call(webView, "InitWebView", parent, rect, false);
-            if (!opened)
-            {
-                LogMissing();
-                return false;
-            }
-
-            host = parent;
-            ready = true;
-            loadedUrl = null;
-            placed = rect;
-            TryTransparent();
-            return true;
-        }
-
-        static void TryTransparent()
-        {
-            if (webView == null)
-            {
-                return;
-            }
-
-            Call(webView, "SetTransparent", true);
-            Call(webView, "SetBackgroundColor", Color.clear);
-            var property = webView.GetType().GetProperty("transparent", Flags);
-            if (property != null && property.CanWrite && property.PropertyType == typeof(bool))
-            {
-                try
-                {
-                    property.SetValue(webView, true);
-                }
-                catch (Exception)
-                {
-                    // A missing transparency hook still leaves the launcher page as the UI.
-                }
+                window.Repaint();
             }
         }
 
-        static void Hide()
+        static void CloseWindow()
         {
-            if (webView != null)
+            if (window == null)
             {
-                Call(webView, "Hide");
-                UnityEngine.Object.DestroyImmediate(webView);
-                webView = null;
+                return;
             }
 
-            host = null;
-            ready = false;
-            loadedUrl = null;
-            placed = new Rect();
+            var open = window;
+            window = null;
+            open.Close();
         }
 
         static EditorWindow FindGameView()
@@ -189,59 +116,277 @@ namespace Curated.Unity.Editor
                 return null;
             }
 
-            return windows[0] as EditorWindow;
-        }
-
-        static object ParentOf(EditorWindow window)
-        {
-            var field = typeof(EditorWindow).GetField("m_Parent", Flags);
-            return field == null ? null : field.GetValue(window);
-        }
-
-        static Rect ContentRect(EditorWindow gameView)
-        {
-            var width = Mathf.Max(1f, gameView.position.width);
-            var height = Mathf.Max(1f, gameView.position.height);
-            const float toolbar = 20f;
-            return new Rect(0f, toolbar, width, Mathf.Max(1f, height - toolbar));
-        }
-
-        static Type FindWebViewType()
-        {
-            var assembly = typeof(UnityEditor.Editor).Assembly;
-            var direct = assembly.GetType("UnityEditor.WebView");
-            if (direct != null)
+            EditorWindow best = null;
+            var bestArea = 0f;
+            foreach (var candidate in windows)
             {
-                return direct;
+                var view = candidate as EditorWindow;
+                if (view == null || !IsVisibleTab(view))
+                {
+                    continue;
+                }
+
+                var area = view.position.width * view.position.height;
+                if (area > bestArea)
+                {
+                    best = view;
+                    bestArea = area;
+                }
+            }
+
+            return best;
+        }
+
+        static bool IsVisibleTab(EditorWindow view)
+        {
+            var parent = ParentOf(view);
+            if (parent == null)
+            {
+                return true;
+            }
+
+            var property = parent.GetType().GetProperty("actualView", Flags);
+            if (property == null)
+            {
+                return true;
             }
 
             try
             {
-                foreach (var type in assembly.GetTypes())
-                {
-                    if (type.Name == "WebView")
-                    {
-                        return type;
-                    }
-                }
+                var actual = property.GetValue(parent, null) as EditorWindow;
+                return actual == null || actual == view;
             }
-            catch (ReflectionTypeLoadException ex)
+            catch (Exception)
             {
-                if (ex.Types == null)
+                return true;
+            }
+        }
+
+        static Rect ContentScreenRect(EditorWindow gameView)
+        {
+            var parent = ParentOf(gameView);
+            var screen = ReadRect(parent, "screenPosition");
+            if (screen.width < 2f || screen.height < 2f)
+            {
+                screen = gameView.position;
+            }
+
+            var chrome = ToolbarHeight();
+            // Dock tabs, then the Game view toolbar, sit above the rendered game.
+            screen.y += chrome * 2f;
+            screen.height = Mathf.Max(1f, screen.height - chrome * 2f);
+            return screen;
+        }
+
+        static Rect ReadRect(object target, string propertyName)
+        {
+            if (target == null)
+            {
+                return new Rect();
+            }
+
+            for (var type = target.GetType(); type != null; type = type.BaseType)
+            {
+                var property = type.GetProperty(propertyName, Flags | BindingFlags.DeclaredOnly);
+                if (property == null || property.PropertyType != typeof(Rect))
                 {
-                    return null;
+                    continue;
                 }
 
-                foreach (var type in ex.Types)
+                try
                 {
-                    if (type != null && type.Name == "WebView")
+                    if (property.GetValue(target, null) is Rect rect)
                     {
-                        return type;
+                        return rect;
                     }
+                }
+                catch (Exception)
+                {
+                    return new Rect();
                 }
             }
 
-            return null;
+            return new Rect();
+        }
+
+        static object ParentOf(EditorWindow view)
+        {
+            var field = typeof(EditorWindow).GetField("m_Parent", Flags);
+            return field == null ? null : field.GetValue(view);
+        }
+
+        static float ToolbarHeight()
+        {
+            try
+            {
+                var height = EditorStyles.toolbar.fixedHeight;
+                if (height > 1f)
+                {
+                    return height;
+                }
+            }
+            catch (Exception)
+            {
+                // The editor skin is not ready yet.
+            }
+
+            return 21f;
+        }
+
+        static Type webViewType;
+        static bool webViewTypeSearched;
+
+        internal static Type WebViewType()
+        {
+            if (webViewTypeSearched)
+            {
+                return webViewType;
+            }
+
+            webViewTypeSearched = true;
+            var editor = typeof(UnityEditor.Editor).Assembly;
+            webViewType = editor.GetType("UnityEditor.WebView") ?? editor.GetType("UnityEditor.Web.WebView");
+            if (webViewType == null)
+            {
+                LogMissing();
+            }
+
+            return webViewType;
+        }
+
+        static void LogMissing()
+        {
+            if (loggedMissing)
+            {
+                return;
+            }
+
+            loggedMissing = true;
+            Debug.LogWarning(
+                "[Curated] This Unity editor has no internal web view, so the launcher overlay page cannot be shown over the Game view.");
+        }
+
+        static void LogInitFailed()
+        {
+            if (loggedInitFailed)
+            {
+                return;
+            }
+
+            loggedInitFailed = true;
+            Debug.LogWarning(
+                "[Curated] The editor web view did not attach to the Game view panel, so the launcher overlay page is not visible.");
+        }
+
+        static bool IsLoopbackHttp(string url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                return false;
+            }
+
+            if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            {
+                return false;
+            }
+
+            if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return System.Net.IPAddress.TryParse(uri.Host, out var address) && System.Net.IPAddress.IsLoopback(address);
+        }
+
+        sealed class CuratedOverlayWindow : EditorWindow
+        {
+            ScriptableObject webView;
+            string loadedUrl;
+
+            void OnGUI()
+            {
+                var url = CuratedEditorOverlay.CurrentUrl;
+                if (string.IsNullOrEmpty(url) || !IsLoopbackHttp(url))
+                {
+                    return;
+                }
+
+                if (Event.current.type != EventType.Repaint && webView != null)
+                {
+                    return;
+                }
+
+                var parent = ParentOf(this);
+                if (parent == null || position.width < 2f || position.height < 2f)
+                {
+                    return;
+                }
+
+                var type = WebViewType();
+                if (type == null)
+                {
+                    return;
+                }
+
+                var width = Mathf.Max(1, (int)position.width);
+                var height = Mathf.Max(1, (int)position.height);
+                if (webView == null)
+                {
+                    if (Event.current.type != EventType.Repaint)
+                    {
+                        return;
+                    }
+
+                    var created = ScriptableObject.CreateInstance(type);
+                    if (!Call(created, "InitWebView", parent, 0, 0, width, height, false)
+                        && !Call(created, "InitWebView", parent, new Rect(0f, 0f, width, height), false, 0)
+                        && !Call(created, "InitWebView", parent, new Rect(0f, 0f, width, height), false))
+                    {
+                        DestroyImmediate(created);
+                        LogInitFailed();
+                        return;
+                    }
+
+                    webView = created;
+                    loadedUrl = null;
+                    pageReady = false;
+                }
+
+                Call(webView, "SetHostView", parent);
+                Call(webView, "SetSizeAndPosition", 0, 0, width, height);
+                Call(webView, "Show");
+                if (string.Equals(loadedUrl, url, StringComparison.Ordinal))
+                {
+                    pageReady = true;
+                    return;
+                }
+
+                if (!Call(webView, "LoadURL", url) && !Call(webView, "LoadURL", url, false) && !Call(webView, "LoadUrl", url))
+                {
+                    return;
+                }
+
+                loadedUrl = url;
+                pageReady = true;
+                Call(webView, "Show");
+                Call(webView, "SetFocus", true);
+            }
+
+            void OnDestroy()
+            {
+                pageReady = false;
+                if (webView != null)
+                {
+                    Call(webView, "Hide");
+                    DestroyImmediate(webView);
+                    webView = null;
+                }
+
+                if (window == this)
+                {
+                    window = null;
+                }
+            }
         }
 
         static System.Collections.Generic.IEnumerable<MethodInfo> Methods(Type type)
@@ -266,7 +411,7 @@ namespace Curated.Unity.Editor
 
             foreach (var method in Methods(target.GetType()))
             {
-                if (method.Name != name)
+                if (!string.Equals(method.Name, name, StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -292,8 +437,8 @@ namespace Curated.Unity.Editor
                     }
 
                     var parameterType = parameters[i].ParameterType;
-                    var argType = args[i].GetType();
-                    if (parameterType != argType && !parameterType.IsAssignableFrom(argType))
+                    var argumentType = args[i].GetType();
+                    if (parameterType != argumentType && !parameterType.IsAssignableFrom(argumentType))
                     {
                         matches = false;
                         break;
@@ -317,37 +462,6 @@ namespace Curated.Unity.Editor
             }
 
             return false;
-        }
-
-        static bool IsLoopbackHttp(string url)
-        {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            {
-                return false;
-            }
-
-            if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
-            {
-                return false;
-            }
-
-            if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            return System.Net.IPAddress.TryParse(uri.Host, out var address) && System.Net.IPAddress.IsLoopback(address);
-        }
-
-        static void LogMissing()
-        {
-            if (loggedMissing)
-            {
-                return;
-            }
-
-            loggedMissing = true;
-            Debug.LogWarning("[Curated] The Game view could not host the launcher overlay page.");
         }
     }
 }
