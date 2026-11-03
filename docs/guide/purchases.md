@@ -2,7 +2,7 @@
 
 Your **game server** creates and finalizes the order with the [publisher Web API key](/admin/web-api). The **game client** asks the Curated launcher overlay to confirm the purchase. 
 
-Rememeber: the publisher key never goes into the game client.
+Remember: the publisher key never goes into the game client.
 
 The samples under [Game client](#game-client) are that overlay handoff. Which Curated base the order uses is chosen in the [game server](#game-server).
 
@@ -14,14 +14,6 @@ The player, the game, your server, and Curated each do a different job.
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 560" role="img" aria-labelledby="purchase-flow-title purchase-flow-desc">
   <title id="purchase-flow-title">In-app purchase flow across the game client, the game server, and Curated</title>
   <desc id="purchase-flow-desc">The game client asks the server to start an order, the server calls InitTxn with the publisher key on either the live or sandbox base, the client asks the Curated launcher overlay to confirm the purchase, and the launcher calls AuthorizeTxn on that same live or sandbox path. Then the server calls FinalizeTxn on the same base it used to start the order. Live orders move wallet funds. Sandbox orders do not.</desc>
-  <style>
-    .pf-box { fill: var(--curated-bg-deep); stroke: var(--curated-line-soft); }
-    .pf-title { fill: var(--curated-fg-bright); font: 600 15px "Source Sans 3", sans-serif; }
-    .pf-line { stroke: var(--curated-faint); stroke-width: 1.5; }
-    .pf-arrow { stroke: var(--curated-accent); stroke-width: 1.6; fill: none; }
-    .pf-label { fill: var(--curated-fg); font: 13px "Source Sans 3", sans-serif; }
-    .pf-note { fill: var(--curated-muted); font: 12px "Source Sans 3", sans-serif; }
-  </style>
   <rect class="pf-box" x="16" y="16" width="200" height="40" rx="8"/>
   <rect class="pf-box" x="280" y="16" width="200" height="40" rx="8"/>
   <rect class="pf-box" x="544" y="16" width="200" height="40" rx="8"/>
@@ -54,7 +46,7 @@ The player, the game, your server, and Curated each do a different job.
   <text class="pf-note" x="380" y="538" text-anchor="middle">Sandbox: same statuses, no wallet movement.</text>
   <defs>
     <marker id="pf-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 1.2 L 9 5 L 0 8.8 z" fill="var(--curated-accent)"/>
+      <path class="pf-head" d="M 0 1.2 L 9 5 L 0 8.8 z"/>
     </marker>
   </defs>
 </svg>
@@ -65,34 +57,21 @@ part of the client samples.
 
 ## Game client
 
-The client asks the Curated launcher overlay to confirm an order the server already created.  
+The client asks the Curated launcher overlay to confirm an order the server already created.
 Purchases only run inside the Curated launcher.
 
-When `CURATED_OVERLAY_ENDPOINT` and `CURATED_OVERLAY_TOKEN` are set, every binding opens a TCP
-connection and sends one line before any HTTP call:
+The launcher sets `CURATED_OVERLAY_ENDPOINT` and `CURATED_OVERLAY_TOKEN`. The binding uses them
+to ask the overlay for a decision. If they are missing, the call returns error. The game does
+not send a decision. The overlay reports `Authorized`, `Denied`, or `Error`, and the binding
+maps that onto its result. The launcher authorizes the order on the live or sandbox base the
+server already chose.
 
-```json
-{"v":1,"token":"<CURATED_OVERLAY_TOKEN>","type":"microtxn_purchase","app_id":1002,"order_id":938473,"trans_id":374839}
-```
+A binding does this for you. An engine without one follows
+[Overlay purchase handoff](https://github.com/CuratedGames/curated-sdk/blob/main/contracts/launch-contract.md#overlay-purchase-handoff)
+in the launch contract spec.
 
-It reads one line back:
-
-```json
-{"v":1,"type":"microtxn_purchase_result","authorized":true,"status":"Authorized","order_id":938473,"trans_id":374839,"error_code":null,"error_description":null}
-```
-
-`status` is `Authorized`, `Denied`, or `Error`. The binding maps that status onto its result.
-The game does not send a decision. The launcher calls AuthorizeTxn, with
-`x-curated-overlay-decision`, on the live or sandbox path the order is already using.
-
-If those overlay variables are missing, the call returns error.
-
-Unity Editor play can still reach the overlay. On init, the Editor sends `editor_attach` to a
-running launcher with the signed-in account, without the launcher having started Unity. The
-launcher then draws its purchase window on the Game view. Leaving play mode, or quitting a
-player build, sends `game_closed` and the launcher cancels that game's microtransaction.
-The launcher still calls AuthorizeTxn. A player build without the launcher returns error, as  
-above.
+Unity Editor play can show this overlay when a signed-in launcher is running. See
+[Unity](./unity#sign-in-and-check-ownership).
 
 1. The game server calls InitTxn and sends `orderId` and `transId` to the client.
 2. The client calls the binding's authorize call. The launcher overlay collects the decision.
@@ -164,7 +143,7 @@ orderid=1000000000000000001&curatedid=<player curated id>&appid=1002&itemcount=1
 
 `orderid` is a positive 64-bit integer you mint on the server. One game starts that counter at `1000000000000000000` so it does not collide with another storefront's sequence. `curatedid` is the player's Curated id, the same id the launcher session returned at sign-in. `description[0]` is the line the overlay shows. The client in this shop sends `Coins` or `Gems`.
 
-Omit `usersession`, or send `client`, and the launcher overlay asks the player to confirm. `usersession=web` is accepted and stored for a browser checkout. That checkout is unused: InitTxn does not return a redirect URL, and nothing opens a browser. When it is added, a web order will also send the buyer's public `ipaddress`, and the response will include the URL to open.
+Omit `usersession`, or send `client`, and the launcher overlay asks the player to confirm. `usersession=web` does not open a browser: InitTxn does not return a redirect URL.
 
 `category[0]` is optional. It is a label stored with that line and returned by QueryTxn. The overlay does not show it. Maximum 64 characters.
 
@@ -249,7 +228,7 @@ The game client calls the module, then calls the Curated SDK only for the player
 10. On later sign-ins, run QueryTxn for orders you still remember, as in the status table above.
 
 The helpers under `Post` are your player record, order counter, and inventory. This module is an
-example. It is not part of the Curated SDK and CI does not compile it.
+example you host yourself. It is not part of the Curated SDK.
 
 ```csharp
 using System;
@@ -317,7 +296,7 @@ public class CuratedPurchases
 
     static string BasePath(IExecutionContext context)
     {
-        //we heavily recommend you to automatically set an automatic "developer environment" detection like this to avoid spending while testing.
+        // Sandbox outside production, so a test order does not move wallet funds.
         if (context.EnvironmentName == "dev")
         {
             return "ICuratedMicroTxnSandbox";

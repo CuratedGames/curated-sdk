@@ -20,12 +20,6 @@ On failure, `InitFromLauncherAsync` throws `CuratedLaunchException`:
 
 <<< @/../Curated.Sdk.Tests/DocsSnippetsTests.cs#launch-error{csharp}
 
-::: tip Tested code
-Every C# block on this site is imported from
-[`Curated.Sdk.Tests/DocsSnippetsTests.cs`](https://github.com/CuratedGames/curated-sdk/blob/main/Curated.Sdk.Tests/DocsSnippetsTests.cs),
-which `dotnet test` compiles and runs in CI.
-:::
-
 If the game already holds a session token, `CuratedClient.InitAsync(appId, token)` runs the same
 checks. Every init path verifies ownership. Game-scoped APIs refuse to run until it succeeds
 (`CuratedClient.IsEntitled`).
@@ -39,8 +33,7 @@ checks. Every init path verifies ownership. Game-scoped APIs refuse to run until
 
 <<< @/../Curated.Sdk.Tests/DocsSnippetsTests.cs#achievements{csharp}
 
-Newly unlocked achievements notify the Curated launcher overlay. Do not build a separate Curated
-toast in the game. See [Achievements and stats](./achievements-stats).
+See [Achievements and stats](./achievements-stats).
 
 ### Stats
 

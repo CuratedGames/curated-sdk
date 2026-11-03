@@ -45,17 +45,14 @@ curated-content-builder.exe upload ^
   --version 1.2.3
 ```
 
-Without `--depot-id`, the build goes to the base depot `<app_id>_00`. The builder checks the
-format before packing: depot keys such as `content` and the old `--depot-key` flag are rejected.
+Without `--depot-id`, the build goes to the base depot `<app_id>_00`.
 
 What happens:
 
 1. Checks the depot ID and that you own the app.
-2. Hashes each file and stages compressed blobs under `<build-output>/.cas-staging`.
-3. Measures upload bandwidth and picks chunk size and parallel uploads. Override with
-   `--chunk-size` and `--concurrency`.
-4. Uploads only the files Curated does not have yet.
-5. Registers the build on the depot. It does not set it live.
+2. Uploads only the files Curated does not have yet. Override chunk size and parallel uploads
+   with `--chunk-size` and `--concurrency`.
+3. Registers the build on the depot. It does not set it live.
 
 ## 4. Set the build live
 
@@ -68,11 +65,6 @@ Put the settings in a TOML file and run `upload --script <file>`. Paths are rela
 script.
 
 <<< @/../tooling/content-builder/examples/simple_app_build.toml#script{toml}
-
-::: tip Tested code
-This example is loaded by a `cargo test` in CI, and every flag on the
-[CLI reference](/reference/content-builder) is parsed from the source on each build.
-:::
 
 ## Environment variables
 

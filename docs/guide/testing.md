@@ -20,21 +20,7 @@ out of builds you share.
 
 ## Engine shortcuts
 
-- **Unity**: in the Editor, `CuratedUnity.InitFromLauncherAsync` sends `editor_attach` to a
-  running Curated launcher with the signed-in account. The launcher does not have to start
-  Unity, and `CURATED_LAUNCHER` is not required. The launcher draws its overlay on the Game view.
-  Leaving play mode cancels a purchase that session started. The bootstrap can keep playing if that
-  connection fails. `not_signed_in` does not start the session. A player build does not send
-  `editor_attach`.
+- **Unity**: Editor play can sign in through a running launcher, without the variables above.
+  See [Unity](./unity#sign-in-and-check-ownership).
 - **RPG Maker**: test play from the editor skips the check.
 - **Godot, Unreal, .NET**: set the variables above.
-
-## Run the binding tests
-
-```bash
-dotnet test Curated.Sdk.sln --configuration Release
-node --test engines/rpgmaker/CuratedSDK.test.mjs
-```
-
-Godot and Unreal tests run inside the engine. See [Godot 4](./godot#tests) and
-[Unreal Engine 5](./unreal#tests).

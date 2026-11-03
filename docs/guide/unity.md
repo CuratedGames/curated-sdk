@@ -50,23 +50,17 @@ catch (CuratedLaunchException e)
 #endif
 ```
 
-::: info Not compiled in CI
-Unity projects are not built in CI, so the snippet above is checked by review only. Everything
-after `InitFromLauncherAsync` uses the `Curated.Sdk` API, whose examples on the
-[.NET page](./dotnet) are compiled and run by `dotnet test`.
-:::
-
 `CuratedUnity.InitFromLauncherAsync` shuts Curated down when the application quits.
 
-In the Unity Editor, `InitFromLauncherAsync` sends `editor_attach` to a running Curated launcher
-with the account signed in there. The launcher does not have to start Unity, and the Editor
-does not need `CURATED_LAUNCHER`. On success, the launcher draws its overlay on the Game view.
-That window is the purchase and achievement UI. Leaving play mode cancels a purchase that
-session started. A successful attach initializes the session, so
-editor play does not fail with `not_launched_by_curated`. If the launcher is not signed in, the
-reply is `not_signed_in` and that session is not started. Player builds still return
-`not_launched_by_curated` when the launcher did not start them. A player build does not
-send `editor_attach`. Do not reimplement that connection in the game.
+In the Unity Editor, `InitFromLauncherAsync` connects to a running Curated launcher that is
+already signed in. The launcher does not have to start Unity, and the Editor does not need
+`CURATED_LAUNCHER`. On success, the launcher draws its overlay on the Game view. That window is
+the purchase and achievement UI. Leaving play mode cancels a purchase that session started. A
+successful connection initializes the session, so editor play does not fail with
+`not_launched_by_curated`. If the launcher is not signed in, the reply is `not_signed_in` and
+that session is not started. Player builds still return `not_launched_by_curated` when the
+launcher did not start them. A player build does not open this editor connection. Do not
+reimplement it in the game.
 
 **Skip In Editor** on the bootstrap still lets play continue when the launcher is not running.
 It does try the connection first, so a signed-in launcher is enough for the Game view overlay.

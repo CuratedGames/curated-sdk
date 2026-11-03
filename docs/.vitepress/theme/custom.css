@@ -14,3 +14,34 @@
   width: 100%;
   height: auto;
 }
+
+/* Keep these on the theme stylesheet. A <style> block inside the SVG resolves
+   var(--curated-*) before this file applies, and the boxes stay black until reload. */
+.purchase-flow .pf-box {
+  fill: var(--curated-bg-deep);
+  stroke: var(--curated-line-soft);
+}
+.purchase-flow .pf-title {
+  fill: var(--curated-fg-bright);
+  font: 600 15px var(--curated-font-body);
+}
+.purchase-flow .pf-line {
+  stroke: var(--curated-faint);
+  stroke-width: 1.5;
+}
+.purchase-flow .pf-arrow {
+  stroke: var(--curated-accent);
+  stroke-width: 1.6;
+  fill: none;
+}
+.purchase-flow .pf-label {
+  fill: var(--curated-fg);
+  font: 13px var(--curated-font-body);
+}
+.purchase-flow .pf-note {
+  fill: var(--curated-muted);
+  font: 12px var(--curated-font-body);
+}
+.purchase-flow .pf-head {
+  fill: var(--curated-accent);
+}
