@@ -35,6 +35,8 @@ jobs:
         run: python3 scripts/check-game-languages.py
       - name: Check public API manifest matches every binding
         run: python3 scripts/check-public-api.py
+      - name: Check Unity .meta files (valid unique GUIDs, no missing or orphan .meta)
+        run: python3 scripts/check-unity-meta.py
       - name: Pack engine bindings
         run: |
           bash scripts/pack-unity-zip.sh "${RUNNER_TEMP}/sdk-unity"

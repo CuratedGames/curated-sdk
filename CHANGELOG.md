@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.2] - 2026-11-03
+
+### Fixed
+
+- Unity package `com.curatedgames.sdk` imports again: `Editor.meta`, `Editor/Curated.Unity.Editor.asmdef.meta`, and `Editor/CuratedGameViewPanel.cs.meta` had 34-character GUIDs, so Unity ignored the Editor assembly and the Game view panel ("does not have a valid GUID"). They and `Runtime/CuratedEditorOverlay.cs.meta` now have valid random GUIDs.
+
+### Changed
+
+- CI checks every Unity `.meta` under `engines/unity` (`scripts/check-unity-meta.py`): 32 lowercase hex GUIDs, no duplicates, no asset without a `.meta`, and no orphan `.meta`.
+
 ## [1.7.1] - 2026-11-03
 
 ### Added
@@ -130,7 +140,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial Curated.Sdk public API: launcher auth, entitlements, achievements, Cloud Save, friends and presence
 
-[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.1...HEAD
+[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.2...HEAD
+[1.7.2]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.5.2...v1.6.0
