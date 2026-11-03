@@ -371,9 +371,11 @@ paths:
         on the live or sandbox base, with header `x-curated-overlay-decision`. Official game
         clients do not call this route and do not post the player's boolean. The game server
         creates the order with InitTxn (publisher key, which the game never has) and passes
-        `orderid` and `transid` to the client. This call records the overlay decision. It does
-        not capture the wallet reserve; the game server calls FinalizeTxn after the player
-        authorizes.
+        `orderid` and `transid` to the client. InitTxn takes one listed currency. When that
+        is not the player's wallet currency, Curated converts the amount with the automatic
+        regional rates and reserves the converted price. This call records the overlay
+        decision for that reserve. It does not capture the wallet reserve; the game server
+        calls FinalizeTxn after the player authorizes.
 
         Authenticate with the launcher session bearer token only. Do not send a publisher
         `key` query parameter or body field. The sandbox base is a game-server setting, not

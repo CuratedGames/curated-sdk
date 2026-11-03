@@ -74,8 +74,9 @@ public static class MicroTxn
     /// <paramref name="authorized"/> is ignored and kept so existing callers still compile.
     /// The launcher calls AuthorizeTxn. If the overlay variables are missing, the result is
     /// <see cref="MicroTxnAuthorizationStatus.Error"/> and this method does not POST.
-    /// Purchases only proceed inside the Curated launcher. The game server still calls
-    /// FinalizeTxn after the player authorizes.
+    /// Purchases only proceed inside the Curated launcher. InitTxn may have converted the
+    /// game's listed price into the player's wallet currency; the overlay confirms that
+    /// converted reserve. The game server still calls FinalizeTxn after the player authorizes.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">
     /// <paramref name="orderId"/> or <paramref name="transId"/> is not positive.
