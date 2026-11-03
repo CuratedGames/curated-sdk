@@ -127,12 +127,26 @@ The launcher replies with one JSON line. Success includes `endpoint`, `overlay_t
 `http://127.0.0.1:{port}/overlay.html?editor=1#{overlay_token}`. The HTTP port may differ from
 `endpoint`. The fragment is the overlay token. The SDK adopts `endpoint`, `overlay_token`, and
 `overlay_url` in memory. Achievement and purchase messages use that adopted endpoint and token
-ahead of `CURATED_OVERLAY_ENDPOINT` and `CURATED_OVERLAY_TOKEN`. The Editor loads `overlay_url`
-in a panel over the Game view. That page is the purchase and achievement UI. The SDK does not
-draw its own purchase or achievement controls, and it does not force a transparent web view
-background (that left the page blank). After this success, init uses the same
-account token when launch variables are absent, so the call does not fail with
-`not_launched_by_curated`.
+ahead of `CURATED_OVERLAY_ENDPOINT` and `CURATED_OVERLAY_TOKEN`. Unity 6 has no embedded editor
+web view. While play mode is running, the Editor sends the Game view rectangle in physical
+screen pixels so the launcher can place its own overlay window on that rectangle, the same
+window it uses for a launched game:
+
+```json
+{"v":1,"token":"<overlay token>","type":"editor_frame","x":0,"y":0,"width":1280,"height":720}
+```
+
+When play mode exits, or when a player build quits, the SDK sends `game_closed` with that overlay
+token. The launcher drops the editor session and cancels the microtransaction that game started,
+including a reserve that is still pending:
+
+```json
+{"v":1,"token":"<overlay token>","type":"game_closed"}
+```
+
+A later Play attaches again. The SDK does not draw its own purchase controls. After a successful
+attach, init uses the same account token when launch variables are absent, so the call does not
+fail with `not_launched_by_curated`.
 
 When the launcher is not signed in:
 

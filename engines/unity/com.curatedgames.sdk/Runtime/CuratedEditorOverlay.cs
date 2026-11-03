@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Curated.Sdk.Internal;
 
 [assembly: InternalsVisibleTo("Curated.Unity.Editor")]
 
@@ -8,8 +9,9 @@ namespace Curated.Unity
 {
 #if UNITY_EDITOR
     /// <summary>
-    /// Hands the launcher overlay page URL to the Editor assembly, which hosts it over the Game view.
-    /// The URL contains the overlay token in its fragment and must not be logged.
+    /// Remembers that the Editor attached to the launcher. The Editor assembly reports the Game view
+    /// rectangle so the launcher can draw its overlay window there. The URL contains the overlay
+    /// token in its fragment and must not be logged.
     /// </summary>
     internal static class CuratedEditorOverlay
     {
@@ -52,6 +54,20 @@ namespace Curated.Unity
         internal static void Clear()
         {
             CurrentUrl = null;
+        }
+
+        internal static void ReportGameView(int x, int y, int width, int height)
+        {
+            OverlayNotifier.NotifyGameView(x, y, width, height);
+        }
+
+        /// <summary>
+        /// Play mode is ending. Tell the launcher to drop this session and cancel a purchase it started.
+        /// </summary>
+        internal static void ClosePlaySession()
+        {
+            OverlayNotifier.NotifyGameClosed();
+            Clear();
         }
     }
 #endif

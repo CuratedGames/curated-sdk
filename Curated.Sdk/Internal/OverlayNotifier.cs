@@ -50,6 +50,45 @@ internal static class OverlayNotifier
         _ = Task.Run(() => SendQuiet(host, port, payload));
     }
 
+    /// <summary>
+    /// Game view rectangle in physical screen pixels. Fire-and-forget. The launcher places its
+    /// overlay window there. Never logs the overlay token.
+    /// </summary>
+    public static void NotifyGameView(int x, int y, int width, int height)
+    {
+        if (width < 2 || height < 2)
+        {
+            return;
+        }
+
+        if (!OverlayChannel.TryResolve(out var endpoint, out var token))
+        {
+            return;
+        }
+
+        if (!TryParseEndpoint(endpoint, out var host, out var port))
+        {
+            return;
+        }
+
+        var payload = BuildGameViewPayload(token, x, y, width, height);
+        _ = Task.Run(() => SendQuiet(host, port, payload));
+    }
+
+    /// <summary>
+    /// The game that owns this overlay session is closing. Blocks briefly so the launcher can
+    /// cancel a purchase before this process or play mode is gone. Clears the adopted channel.
+    /// </summary>
+    public static void NotifyGameClosed()
+    {
+        if (OverlayChannel.TryResolve(out var endpoint, out var token) && TryParseEndpoint(endpoint, out var host, out var port))
+        {
+            SendQuiet(host, port, BuildGameClosedPayload(token));
+        }
+
+        OverlayChannel.Clear();
+    }
+
     public static void NotifyAchievementToasts(
         long appId,
         IReadOnlyList<AchievementToastWire>? toasts,
@@ -138,6 +177,32 @@ internal static class OverlayNotifier
         }
 
         sb.Append('}');
+        return sb.ToString();
+    }
+
+    internal static string BuildGameViewPayload(string token, int x, int y, int width, int height)
+    {
+        var sb = new StringBuilder(128);
+        sb.Append("{\"v\":1,\"token\":");
+        AppendJsonString(sb, token);
+        sb.Append(",\"type\":\"editor_frame\",\"x\":");
+        sb.Append(x.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        sb.Append(",\"y\":");
+        sb.Append(y.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        sb.Append(",\"width\":");
+        sb.Append(width.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        sb.Append(",\"height\":");
+        sb.Append(height.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        sb.Append('}');
+        return sb.ToString();
+    }
+
+    internal static string BuildGameClosedPayload(string token)
+    {
+        var sb = new StringBuilder(64);
+        sb.Append("{\"v\":1,\"token\":");
+        AppendJsonString(sb, token);
+        sb.Append(",\"type\":\"game_closed\"}");
         return sb.ToString();
     }
 

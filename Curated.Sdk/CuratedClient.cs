@@ -267,6 +267,7 @@ public static class CuratedClient
     /// <summary>Shut down Curated and release network resources. Safe to call more than once.</summary>
     public static void Shutdown()
     {
+        OverlayNotifier.NotifyGameClosed();
         ClientState? old;
         lock (Gate)
         {
