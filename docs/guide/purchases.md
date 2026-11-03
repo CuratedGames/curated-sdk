@@ -212,8 +212,9 @@ A sandbox order still moves through pending, authorized, captured, and refunded.
 are reserved, captured, or refunded. On the live base, InitTxn reserves funds and FinalizeTxn
 captures them. RefundTxn returns them.
 
-Use a [Stripe test card](https://docs.stripe.com/testing#cards) for a sandbox order. Test cards
-are for the sandbox endpoint only.
+::: tip
+A sandbox purchase assumes the player already has enough funds. The player is not redirected to Add funds.
+:::
 
 ### Unity Cloud Code
 
