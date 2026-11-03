@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import net from "node:net";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -134,21 +135,46 @@ test("setStat and incrementStat hit the player stats routes", async () => {
   assert.deepEqual(log.at(-1).body, { delta: 1 });
 });
 
-test("authorizeTxn posts the player decision and never a publisher key", async () => {
+function listenOverlay(handler) {
+  return new Promise((resolve) => {
+    const server = net.createServer((socket) => {
+      let buf = "";
+      socket.on("data", (chunk) => {
+        buf += chunk.toString("utf8");
+        const nl = buf.indexOf("\n");
+        if (nl < 0) return;
+        const reply = handler(buf.slice(0, nl));
+        if (reply == null) return;
+        socket.end(`${reply}\n`);
+      });
+    });
+    server.listen(0, "127.0.0.1", () => resolve({ server, port: server.address().port }));
+  });
+}
+
+test("authorizeTxn asks the overlay and ignores the game boolean", async () => {
   const log = [];
+  let seen = "";
+  const overlay = await listenOverlay((line) => {
+    seen = line;
+    return JSON.stringify({
+      v: 1,
+      type: "microtxn_purchase_result",
+      authorized: false,
+      status: "Denied",
+      order_id: 55,
+      trans_id: 77,
+      error_code: null,
+      error_description: null,
+    });
+  });
   const transport = async (method, url, token, body) => {
     log.push({ line: `${method} ${url}`, token, body });
     const path = new URL(url).pathname;
     if (path === "/auth/me") return { status: 200, text: '{"user_id":"u","username":"p","curated_id":"10000000000000001"}' };
     if (path === "/library") return { status: 200, text: '[{"app_id":1002,"source":"grant"}]' };
     if (path === "/ICuratedMicroTxn/AuthorizeTxn/v1/") {
-      const decision = body && body.authorized ? 1 : 0;
-      return {
-        status: 200,
-        text: JSON.stringify({
-          response: { result: "OK", params: { orderid: "55", transid: "77", authorized: decision } },
-        }),
-      };
+      throw new Error("client must not POST");
     }
     return { status: 500, text: "" };
   };
@@ -158,31 +184,53 @@ test("authorizeTxn posts the player decision and never a publisher key", async (
     CURATED_APP_ID: "1002",
     CURATED_SESSION_TOKEN: "tok",
   };
-  assert.equal((await Curated.initFromLauncher(1002, { env, transport })).ok, true);
-  const authorized = await Curated.authorizeTxn(55, 77, true);
-  assert.deepEqual(authorized, { ok: true, status: "authorized", orderId: 55, transId: 77 });
-  assert.equal(log.at(-1).line, "POST https://api.curated.games/ICuratedMicroTxn/AuthorizeTxn/v1/");
-  assert.equal(log.at(-1).token, "tok");
-  assert.deepEqual(log.at(-1).body, { orderid: 55, transid: 77, appid: 1002, authorized: true });
-  assert.equal("key" in log.at(-1).body, false);
-  assert.equal(JSON.stringify(log.at(-1).body).includes('"key"'), false);
+  const previousEndpoint = process.env.CURATED_OVERLAY_ENDPOINT;
+  const previousToken = process.env.CURATED_OVERLAY_TOKEN;
+  process.env.CURATED_OVERLAY_ENDPOINT = `127.0.0.1:${overlay.port}`;
+  process.env.CURATED_OVERLAY_TOKEN = "overlay-token";
+  try {
+    assert.equal((await Curated.initFromLauncher(1002, { env, transport })).ok, true);
+    const denied = await Curated.authorizeTxn(55, 77, true);
+    assert.deepEqual(denied, { ok: true, status: "denied", orderId: 55, transId: 77 });
+    assert.equal(
+      seen,
+      '{"v":1,"token":"overlay-token","type":"microtxn_purchase","app_id":1002,"order_id":55,"trans_id":77}',
+    );
+    assert.equal(log.some((entry) => String(entry.line).includes("AuthorizeTxn")), false);
 
-  const denied = await Curated.authorizeTxn(55, 77, false);
-  assert.deepEqual(denied, { ok: true, status: "denied", orderId: 55, transId: 77 });
-  assert.deepEqual(log.at(-1).body, { orderid: 55, transid: 77, appid: 1002, authorized: false });
+    process.env.CURATED_OVERLAY_ENDPOINT = "";
+    const missing = await Curated.authorizeTxn(55, 77, false);
+    assert.equal(missing.status, "error");
+    assert.equal(missing.ok, false);
+    assert.equal(missing.errorDescription, "Purchases require the Curated launcher overlay.");
+    assert.equal(log.some((entry) => String(entry.line).includes("AuthorizeTxn")), false);
+  } finally {
+    overlay.server.close();
+    if (previousEndpoint === undefined) delete process.env.CURATED_OVERLAY_ENDPOINT;
+    else process.env.CURATED_OVERLAY_ENDPOINT = previousEndpoint;
+    if (previousToken === undefined) delete process.env.CURATED_OVERLAY_TOKEN;
+    else process.env.CURATED_OVERLAY_TOKEN = previousToken;
+  }
 });
 
-test("authorizeTxn surfaces a Failure envelope as error", async () => {
+test("authorizeTxn maps an overlay error result", async () => {
+  const overlay = await listenOverlay(() =>
+    JSON.stringify({
+      v: 1,
+      type: "microtxn_purchase_result",
+      authorized: false,
+      status: "Error",
+      order_id: 55,
+      trans_id: 77,
+      error_code: 7,
+      error_description: "Order is not pending",
+    }),
+  );
   const transport = async (_method, url) => {
     const path = new URL(url).pathname;
     if (path === "/auth/me") return { status: 200, text: '{"user_id":"u","username":"p","curated_id":"10000000000000001"}' };
     if (path === "/library") return { status: 200, text: '[{"app_id":1002,"source":"grant"}]' };
-    return {
-      status: 200,
-      text: JSON.stringify({
-        response: { result: "Failure", error: { errorcode: 7, errordesc: "Order is not pending" } },
-      }),
-    };
+    return { status: 500, text: "" };
   };
   const env = {
     CURATED_LAUNCHER: "1",
@@ -190,17 +238,29 @@ test("authorizeTxn surfaces a Failure envelope as error", async () => {
     CURATED_APP_ID: "1002",
     CURATED_SESSION_TOKEN: "tok",
   };
-  assert.equal((await Curated.initFromLauncher(1002, { env, transport })).ok, true);
-  const failed = await Curated.authorizeTxn(55, 77, true);
-  assert.deepEqual(failed, {
-    ok: false,
-    status: "error",
-    error: "hub_error",
-    orderId: 55,
-    transId: 77,
-    errorCode: 7,
-    errorDescription: "Order is not pending",
-  });
+  const previousEndpoint = process.env.CURATED_OVERLAY_ENDPOINT;
+  const previousToken = process.env.CURATED_OVERLAY_TOKEN;
+  process.env.CURATED_OVERLAY_ENDPOINT = `127.0.0.1:${overlay.port}`;
+  process.env.CURATED_OVERLAY_TOKEN = "overlay-token";
+  try {
+    assert.equal((await Curated.initFromLauncher(1002, { env, transport })).ok, true);
+    const failed = await Curated.authorizeTxn(55, 77, true);
+    assert.deepEqual(failed, {
+      ok: false,
+      status: "error",
+      error: "hub_error",
+      orderId: 55,
+      transId: 77,
+      errorCode: 7,
+      errorDescription: "Order is not pending",
+    });
+  } finally {
+    overlay.server.close();
+    if (previousEndpoint === undefined) delete process.env.CURATED_OVERLAY_ENDPOINT;
+    else process.env.CURATED_OVERLAY_ENDPOINT = previousEndpoint;
+    if (previousToken === undefined) delete process.env.CURATED_OVERLAY_TOKEN;
+    else process.env.CURATED_OVERLAY_TOKEN = previousToken;
+  }
 });
 
 test("getOpenIdIdToken posts app_id and returns id_token", async () => {
@@ -292,9 +352,6 @@ test("docs snippets: script calls after the launch check", async () => {
     if (path.endsWith("/unlock")) return { status: 200, text: '{"newly_unlocked":true}' };
     if (path.endsWith("/stats/progress")) return { status: 200, text: '{"stats":[]}' };
     if (path.includes("/stats/")) return { status: 200, text: '{"stat":{"api_name":"CardsCreated","value":10},"previous_value":0}' };
-    if (path === "/ICuratedMicroTxn/AuthorizeTxn/v1/") {
-      return { status: 200, text: JSON.stringify({ response: { result: "OK", params: { orderid: "938473", transid: "374839", authorized: body.authorized ? 1 : 0 } } }) };
-    }
     return { status: 500, text: "" };
   };
   const env = { CURATED_LAUNCHER: "1", CURATED_CONTRACT_VERSION: "1", CURATED_APP_ID: "1002", CURATED_SESSION_TOKEN: "tok" };
@@ -316,13 +373,40 @@ test("docs snippets: script calls after the launch check", async () => {
   assert.equal(curatedId, "10000000000000001");
   assert.equal(gameLanguage, "en");
 
-  // #region purchase
-  // orderId and transId come from your game server, which created the order with InitTxn.
-  const purchase = await Curated.authorizeTxn(938473, 374839, true);
-  if (purchase.status === "authorized") {
-    // Tell your game server; it calls FinalizeTxn with the publisher key.
+  const overlay = await listenOverlay(() =>
+    JSON.stringify({
+      v: 1,
+      type: "microtxn_purchase_result",
+      authorized: true,
+      status: "Authorized",
+      order_id: 938473,
+      trans_id: 374839,
+      error_code: null,
+      error_description: null,
+    }),
+  );
+  const previousEndpoint = process.env.CURATED_OVERLAY_ENDPOINT;
+  const previousToken = process.env.CURATED_OVERLAY_TOKEN;
+  process.env.CURATED_OVERLAY_ENDPOINT = `127.0.0.1:${overlay.port}`;
+  process.env.CURATED_OVERLAY_TOKEN = "overlay-token";
+  try {
+    // #region purchase
+    // orderId and transId come from your game server, which created the order with InitTxn.
+    // This asks the Curated launcher overlay. `true` is ignored. Outside the launcher
+    // the status is "error". The client does not POST.
+    const purchase = await Curated.authorizeTxn(938473, 374839, true);
+    if (purchase.status === "authorized") {
+      // Tell your game server; it calls FinalizeTxn with the publisher key.
+    }
+    // #endregion purchase
+    assert.equal(purchase.status, "authorized");
+    assert.equal(log.includes("POST /ICuratedMicroTxn/AuthorizeTxn/v1/"), false);
+  } finally {
+    overlay.server.close();
+    if (previousEndpoint === undefined) delete process.env.CURATED_OVERLAY_ENDPOINT;
+    else process.env.CURATED_OVERLAY_ENDPOINT = previousEndpoint;
+    if (previousToken === undefined) delete process.env.CURATED_OVERLAY_TOKEN;
+    else process.env.CURATED_OVERLAY_TOKEN = previousToken;
   }
-  // #endregion purchase
-  assert.equal(purchase.status, "authorized");
   assert.ok(log.includes("POST /games/app/1002/stats/CardsCreated/increment"));
 });

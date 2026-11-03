@@ -78,6 +78,29 @@ Rules: never fail the unlock if the overlay is down; never log the overlay token
 overlay variables (older launchers / editor). Download-complete toasts are launcher-only and do not
 use this channel.
 
+### Overlay purchase handoff
+
+In-game purchases use the same endpoint as a request and a response. Official bindings do this
+instead of posting the player's boolean. When both overlay variables are set, the game opens one
+TCP connection and sends one line:
+
+```json
+{"v":1,"token":"<CURATED_OVERLAY_TOKEN>","type":"microtxn_purchase","app_id":1002,"order_id":938473,"trans_id":374839}
+```
+
+It reads one line:
+
+```json
+{"v":1,"type":"microtxn_purchase_result","authorized":true,"status":"Authorized","order_id":938473,"trans_id":374839,"error_code":null,"error_description":null}
+```
+
+`status` is `Authorized`, `Denied`, or `Error`. Map that status onto the binding's result. The
+`authorized` argument on the game call is ignored and kept only so existing callers still compile.
+The launcher calls `POST /ICuratedMicroTxn/AuthorizeTxn/v1/` (or the sandbox base) with
+`x-curated-overlay-decision`. The game does not. If either overlay variable is missing, the
+purchase result is an error and the game does not fall back to posting its own boolean. Purchases
+only proceed inside the Curated launcher. Never log the overlay token.
+
 ### Game language
 
 Bindings expose the current game language (for example `CuratedClient.GetCurrentGameLanguage()` in
@@ -231,11 +254,12 @@ require an active entitlement for the app on the server side, so a binding that 
 entitlement check still cannot unlock achievements, write stats, or authorize a purchase for
 players who do not own the game. A game-scoped token gets `403` on another app's routes.
 
-`POST /ICuratedMicroTxn/AuthorizeTxn/v1/` is the player-session purchase step. The game server
-creates the order (InitTxn) and, after the player authorizes, captures it (FinalizeTxn). Those
-server calls use the publisher key. The game client never receives that key and never sends it.
-The client posts `orderid`, `transid`, `appid`, and the player's `authorized` decision, then
-surfaces authorized, denied, or error from Steam's `response.result` envelope.
+`POST /ICuratedMicroTxn/AuthorizeTxn/v1/` is the player-session purchase step the **launcher**
+calls after the overlay handoff above, on the live or sandbox path, with
+`x-curated-overlay-decision`. The game server creates the order (InitTxn) and, after the player
+authorizes, captures it (FinalizeTxn). Those server calls use the publisher key. The game client
+never receives that key, never sends it, and does not POST its own boolean. The client maps the
+overlay `status` to authorized, denied, or error. The sandbox base URL is a game-server setting.
 
 ## 7. Dedicated servers
 

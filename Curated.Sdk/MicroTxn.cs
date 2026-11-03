@@ -14,7 +14,10 @@ public enum MicroTxnAuthorizationStatus
     /// <summary>The player denied the order. The wallet reserve is released and the order is failed.</summary>
     Denied,
 
-    /// <summary>Curated rejected the authorization or returned an unreadable result.</summary>
+    /// <summary>
+    /// The launcher overlay is missing, the purchase could not be completed, or Curated rejected it.
+    /// Not a player denial.
+    /// </summary>
     Error,
 }
 
@@ -56,20 +59,23 @@ public sealed class MicroTxnAuthorization
 
 /// <summary>
 /// In-game purchases for the signed-in player. The game server creates the order with InitTxn
-/// and finalizes it with FinalizeTxn. This client only records the player's authorization.
-/// The publisher key is never read or sent.
+/// and finalizes it with FinalizeTxn. This client asks the Curated launcher overlay to confirm
+/// the purchase. The publisher key is never read or sent, and the client does not POST a decision.
 /// </summary>
 public static class MicroTxn
 {
     /// <summary>
-    /// Begin authorization for an order the game server created with InitTxn.
-    /// <paramref name="authorized"/> is the signed-in player's decision: true keeps the wallet
-    /// reserve, false releases it and fails the order.
+    /// Ask the Curated launcher overlay to confirm an order the game server created with InitTxn.
     /// </summary>
     /// <remarks>
-    /// Calls <c>POST /ICuratedMicroTxn/AuthorizeTxn/v1/</c> with the player session bearer token.
-    /// There is no publisher <c>key</c> parameter. The game server still calls FinalizeTxn after
-    /// the player authorizes.
+    /// When <c>CURATED_OVERLAY_ENDPOINT</c> and <c>CURATED_OVERLAY_TOKEN</c> are set, opens one
+    /// TCP connection, sends a <c>microtxn_purchase</c> line, and maps the overlay
+    /// <c>microtxn_purchase_result</c> status to authorized, denied, or error.
+    /// <paramref name="authorized"/> is ignored and kept so existing callers still compile.
+    /// The launcher calls AuthorizeTxn. If the overlay variables are missing, the result is
+    /// <see cref="MicroTxnAuthorizationStatus.Error"/> and this method does not POST.
+    /// Purchases only proceed inside the Curated launcher. The game server still calls
+    /// FinalizeTxn after the player authorizes.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">
     /// <paramref name="orderId"/> or <paramref name="transId"/> is not positive.

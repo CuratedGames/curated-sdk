@@ -45,8 +45,8 @@ struct CURATEDSDK_API FCuratedMicroTxnAuthorization
 	FString ErrorDescription;
 
 	/**
-	 * Launch-contract error when the call did not complete (not launched, network, hub, session).
-	 * None when the Steam-style envelope was read, including authorized, denied, and Failure.
+	 * Launch-contract error when the overlay handoff did not complete.
+	 * None when the overlay returned a purchase result, including Authorized, Denied, and Error.
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Curated")
 	ECuratedLaunchError TransportError = ECuratedLaunchError::None;
@@ -93,9 +93,10 @@ public:
 	void IncrementStat(const FString& ApiName, float Delta, FCuratedStatWritten OnWritten);
 
 	/**
-	 * Begin authorization for an order the game server created with InitTxn.
-	 * bAuthorized is the signed-in player's decision. Uses the player session.
-	 * Never sends a publisher key. The game server calls FinalizeTxn after authorization.
+	 * Ask the Curated launcher overlay to confirm an order the game server created with InitTxn.
+	 * bAuthorized is ignored and kept for source compatibility. The overlay collects the decision.
+	 * Does not POST the player's boolean. Outside the launcher the result is Error.
+	 * The game server calls FinalizeTxn after authorization.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Curated")
 	void AuthorizeTxn(int64 OrderId, int64 TransId, bool bAuthorized, FCuratedMicroTxnAuthorized OnDone);

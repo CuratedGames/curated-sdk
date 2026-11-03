@@ -86,8 +86,9 @@ is sent only to the Curated API.
 `CuratedUnity.InitFromLauncherAsync` shuts Curated down on `Application.quitting`. Achievements,
 stats, Cloud Save, friends, presence, and in-game purchase authorization are on the
 `Curated.Sdk` API (`Achievements`, `Stats`, `Cloud`, `Friends`, `Presence`, `MicroTxn`).
-`MicroTxn.AuthorizeAsync` uses the player session for an order the game server created. It
-never sends a publisher key. Example:
+`MicroTxn.AuthorizeAsync` asks the Curated launcher overlay to confirm an order the game
+server created. The `authorized` argument is ignored. Outside the launcher the result is
+error, and the client does not POST. Example:
 
 ```csharp
 await Stats.RefreshAsync();

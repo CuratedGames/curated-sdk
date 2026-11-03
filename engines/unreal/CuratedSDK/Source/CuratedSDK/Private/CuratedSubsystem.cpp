@@ -1,5 +1,6 @@
 #include "CuratedSubsystem.h"
 
+#include "Async/Async.h"
 #include "Dom/JsonObject.h"
 #include "GenericPlatform/GenericPlatformHttp.h"
 #include "HttpModule.h"
@@ -288,140 +289,253 @@ void UCuratedSubsystem::SetStat(const FString& ApiName, float Value, FCuratedSta
 
 namespace
 {
-	bool TryReadMicroTxnId(const TSharedPtr<FJsonObject>& Object, const TCHAR* Field, int64& Out)
+	FString EscapeOverlayJson(const FString& Value)
+	{
+		FString Out;
+		Out.Reserve(Value.Len() + 2);
+		for (const TCHAR Ch : Value)
+		{
+			switch (Ch)
+			{
+			case TEXT('\\'): Out += TEXT("\\\\"); break;
+			case TEXT('"'): Out += TEXT("\\\""); break;
+			case TEXT('\n'): Out += TEXT("\\n"); break;
+			case TEXT('\r'): Out += TEXT("\\r"); break;
+			case TEXT('\t'): Out += TEXT("\\t"); break;
+			default:
+				if (Ch < 0x20)
+				{
+					Out += FString::Printf(TEXT("\\u%04x"), static_cast<int32>(Ch));
+				}
+				else
+				{
+					Out.AppendChar(Ch);
+				}
+				break;
+			}
+		}
+		return Out;
+	}
+
+	bool ParseOverlayEndpoint(FString Endpoint, FString& Host, int32& Port)
+	{
+		Endpoint = Endpoint.TrimStartAndEnd();
+		if (Endpoint.StartsWith(TEXT("http://")))
+		{
+			Endpoint.RightChopInline(7);
+		}
+		int32 Colon = INDEX_NONE;
+		if (!Endpoint.FindLastChar(TEXT(':'), Colon) || Colon <= 0)
+		{
+			return false;
+		}
+		Host = Endpoint.Left(Colon).TrimStartAndEnd();
+		Port = FCString::Atoi(*Endpoint.Mid(Colon + 1).TrimStartAndEnd());
+		if (Host.IsEmpty())
+		{
+			Host = TEXT("127.0.0.1");
+		}
+		return Port > 0 && Port <= 65535;
+	}
+
+	int64 ReadOverlayId(const TSharedPtr<FJsonObject>& Object, const TCHAR* Field, int64 Fallback)
 	{
 		if (!Object.IsValid() || !Object->HasField(Field))
 		{
-			return false;
+			return Fallback;
 		}
 		FString Text;
 		if (Object->TryGetStringField(Field, Text))
 		{
-			if (Text.IsEmpty())
-			{
-				return false;
-			}
-			Out = FCString::Atoi64(*Text);
-			return Out > 0;
+			const int64 Parsed = FCString::Atoi64(*Text);
+			return Parsed > 0 ? Parsed : Fallback;
 		}
 		double Number = 0;
 		if (Object->TryGetNumberField(Field, Number) && Number > 0)
 		{
-			Out = static_cast<int64>(Number);
-			return true;
+			return static_cast<int64>(Number);
 		}
-		return false;
+		return Fallback;
 	}
 
-	bool TryReadMicroTxnFlag(const TSharedPtr<FJsonValue>& Value, bool& Out)
-	{
-		if (!Value.IsValid())
-		{
-			return false;
-		}
-		if (Value->Type == EJson::Boolean)
-		{
-			Out = Value->AsBool();
-			return true;
-		}
-		if (Value->Type == EJson::Number)
-		{
-			const double Number = Value->AsNumber();
-			if (Number == 0.0 || Number == 1.0)
-			{
-				Out = Number == 1.0;
-				return true;
-			}
-		}
-		if (Value->Type == EJson::String)
-		{
-			const FString Text = Value->AsString();
-			if (Text == TEXT("0") || Text.Equals(TEXT("false"), ESearchCase::IgnoreCase))
-			{
-				Out = false;
-				return true;
-			}
-			if (Text == TEXT("1") || Text.Equals(TEXT("true"), ESearchCase::IgnoreCase))
-			{
-				Out = true;
-				return true;
-			}
-		}
-		return false;
-	}
-
-	FCuratedMicroTxnAuthorization ReadMicroTxnAuthorization(
-		const FString& Body,
-		int64 OrderId,
-		int64 TransId,
-		bool bSubmitted)
+	FCuratedMicroTxnAuthorization OverlayError(int64 OrderId, int64 TransId, const FString& Description)
 	{
 		FCuratedMicroTxnAuthorization Result;
+		Result.Status = ECuratedMicroTxnStatus::Error;
 		Result.OrderId = OrderId;
 		Result.TransId = TransId;
-		Result.TransportError = ECuratedLaunchError::None;
+		Result.TransportError = ECuratedLaunchError::HubError;
+		Result.ErrorDescription = Description;
+		return Result;
+	}
+
+	FCuratedMicroTxnAuthorization ParseOverlayPurchaseResult(const FString& Line, int64 OrderId, int64 TransId)
+	{
 		TSharedPtr<FJsonObject> Root;
-		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Body);
-		const TSharedPtr<FJsonObject>* Response = nullptr;
-		if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid()
-			|| !Root->TryGetObjectField(TEXT("response"), Response) || Response == nullptr || !Response->IsValid())
+		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Line);
+		if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
 		{
-			Result.Status = ECuratedMicroTxnStatus::Error;
-			Result.ErrorDescription = TEXT("Curated returned an unreadable authorization response.");
+			return OverlayError(OrderId, TransId, TEXT("Curated overlay returned an unreadable purchase result."));
+		}
+		FString Type;
+		Root->TryGetStringField(TEXT("type"), Type);
+		if (Type != TEXT("microtxn_purchase_result"))
+		{
+			return OverlayError(OrderId, TransId, TEXT("Curated overlay returned an unreadable purchase result."));
+		}
+		const int64 EchoedOrder = ReadOverlayId(Root, TEXT("order_id"), OrderId);
+		const int64 EchoedTrans = ReadOverlayId(Root, TEXT("trans_id"), TransId);
+		FString Status;
+		if (!Root->TryGetStringField(TEXT("status"), Status))
+		{
+			return OverlayError(EchoedOrder, EchoedTrans, TEXT("Curated overlay returned an unreadable purchase result."));
+		}
+		FCuratedMicroTxnAuthorization Result;
+		Result.OrderId = EchoedOrder;
+		Result.TransId = EchoedTrans;
+		Result.TransportError = ECuratedLaunchError::None;
+		if (Status.Equals(TEXT("Authorized"), ESearchCase::IgnoreCase))
+		{
+			Result.Status = ECuratedMicroTxnStatus::Authorized;
 			return Result;
 		}
-		FString ResultText;
-		(*Response)->TryGetStringField(TEXT("result"), ResultText);
-		if (ResultText.Equals(TEXT("OK"), ESearchCase::IgnoreCase))
+		if (Status.Equals(TEXT("Denied"), ESearchCase::IgnoreCase))
 		{
-			bool bDecision = bSubmitted;
-			const TSharedPtr<FJsonObject>* Params = nullptr;
-			if ((*Response)->TryGetObjectField(TEXT("params"), Params) && Params && Params->IsValid())
-			{
-				int64 Echoed = 0;
-				if (TryReadMicroTxnId(*Params, TEXT("orderid"), Echoed))
-				{
-					Result.OrderId = Echoed;
-				}
-				if (TryReadMicroTxnId(*Params, TEXT("transid"), Echoed))
-				{
-					Result.TransId = Echoed;
-				}
-				if ((*Params)->HasField(TEXT("authorized")))
-				{
-					if (!TryReadMicroTxnFlag((*Params)->TryGetField(TEXT("authorized")), bDecision))
-					{
-						Result.Status = ECuratedMicroTxnStatus::Error;
-						Result.ErrorDescription = TEXT("Curated returned an unreadable authorization response.");
-						return Result;
-					}
-				}
-			}
-			Result.Status = bDecision ? ECuratedMicroTxnStatus::Authorized : ECuratedMicroTxnStatus::Denied;
+			Result.Status = ECuratedMicroTxnStatus::Denied;
 			return Result;
 		}
 		Result.Status = ECuratedMicroTxnStatus::Error;
 		Result.ErrorDescription = TEXT("Curated could not authorize the order.");
-		const TSharedPtr<FJsonObject>* Error = nullptr;
-		if ((*Response)->TryGetObjectField(TEXT("error"), Error) && Error && Error->IsValid())
+		if (!Status.Equals(TEXT("Error"), ESearchCase::IgnoreCase))
 		{
-			double Code = 0;
-			if ((*Error)->TryGetNumberField(TEXT("errorcode"), Code))
-			{
-				Result.ErrorCode = static_cast<int32>(Code);
-			}
-			FString Description;
-			if ((*Error)->TryGetStringField(TEXT("errordesc"), Description) && !Description.IsEmpty())
-			{
-				Result.ErrorDescription = Description;
-			}
+			Result.ErrorDescription = TEXT("Curated overlay returned an unreadable purchase result.");
+			Result.TransportError = ECuratedLaunchError::HubError;
+			return Result;
+		}
+		double Code = 0;
+		if (Root->TryGetNumberField(TEXT("error_code"), Code))
+		{
+			Result.ErrorCode = static_cast<int32>(Code);
+		}
+		FString Description;
+		if (Root->TryGetStringField(TEXT("error_description"), Description) && !Description.IsEmpty())
+		{
+			Result.ErrorDescription = Description;
 		}
 		return Result;
+	}
+
+	bool ReadOverlayLine(FSocket* Socket, FString& OutLine)
+	{
+		TArray<uint8> Pending;
+		const double Deadline = FPlatformTime::Seconds() + 600.0;
+		while (FPlatformTime::Seconds() < Deadline)
+		{
+			if (!Socket->Wait(ESocketWaitConditions::WaitForRead, FTimespan::FromMilliseconds(200)))
+			{
+				continue;
+			}
+			uint8 Buffer[1024];
+			int32 Read = 0;
+			if (!Socket->Recv(Buffer, sizeof(Buffer), Read))
+			{
+				return false;
+			}
+			if (Read <= 0)
+			{
+				return false;
+			}
+			Pending.Append(Buffer, Read);
+			for (int32 Index = 0; Index < Pending.Num(); ++Index)
+			{
+				if (Pending[Index] != '\n')
+				{
+					continue;
+				}
+				int32 Length = Index;
+				if (Length > 0 && Pending[Length - 1] == '\r')
+				{
+					Length--;
+				}
+				const FUTF8ToTCHAR Convert(reinterpret_cast<const ANSICHAR*>(Pending.GetData()), Length);
+				OutLine = FString(Convert.Length(), Convert.Get());
+				return true;
+			}
+			if (Pending.Num() > 65536)
+			{
+				return false;
+			}
+		}
+		return false;
+	}
+
+	FCuratedMicroTxnAuthorization ExchangeOverlayPurchase(int64 AppId, int64 OrderId, int64 TransId)
+	{
+		const FString Endpoint = FPlatformMisc::GetEnvironmentVariable(TEXT("CURATED_OVERLAY_ENDPOINT")).TrimStartAndEnd();
+		const FString Token = FPlatformMisc::GetEnvironmentVariable(TEXT("CURATED_OVERLAY_TOKEN")).TrimStartAndEnd();
+		FString Host;
+		int32 Port = 0;
+		if (Endpoint.IsEmpty() || Token.IsEmpty() || !ParseOverlayEndpoint(Endpoint, Host, Port))
+		{
+			return OverlayError(OrderId, TransId, TEXT("Purchases require the Curated launcher overlay."));
+		}
+		ISocketSubsystem* Sockets = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
+		if (!Sockets)
+		{
+			return OverlayError(OrderId, TransId, TEXT("Curated overlay did not answer."));
+		}
+		TSharedRef<FInternetAddr> Addr = Sockets->CreateInternetAddr();
+		bool bValid = false;
+		Addr->SetIp(*Host, bValid);
+		Addr->SetPort(Port);
+		if (!bValid)
+		{
+			return OverlayError(OrderId, TransId, TEXT("Curated overlay did not answer."));
+		}
+		FSocket* Socket = Sockets->CreateSocket(NAME_Stream, TEXT("CuratedOverlayPurchase"), false);
+		if (!Socket)
+		{
+			return OverlayError(OrderId, TransId, TEXT("Curated overlay did not answer."));
+		}
+		Socket->SetNonBlocking(false);
+		if (!Socket->Connect(*Addr))
+		{
+			Sockets->DestroySocket(Socket);
+			return OverlayError(OrderId, TransId, TEXT("Curated overlay did not answer."));
+		}
+		const FString Payload = FString::Printf(
+			TEXT("{\"v\":1,\"token\":\"%s\",\"type\":\"microtxn_purchase\",\"app_id\":%lld,\"order_id\":%lld,\"trans_id\":%lld}\n"),
+			*EscapeOverlayJson(Token),
+			AppId,
+			OrderId,
+			TransId);
+		const FTCHARToUTF8 Utf8(*Payload);
+		int32 Offset = 0;
+		while (Offset < Utf8.Length())
+		{
+			int32 Sent = 0;
+			if (!Socket->Send(reinterpret_cast<const uint8*>(Utf8.Get()) + Offset, Utf8.Length() - Offset, Sent) || Sent <= 0)
+			{
+				Sockets->DestroySocket(Socket);
+				return OverlayError(OrderId, TransId, TEXT("Curated overlay did not answer."));
+			}
+			Offset += Sent;
+		}
+		FString Line;
+		const bool bRead = ReadOverlayLine(Socket, Line);
+		Sockets->DestroySocket(Socket);
+		if (!bRead)
+		{
+			return OverlayError(OrderId, TransId, TEXT("Curated overlay did not answer."));
+		}
+		return ParseOverlayPurchaseResult(Line, OrderId, TransId);
 	}
 }
 
 void UCuratedSubsystem::AuthorizeTxn(int64 OrderId, int64 TransId, bool bAuthorized, FCuratedMicroTxnAuthorized OnDone)
 {
+	// The overlay collects the decision. bAuthorized stays for source compatibility.
+	(void)bAuthorized;
 	ECuratedLaunchError ReadyError;
 	if (!RequireReady(ReadyError) || OrderId <= 0 || TransId <= 0)
 	{
@@ -433,33 +547,15 @@ void UCuratedSubsystem::AuthorizeTxn(int64 OrderId, int64 TransId, bool bAuthori
 		OnDone.ExecuteIfBound(Result);
 		return;
 	}
-	const FString Body = FString::Printf(
-		TEXT("{\"orderid\":%lld,\"transid\":%lld,\"appid\":%lld,\"authorized\":%s}"),
-		OrderId,
-		TransId,
-		Context.AppId,
-		bAuthorized ? TEXT("true") : TEXT("false"));
-	SendRequest(Context, TEXT("POST"), TEXT("/ICuratedMicroTxn/AuthorizeTxn/v1/"),
-		[OnDone, OrderId, TransId, bAuthorized](ECuratedLaunchError Error, const FString& ResponseBody)
+	const int64 AppId = Context.AppId;
+	Async(EAsyncExecution::ThreadPool, [OnDone, OrderId, TransId, AppId]()
+	{
+		const FCuratedMicroTxnAuthorization Result = ExchangeOverlayPurchase(AppId, OrderId, TransId);
+		AsyncTask(ENamedThreads::GameThread, [OnDone, Result]()
 		{
-			FCuratedMicroTxnAuthorization Result = ReadMicroTxnAuthorization(ResponseBody, OrderId, TransId, bAuthorized);
-			if (Error != ECuratedLaunchError::None && Result.Status != ECuratedMicroTxnStatus::Error)
-			{
-				Result.Status = ECuratedMicroTxnStatus::Error;
-			}
-			if (Error != ECuratedLaunchError::None && Result.ErrorCode == 0 && Result.ErrorDescription.IsEmpty())
-			{
-				Result.TransportError = Error;
-				Result.Status = ECuratedMicroTxnStatus::Error;
-			}
-			else if (Error != ECuratedLaunchError::None && Result.Status == ECuratedMicroTxnStatus::Error
-				&& Result.ErrorDescription == TEXT("Curated returned an unreadable authorization response."))
-			{
-				Result.TransportError = Error;
-				Result.ErrorDescription.Reset();
-			}
 			OnDone.ExecuteIfBound(Result);
-		}, Body);
+		});
+	});
 }
 
 void UCuratedSubsystem::IncrementStat(const FString& ApiName, float Delta, FCuratedStatWritten OnWritten)

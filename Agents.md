@@ -75,10 +75,10 @@ ordinary command-line arguments. Credentials are never on the command line.
 1. Add the package from this repository with a Git URL. In `Packages/manifest.json`:
 
 ```json
-"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.6.0"
+"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.7.0"
 ```
 
-Replace `v1.6.0` with a release tag, `main`, or a commit SHA. Or use
+Replace `v1.7.0` with a release tag, `main`, or a commit SHA. Or use
 **Window > Package Manager > + > Add package from git URL…** with the same URL.
 Use **v1.3.1 or newer** (or `main`). Older tags such as `v1.3.0` still have the previous
 folder name `games.curated.sdk` and fail with a pathspec error.
@@ -171,7 +171,8 @@ await Presence.SetAsync("in_game", "Level 3");
 await Presence.HeartbeatAsync();
 
 // In-game purchase. InitTxn and FinalizeTxn stay on the game server (publisher key).
-// The client only authorizes with the player session and never sends that key.
+// The client asks the Curated launcher overlay. `authorized` is ignored.
+// Outside the launcher the status is Error. The client does not POST.
 MicroTxnAuthorization purchase = await MicroTxn.AuthorizeAsync(938473, 374839, authorized: true);
 // purchase.Status is Authorized, Denied, or Error. Same call: Godot authorize_txn,
 // Unreal AuthorizeTxn, RPG Maker authorizeTxn.
