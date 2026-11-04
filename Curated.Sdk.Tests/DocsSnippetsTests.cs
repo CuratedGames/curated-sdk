@@ -24,6 +24,7 @@ public class DocsSnippetsTests : IDisposable
     {
         Environment.SetEnvironmentVariable(LaunchContext.OverlayEndpointVariable, null);
         Environment.SetEnvironmentVariable(LaunchContext.OverlayTokenVariable, null);
+        OverlayChannel.Clear();
         CuratedClient.Shutdown();
     }
 
@@ -140,6 +141,43 @@ public class DocsSnippetsTests : IDisposable
         await Presence.SetAsync("in_game", "Level 3");
         await Presence.HeartbeatAsync();
         #endregion friends-presence
+    }
+
+    [Fact]
+    public async Task Store_overlay_snippet_runs()
+    {
+        CuratedClient.InitForTests(AppId, new RecordingTransport());
+        OverlayChannel.Clear();
+        using var overlay = new TcpListener(IPAddress.Loopback, 0);
+        overlay.Start();
+        var port = ((IPEndPoint)overlay.LocalEndpoint).Port;
+        Environment.SetEnvironmentVariable(LaunchContext.OverlayEndpointVariable, "127.0.0.1:" + port);
+        Environment.SetEnvironmentVariable(LaunchContext.OverlayTokenVariable, "overlay-token");
+        var accepted = Task.Run(async () =>
+        {
+            using var client = await overlay.AcceptTcpClientAsync();
+            using var stream = client.GetStream();
+            var buffer = new byte[1024];
+            var text = "";
+            while (!text.Contains("\n"))
+            {
+                var read = await stream.ReadAsync(buffer, 0, buffer.Length);
+                text += Encoding.UTF8.GetString(buffer, 0, read);
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(
+                "{\"v\":1,\"type\":\"open_store_overlay_result\",\"ok\":true}\n");
+            await stream.WriteAsync(bytes, 0, bytes.Length);
+        });
+
+        #region store-overlay
+        // Published store page, no cart action.
+        // AddToCart and AddToCartAndShow are only for a released or preorderable app.
+        Friends.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
+        #endregion store-overlay
+
+        await accepted;
+        overlay.Stop();
     }
 
     [Fact]

@@ -354,7 +354,7 @@ public static class CuratedClient
 
     /// <summary>
     /// Initialized client that passed ownership verification. Game-scoped APIs use this so a
-    /// token-only bootstrap cannot reach achievements, stats, Cloud Save, friends, presence, OpenID, or purchases.
+    /// token-only bootstrap cannot reach achievements, stats, Cloud Save, friends, presence, OpenID, purchases, or the store overlay.
     /// </summary>
     internal static ClientState GameState
     {

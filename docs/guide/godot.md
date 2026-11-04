@@ -42,8 +42,9 @@ func _on_boss_defeated() -> void:
 - `get_openid_id_token()` for [OpenID Connect](./openid).
 - `get_current_game_language()` for the [game language](./game-language).
 
-Cloud Save, friends, and presence are C# only. See
-[Cloud Save, friends, presence](./cloud-friends-presence).
+Cloud Save, friends, presence, and the store overlay are C# only. See
+[Cloud Save, friends, presence](./cloud-friends-presence) and
+[Store overlay](./dotnet#store-overlay).
 
 ## Dedicated servers
 

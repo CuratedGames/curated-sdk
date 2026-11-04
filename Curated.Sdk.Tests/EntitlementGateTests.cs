@@ -103,6 +103,10 @@ public class EntitlementGateTests : IDisposable
             MicroTxn.AuthorizeAsync(1, 2));
         Assert.Equal(CuratedLaunchError.NotEntitled, purchase.Error);
 
+        var store = Assert.Throws<CuratedLaunchException>(() =>
+            Friends.OpenStoreOverlay(1, OverlayToStoreFlag.None));
+        Assert.Equal(CuratedLaunchError.NotEntitled, store.Error);
+
         var setStat = Assert.Throws<CuratedLaunchException>(() => Stats.SetStat("CardsCreated", 1));
         Assert.Equal(CuratedLaunchError.NotEntitled, setStat.Error);
 

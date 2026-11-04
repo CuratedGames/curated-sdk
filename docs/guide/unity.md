@@ -67,12 +67,13 @@ It does try the connection first, so a signed-in launcher is enough for the Game
 
 ## Features
 
-Achievements, stats, Cloud Save, friends, presence, purchases, and OpenID use the shared C# API.
+Achievements, stats, Cloud Save, friends, presence, purchases, the store overlay, and OpenID use the shared C# API.
 See [.NET](./dotnet#features) for tested examples, and:
 
 - [Achievements and stats](./achievements-stats)
 - [Game language](./game-language): `CuratedUnity.GetCurrentGameLanguage()`
 - [In-app purchases / Microtransactions](./purchases)
+- [Store overlay](./dotnet#store-overlay): `Friends.OpenStoreOverlay` on the shared C# API. Editor play uses the overlay attached at init.
 - [OpenID Connect](./openid): `CuratedUnity.GetOpenIdIdTokenAsync()` for Unity Authentication
 
 ## Dedicated server and WebGL
