@@ -21,6 +21,24 @@ In C# you can also convert in both directions:
 
 The mapping for every language is on [Game languages](/reference/languages).
 
+## Store overlay
+
+`Friends.OpenStoreOverlay` is Curated's `OpenStoreOverlay`. It opens a published Curated store
+page in the launcher overlay. Call it after Curated is initialized.
+
+| Flag | Effect |
+| --- | --- |
+| `OverlayToStoreFlag.None` | Open the store page. No cart action. The page can be published before the game is released. |
+| `OverlayToStoreFlag.AddToCart` | Open the store page and add the app to the cart. Released or preorderable apps only. |
+| `OverlayToStoreFlag.AddToCartAndShow` | Add the app to the cart and show the cart. Released or preorderable apps only. |
+
+On failure the call throws `CuratedException`. `Message` is the launcher's English text. When
+`AddToCart` or `AddToCartAndShow` is used for a page that is published but not released or
+preorderable, that message says that add to cart is only available for released or preorderable
+apps, that this store page is published but not released, and to use `OverlayToStoreFlag.None`.
+
+See [Store overlay](./dotnet#store-overlay).
+
 ## Stats
 
 `Stats.SetStat` + `Stats.StoreStatsAsync` mirror Steam's SetStat / StoreStats. See

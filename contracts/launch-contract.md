@@ -101,6 +101,54 @@ The launcher calls `POST /ICuratedMicroTxn/AuthorizeTxn/v1/` (or the sandbox bas
 purchase result is an error and the game does not fall back to posting its own boolean. Purchases
 only proceed inside the Curated launcher. Never log the overlay token.
 
+### Overlay store page
+
+Opening a Curated store page uses the same overlay endpoint as a request and a response. Official
+C# bindings do this from `Friends.OpenStoreOverlay`. When the overlay channel is available (launch
+variables, or the endpoint and token adopted after `editor_attach`), the game opens one TCP
+connection and sends one line:
+
+```json
+{"v":1,"token":"<CURATED_OVERLAY_TOKEN>","type":"open_store_overlay","app_id":1002,"flag":0}
+```
+
+`app_id` is the published Curated app whose store page should open. It may differ from the running
+game. `flag` is `0` (`None`: open the store page, no cart action), `1` (`AddToCart`: open the
+store page and add the app to the cart), or `2` (`AddToCartAndShow`: add the app to the cart and
+navigate the overlay to the cart).
+
+The launcher answers on that same connection with one line, then both sides close.
+
+Success:
+
+```json
+{"v":1,"type":"open_store_overlay_result","ok":true}
+```
+
+Failure:
+
+```json
+{"v":1,"type":"open_store_overlay_result","ok":false,"error":"<English message>"}
+```
+
+`ok` is a JSON boolean. On failure `error` is one English sentence. The binding throws that
+sentence to the caller (`CuratedException.Message` in C#). The result is a single line.
+
+The launcher enforces these rules and puts the reason in `error`:
+
+- The overlay must be enabled in the user's launcher settings and active for the running
+  application. Otherwise `error` is `The Curated overlay is turned off in launcher settings.` or
+  `The Curated overlay is not active for this application.`
+- `app_id` must be a published Curated app (the store page is visible, even when the game is not
+  released). Otherwise `error` is `This app does not have a published Curated store page.`
+- `flag` `0` is allowed for a published app.
+- `flag` `1` and `flag` `2` are allowed only when that app is released or preorderable.
+- When `flag` is `1` or `2` and the app is published but neither released nor preorderable,
+  `error` is exactly: `Add to cart is only available for released or preorderable apps. This store page is published but not released. Use OverlayToStoreFlag.None.`
+
+If the overlay variables are missing and no editor attach was adopted, the binding fails before
+it connects. Never log the overlay token.
+
 ### Unity Editor attach
 
 Unity Editor play is not a process the launcher started. It does not need `CURATED_LAUNCHER=1`
@@ -126,10 +174,10 @@ The launcher replies with one JSON line. Success includes `endpoint`, `overlay_t
 `endpoint` is `host:port` on loopback. `overlay_url` is
 `http://127.0.0.1:{port}/overlay.html?editor=1#{overlay_token}`. The HTTP port may differ from
 `endpoint`. The fragment is the overlay token. The SDK adopts `endpoint`, `overlay_token`, and
-`overlay_url` in memory. Achievement and purchase messages use that adopted endpoint and token
-ahead of `CURATED_OVERLAY_ENDPOINT` and `CURATED_OVERLAY_TOKEN`. Unity 6 has no embedded editor
-web view. While play mode is running, the Editor sends the Game view rectangle in physical
-screen pixels so the launcher can place its own overlay window on that rectangle, the same
+`overlay_url` in memory. Achievement, purchase, and store overlay messages use that adopted
+endpoint and token ahead of `CURATED_OVERLAY_ENDPOINT` and `CURATED_OVERLAY_TOKEN`. Unity 6 has
+no embedded editor web view. While play mode is running, the Editor sends the Game view rectangle
+in physical screen pixels so the launcher can place its own overlay window on that rectangle, the same
 window it uses for a launched game:
 
 ```json
@@ -162,9 +210,10 @@ The bridge port is loopback only. The SDK checks, in order: `CURATED_EDITOR_BRID
 beside the launcher executable, then those same keys on `Config/session.json` and
 `~/.curated/credentials.json`.
 
-Player builds do not send `editor_attach`. Purchases and achievements there still use the
-overlay variables the launcher put on the process, and the launcher window is the UI. The
-purchase reply is `microtxn_purchase_result`, as above.
+Player builds do not send `editor_attach`. Purchases, achievements, and the store overlay there
+still use the overlay variables the launcher put on the process, and the launcher window is the
+UI. The purchase reply is `microtxn_purchase_result`, and the store reply is
+`open_store_overlay_result`, as above.
 
 ### Game language
 

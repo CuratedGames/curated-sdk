@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-04
+
+### Added
+
+- C# SDK: `Friends.OpenStoreOverlay(long appId, OverlayToStoreFlag flag)` opens a published Curated store page in the launcher overlay (`CURATED_OVERLAY_ENDPOINT` / `CURATED_OVERLAY_TOKEN`). The Unity Editor attach path uses the same overlay channel. `OverlayToStoreFlag.None` opens the page with no cart action. `AddToCart` and `AddToCartAndShow` add a released or preorderable app to the cart, and `AddToCartAndShow` then shows the cart. The launcher answers on the same connection. Failures throw `CuratedException` with the launcher's English message.
+- Rebuilt Unity `Plugins/Curated.Sdk.dll` for the store overlay.
+
 ## [1.8.0] - 2026-11-03
 ### Changed
 
@@ -155,7 +162,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial Curated.Sdk public API: launcher auth, entitlements, achievements, Cloud Save, friends and presence
 
-[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.3...v1.8.0
 [1.7.3]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.2...v1.7.3
 [1.7.2]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.1...v1.7.2

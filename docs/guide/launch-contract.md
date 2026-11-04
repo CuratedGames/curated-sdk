@@ -22,7 +22,7 @@ and [game-language.v1.json](https://github.com/CuratedGames/curated-sdk/blob/mai
 | `CURATED_API_BASE` | no | `https://api.curated.games` | API origin. The only place the token may go |
 | `CURATED_USER_ID`, `CURATED_USERNAME` | no | | Display hints. Trust `/auth/me` instead |
 | `CURATED_LANGUAGE` | no | `it` | Launcher client language. See [Game language](./game-language) |
-| `CURATED_OVERLAY_ENDPOINT`, `CURATED_OVERLAY_TOKEN` | no | `127.0.0.1:4050` | Launcher overlay. Achievement toasts, and the in-game purchase handoff |
+| `CURATED_OVERLAY_ENDPOINT`, `CURATED_OVERLAY_TOKEN` | no | `127.0.0.1:4050` | Launcher overlay. Achievement toasts, the in-game purchase handoff, and opening a store page |
 
 ## Startup sequence
 
@@ -44,6 +44,18 @@ No response at all is `network_error`. Any other non-2xx response is `hub_error`
 The token works only for the game-facing operations in the OpenAPI file, and only for your app.
 It expires after at most 12 hours, and right away when the player signs out of the launcher.
 Treat a later 401 as `session_invalid` and ask the player to relaunch.
+
+## Store overlay
+
+`Friends.OpenStoreOverlay` asks the launcher overlay to open a published store page. The game
+sends one `open_store_overlay` line (`app_id`, `flag` 0, 1, or 2) and reads one
+`open_store_overlay_result` line. `{"v":1,"type":"open_store_overlay_result","ok":true}` means
+the overlay opened it. `{"v":1,"type":"open_store_overlay_result","ok":false,"error":"<English message>"}`
+is the failure, and `error` is the text the caller sees. Flag 0 opens the page. Flags 1 and 2
+add the app to the cart and are only for a released or preorderable app. The
+[launch contract](https://github.com/CuratedGames/curated-sdk/blob/main/contracts/launch-contract.md#overlay-store-page)
+has the full line format. C# games call [Store overlay](./dotnet#store-overlay) and do not open
+this socket themselves.
 
 ## Command-line arguments
 

@@ -2,7 +2,7 @@
 
 GDScript addon implementing launch contract v1 (`contracts/launch-contract.md`). Works in
 GDScript and C# projects; C# projects can also reference `Curated.Sdk.dll` (netstandard2.1)
-for Cloud Save, friends, and presence.
+for Cloud Save, friends, presence, and the store overlay.
 
 ## Install
 
@@ -32,7 +32,7 @@ func _on_boss_defeated() -> void:
 `init_from_launcher`, call `refresh_stats` / `set_stat` / `increment_stat` / `store_stats`,
 `authorize_txn(order_id, trans_id)` to ask the Curated launcher overlay to
 confirm an in-game purchase the game server created, or `get_openid_id_token` (never log the
-token). Cloud Save, friends, and presence stay on
+token). Cloud Save, friends, presence, and the store overlay (`Friends.OpenStoreOverlay`) stay on
 `Curated.Sdk.dll` for C# projects. `Curated.session` holds `user_id`, `curated_id`,
 `username`, `language` (raw launcher value), `game_language`, and `entitlement` after init.
 
