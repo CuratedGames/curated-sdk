@@ -1,6 +1,6 @@
 namespace Curated.Sdk;
 
-/// <summary>What <see cref="Friends.OpenStoreOverlay"/> should do with the cart.</summary>
+/// <summary>What <see cref="CuratedClient.OpenStoreOverlay"/> should do with the cart.</summary>
 public enum OverlayToStoreFlag : byte
 {
     /// <summary>Open the store page. No cart action. Allowed for a published app, including one that is not released.</summary>

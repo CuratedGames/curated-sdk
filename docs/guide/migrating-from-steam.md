@@ -23,8 +23,25 @@ The mapping for every language is on [Game languages](/reference/languages).
 
 ## Store overlay
 
-`Friends.OpenStoreOverlay` is Curated's `OpenStoreOverlay`. It opens a published Curated store
-page in the launcher overlay. Call it after Curated is initialized.
+`CuratedClient.OpenStoreOverlay` is Curated's `OpenStoreOverlay`. Unity calls
+`CuratedUnity.OpenStoreOverlay(appId, flag)`. It opens a published Curated store page in the
+launcher overlay. Call it after Curated is initialized.
+
+```csharp
+CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
+CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart);
+CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCartAndShow);
+
+try
+{
+    CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart);
+}
+catch (CuratedException)
+{
+    // Add to cart is only available for released or preorderable apps. This store page is published but not released. Use OverlayToStoreFlag.None.
+    CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
+}
+```
 
 | Flag | Effect |
 | --- | --- |

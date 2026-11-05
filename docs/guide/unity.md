@@ -67,14 +67,46 @@ It does try the connection first, so a signed-in launcher is enough for the Game
 
 ## Features
 
-Achievements, stats, Cloud Save, friends, presence, purchases, the store overlay, and OpenID use the shared C# API.
+Achievements, stats, Cloud Save, friends, presence, and purchases use the shared C# API.
 See [.NET](./dotnet#features) for tested examples, and:
 
 - [Achievements and stats](./achievements-stats)
 - [Game language](./game-language): `CuratedUnity.GetCurrentGameLanguage()`
 - [In-app purchases / Microtransactions](./purchases)
-- [Store overlay](./dotnet#store-overlay): `Friends.OpenStoreOverlay` on the shared C# API. Editor play uses the overlay attached at init.
 - [OpenID Connect](./openid): `CuratedUnity.GetOpenIdIdTokenAsync()` for Unity Authentication
+
+## Store overlay
+
+`CuratedUnity.OpenStoreOverlay(appId, flag)` opens a published Curated store page in the launcher
+overlay. Call it after `InitFromLauncherAsync`. Editor play uses the overlay attached at init.
+The page can be for this game or for another Curated app.
+
+```csharp
+#if !UNITY_SERVER && !UNITY_WEBGL
+using Curated.Sdk;
+using Curated.Unity;
+
+CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
+CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart);
+CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCartAndShow);
+
+try
+{
+    CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart);
+}
+catch (CuratedException)
+{
+    // Add to cart is only available for released or preorderable apps. This store page is published but not released. Use OverlayToStoreFlag.None.
+    CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
+}
+#endif
+```
+
+| Flag | What the overlay does |
+| --- | --- |
+| `OverlayToStoreFlag.None` | Opens the store page. Does not change the cart. Allowed for a published app, including one whose game is not released yet. |
+| `OverlayToStoreFlag.AddToCart` | Opens the store page and adds the app to the cart. Released or preorderable apps only. |
+| `OverlayToStoreFlag.AddToCartAndShow` | Adds the app to the cart and shows the cart. Released or preorderable apps only. |
 
 ## Dedicated server and WebGL
 

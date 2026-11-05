@@ -53,10 +53,11 @@ See [Achievements and stats](./achievements-stats).
 
 ### Store overlay
 
-`Friends.OpenStoreOverlay` opens a published Curated store page in the launcher overlay. Curated
+`CuratedClient.OpenStoreOverlay` opens a published Curated store page in the launcher overlay. Curated
 must already be initialized, and the overlay must be enabled in the player's launcher settings
 and active for the running game. In the Unity Editor that is the overlay from a successful
-launcher attach. The page can be for this game or for another Curated app.
+launcher attach. The page can be for this game or for another Curated app. Unity calls
+`CuratedUnity.OpenStoreOverlay` with the same arguments.
 
 <<< @/../Curated.Sdk.Tests/DocsSnippetsTests.cs#store-overlay{csharp}
 
@@ -70,9 +71,10 @@ The call waits for the launcher's reply. On failure it throws `CuratedException`
 the launcher's English reason.
 
 If `AddToCart` or `AddToCartAndShow` is used for a store page that is published but not released
-and not preorderable, `Message` says that add to cart is only available for released or
-preorderable apps, that this store page is published but not released, and that the caller
-should use `OverlayToStoreFlag.None`.
+and not preorderable, `Message` is exactly `Add to cart is only available for released or preorderable apps. This store page is published but not released. Use OverlayToStoreFlag.None.`
+Open the page with `OverlayToStoreFlag.None` instead:
+
+<<< @/../Curated.Sdk.Tests/DocsSnippetsTests.cs#store-overlay-not-released{csharp}
 
 Before init the call throws `InvalidOperationException`. Without a verified ownership check it
 throws `CuratedLaunchException` (`not_entitled`). An app id that is not positive throws

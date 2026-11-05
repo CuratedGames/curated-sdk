@@ -54,7 +54,7 @@ public class OpenStoreOverlayTests : IDisposable
         var transport = new RecordingTransport((_, _, _) => throw new InvalidOperationException("client must not POST"));
         CuratedClient.InitForTests(1002, transport);
 
-        Friends.OpenStoreOverlay(4400, OverlayToStoreFlag.AddToCartAndShow);
+        CuratedClient.OpenStoreOverlay(4400, OverlayToStoreFlag.AddToCartAndShow);
 
         Assert.Empty(transport.Calls);
         Assert.Equal(
@@ -72,7 +72,7 @@ public class OpenStoreOverlayTests : IDisposable
             "{\"v\":1,\"type\":\"open_store_overlay_result\",\"ok\":true}");
         CuratedClient.InitForTests(1002, new RecordingTransport());
 
-        Friends.OpenStoreOverlay(1002, flag);
+        CuratedClient.OpenStoreOverlay(1002, flag);
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class OpenStoreOverlayTests : IDisposable
         CuratedClient.InitForTests(1002, new RecordingTransport());
 
         var ex = Assert.Throws<CuratedException>(() =>
-            Friends.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart));
+            CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart));
 
         Assert.Equal(UnpublishedCartMessage, ex.Message);
         Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
@@ -101,7 +101,7 @@ public class OpenStoreOverlayTests : IDisposable
         CuratedClient.InitForTests(3, new RecordingTransport());
 
         var ex = Assert.Throws<CuratedException>(() =>
-            Friends.OpenStoreOverlay(8, OverlayToStoreFlag.None));
+            CuratedClient.OpenStoreOverlay(8, OverlayToStoreFlag.None));
 
         Assert.Equal(message, ex.Message);
     }
@@ -114,7 +114,7 @@ public class OpenStoreOverlayTests : IDisposable
         CuratedClient.InitForTests(3, new RecordingTransport());
 
         var ex = Assert.Throws<CuratedException>(() =>
-            Friends.OpenStoreOverlay(8, OverlayToStoreFlag.AddToCartAndShow));
+            CuratedClient.OpenStoreOverlay(8, OverlayToStoreFlag.AddToCartAndShow));
 
         Assert.Equal("Say \"hi\"", ex.Message);
     }
@@ -126,7 +126,7 @@ public class OpenStoreOverlayTests : IDisposable
         CuratedClient.InitForTests(3, transport);
 
         var ex = Assert.Throws<CuratedException>(() =>
-            Friends.OpenStoreOverlay(9, OverlayToStoreFlag.None));
+            CuratedClient.OpenStoreOverlay(9, OverlayToStoreFlag.None));
 
         Assert.Empty(transport.Calls);
         Assert.Equal(OverlayStore.OverlayUnavailableMessage, ex.Message);
@@ -141,7 +141,7 @@ public class OpenStoreOverlayTests : IDisposable
         CuratedClient.InitForTests(3, new RecordingTransport());
 
         var ex = Assert.Throws<CuratedException>(() =>
-            Friends.OpenStoreOverlay(4, OverlayToStoreFlag.None));
+            CuratedClient.OpenStoreOverlay(4, OverlayToStoreFlag.None));
 
         Assert.Equal(OverlayStore.UnreadableResultMessage, ex.Message);
     }
@@ -154,7 +154,7 @@ public class OpenStoreOverlayTests : IDisposable
         CuratedClient.InitForTests(3, new RecordingTransport());
 
         var ex = Assert.Throws<CuratedException>(() =>
-            Friends.OpenStoreOverlay(4, OverlayToStoreFlag.None));
+            CuratedClient.OpenStoreOverlay(4, OverlayToStoreFlag.None));
 
         Assert.Equal(OverlayStore.UnreadableResultMessage, ex.Message);
     }
@@ -167,7 +167,7 @@ public class OpenStoreOverlayTests : IDisposable
         CuratedClient.InitForTests(3, new RecordingTransport());
 
         var ex = Assert.Throws<CuratedException>(() =>
-            Friends.OpenStoreOverlay(1, OverlayToStoreFlag.None));
+            CuratedClient.OpenStoreOverlay(1, OverlayToStoreFlag.None));
 
         Assert.Equal(OverlayStore.OverlaySilentMessage, ex.Message);
     }
@@ -188,7 +188,7 @@ public class OpenStoreOverlayTests : IDisposable
         Environment.SetEnvironmentVariable(LaunchContext.OverlayTokenVariable, null);
         CuratedClient.InitForTests(3, new RecordingTransport());
 
-        Friends.OpenStoreOverlay(77, OverlayToStoreFlag.None);
+        CuratedClient.OpenStoreOverlay(77, OverlayToStoreFlag.None);
 
         Assert.Contains("\"token\":\"channel-token\"", seen);
         Assert.Contains("\"app_id\":77", seen);
@@ -199,13 +199,13 @@ public class OpenStoreOverlayTests : IDisposable
     public void OpenStoreOverlay_requires_init_and_a_positive_app_id()
     {
         Assert.Throws<InvalidOperationException>(() =>
-            Friends.OpenStoreOverlay(1, OverlayToStoreFlag.None));
+            CuratedClient.OpenStoreOverlay(1, OverlayToStoreFlag.None));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Friends.OpenStoreOverlay(0, OverlayToStoreFlag.AddToCart));
+            CuratedClient.OpenStoreOverlay(0, OverlayToStoreFlag.AddToCart));
 
         CuratedClient.InitForTestsWithoutEntitlement(1002, new RecordingTransport());
         var ex = Assert.Throws<CuratedLaunchException>(() =>
-            Friends.OpenStoreOverlay(1002, OverlayToStoreFlag.None));
+            CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.None));
         Assert.Equal(CuratedLaunchError.NotEntitled, ex.Error);
     }
 

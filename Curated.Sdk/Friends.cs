@@ -26,33 +26,4 @@ public static class Friends
     public static Task<IReadOnlyList<Friend>> GetRequestsAsync(
         CancellationToken cancellationToken = default) =>
         FriendsService.GetRequestsAsync(CuratedClient.GameState, cancellationToken);
-
-    /// <summary>
-    /// Open a published Curated store page in the launcher overlay.
-    /// <see cref="OverlayToStoreFlag.None"/> opens the page with no cart action.
-    /// <see cref="OverlayToStoreFlag.AddToCart"/> and <see cref="OverlayToStoreFlag.AddToCartAndShow"/>
-    /// also add the app to the cart, and only for a released or preorderable app.
-    /// </summary>
-    /// <remarks>
-    /// Curated must already be initialized. The overlay must be enabled in the launcher and active
-    /// for this application, including after the Unity Editor attach. Sends one
-    /// <c>open_store_overlay</c> line to the overlay and reads one result line. On failure the
-    /// exception message is the launcher's English text.
-    /// </remarks>
-    /// <param name="appId">Published Curated app whose store page should open. This can be a different app than the one that is running.</param>
-    /// <param name="flag">Store page only, add to cart, or add to cart and show the cart.</param>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="appId"/> is not positive.</exception>
-    /// <exception cref="InvalidOperationException">Curated is not initialized.</exception>
-    /// <exception cref="CuratedLaunchException">The player does not own the running game.</exception>
-    /// <exception cref="CuratedException">The overlay is unavailable, or the launcher rejected the request. <see cref="Exception.Message"/> is the English reason.</exception>
-    public static void OpenStoreOverlay(long appId, OverlayToStoreFlag flag)
-    {
-        if (appId <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(appId), "app id must be positive");
-        }
-
-        _ = CuratedClient.GameState;
-        OverlayStore.Open(appId, flag);
-    }
 }

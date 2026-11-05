@@ -11,6 +11,10 @@ they affect this package.
 
 ## [Unreleased]
 
+### Changed
+
+- C# SDK: `OpenStoreOverlay` moved from `Friends` to `CuratedClient.OpenStoreOverlay(long appId, OverlayToStoreFlag flag)`. Unity calls `CuratedUnity.OpenStoreOverlay(appId, flag)`. `OverlayToStoreFlag` is unchanged (`None` = 0, `AddToCart` = 1, `AddToCartAndShow` = 2). The overlay line and the launcher error text are unchanged.
+
 ## [1.9.0] - 2026-11-04
 
 ### Added
