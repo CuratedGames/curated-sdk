@@ -104,7 +104,8 @@ only proceed inside the Curated launcher. Never log the overlay token.
 ### Overlay store page
 
 Opening a Curated store page uses the same overlay endpoint as a request and a response. Official
-C# bindings do this from `Friends.OpenStoreOverlay`. When the overlay channel is available (launch
+C# bindings do this from `CuratedClient.OpenStoreOverlay`. Unity calls
+`CuratedUnity.OpenStoreOverlay`. When the overlay channel is available (launch
 variables, or the endpoint and token adopted after `editor_attach`), the game opens one TCP
 connection and sends one line:
 

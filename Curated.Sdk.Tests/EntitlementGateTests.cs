@@ -104,7 +104,7 @@ public class EntitlementGateTests : IDisposable
         Assert.Equal(CuratedLaunchError.NotEntitled, purchase.Error);
 
         var store = Assert.Throws<CuratedLaunchException>(() =>
-            Friends.OpenStoreOverlay(1, OverlayToStoreFlag.None));
+            CuratedClient.OpenStoreOverlay(1, OverlayToStoreFlag.None));
         Assert.Equal(CuratedLaunchError.NotEntitled, store.Error);
 
         var setStat = Assert.Throws<CuratedLaunchException>(() => Stats.SetStat("CardsCreated", 1));

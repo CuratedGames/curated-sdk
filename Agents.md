@@ -33,7 +33,7 @@ The Curated launcher starts games with environment variables defined in
 | `CURATED_API_BASE` | `https://api.curated.games` | Only destination for the token |
 | `CURATED_USER_ID`, `CURATED_USERNAME` | | Display hints; trust `/auth/me` instead |
 | `CURATED_LANGUAGE` | `en`, `es`, `it` | Launcher client language; read it with `GetCurrentGameLanguage` |
-| `CURATED_OVERLAY_ENDPOINT` / `CURATED_OVERLAY_TOKEN` | `127.0.0.1:<port>` + secret | Optional overlay IPC. Achievement toasts, in-game purchase handoff, and `Friends.OpenStoreOverlay` |
+| `CURATED_OVERLAY_ENDPOINT` / `CURATED_OVERLAY_TOKEN` | `127.0.0.1:<port>` + secret | Optional overlay IPC. Achievement toasts, in-game purchase handoff, and `CuratedClient.OpenStoreOverlay` |
 
 Startup: `GET /auth/me` (session valid?) then `GET /library` (owns `app_id`?). Each binding
 returns a session or one error code: `not_launched_by_curated`, `unsupported_contract_version`,
@@ -75,10 +75,10 @@ ordinary command-line arguments. Credentials are never on the command line.
 1. Add the package from this repository with a Git URL. In `Packages/manifest.json`:
 
 ```json
-"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.9.0"
+"com.curatedgames.sdk": "https://github.com/CuratedGames/curated-sdk.git?path=/engines/unity/com.curatedgames.sdk#v1.10.0"
 ```
 
-Replace `v1.9.0` with a release tag, `main`, or a commit SHA. Or use
+Replace `v1.10.0` with a release tag, `main`, or a commit SHA. Or use
 **Window > Package Manager > + > Add package from git URL…** with the same URL.
 Use **v1.3.1 or newer** (or `main`). Older tags such as `v1.3.0` still have the previous
 folder name `games.curated.sdk` and fail with a pathspec error.
@@ -181,8 +181,12 @@ MicroTxnAuthorization purchase = await MicroTxn.AuthorizeAsync(938473, 374839);
 // Unreal AuthorizeTxn, RPG Maker authorizeTxn.
 
 // Open a published Curated store page in the launcher overlay.
-// None opens the page. AddToCart and AddToCartAndShow require a released or preorderable app.
-Friends.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
+// Unity: CuratedUnity.OpenStoreOverlay(appId, flag). Same flags.
+CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
+CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart);
+CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCartAndShow);
+// Published but not released: CuratedException.Message is
+// "Add to cart is only available for released or preorderable apps. This store page is published but not released. Use OverlayToStoreFlag.None."
 
 // Optional: Unity Authentication (or another OIDC consumer). Never log the token.
 string idToken = await CuratedClient.GetOpenIdIdTokenAsync();

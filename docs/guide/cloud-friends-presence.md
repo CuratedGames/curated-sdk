@@ -19,4 +19,4 @@ Turn Cloud Save on and list the save paths in the admin first, under
 Presence status is `online`, `away`, `offline`, or `in_game`. With `in_game`, the SDK sends your
 app id automatically. Call `HeartbeatAsync` periodically while the game runs.
 
-Opening a store page is also on `Friends`: see [Store overlay](./dotnet#store-overlay).
+Opening a store page is `CuratedClient.OpenStoreOverlay` (Unity: `CuratedUnity.OpenStoreOverlay`): see [Store overlay](./dotnet#store-overlay).

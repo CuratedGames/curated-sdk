@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- C# SDK: `OpenStoreOverlay` moved from `Friends` to `CuratedClient.OpenStoreOverlay(long appId, OverlayToStoreFlag flag)`. Unity calls `CuratedUnity.OpenStoreOverlay(appId, flag)`. `OverlayToStoreFlag` is unchanged (`None` = 0, `AddToCart` = 1, `AddToCartAndShow` = 2). The overlay line and the launcher error text are unchanged.
+- Rebuilt Unity `Plugins/Curated.Sdk.dll` for the store overlay move.
+
 ## [1.9.0] - 2026-11-04
 
 ### Added

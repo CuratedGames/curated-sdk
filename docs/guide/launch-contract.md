@@ -47,7 +47,8 @@ Treat a later 401 as `session_invalid` and ask the player to relaunch.
 
 ## Store overlay
 
-`Friends.OpenStoreOverlay` asks the launcher overlay to open a published store page. The game
+`CuratedClient.OpenStoreOverlay` asks the launcher overlay to open a published store page. Unity
+calls `CuratedUnity.OpenStoreOverlay`. The game
 sends one `open_store_overlay` line (`app_id`, `flag` 0, 1, or 2) and reads one
 `open_store_overlay_result` line. `{"v":1,"type":"open_store_overlay_result","ok":true}` means
 the overlay opened it. `{"v":1,"type":"open_store_overlay_result","ok":false,"error":"<English message>"}`

@@ -99,6 +99,24 @@ Stats.SetStat("CardsCreated", 10);
 await Stats.StoreStatsAsync();
 ```
 
+Open a published store page with `CuratedUnity.OpenStoreOverlay(appId, flag)`:
+
+```csharp
+CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
+CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart);
+CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCartAndShow);
+
+try
+{
+    CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart);
+}
+catch (CuratedException)
+{
+    // Add to cart is only available for released or preorderable apps. This store page is published but not released. Use OverlayToStoreFlag.None.
+    CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
+}
+```
+
 For Unity Authentication OpenID Connect, call `CuratedUnity.GetOpenIdIdTokenAsync()` after init
 and pass the string to `SignInWithOpenIdConnectAsync` / `LinkWithOpenIdConnectAsync` with provider
 `oidc-curated`. Never log the ID token; never send `CURATED_SESSION_TOKEN` to Unity.

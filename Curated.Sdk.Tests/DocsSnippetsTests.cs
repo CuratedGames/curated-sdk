@@ -155,26 +155,77 @@ public class DocsSnippetsTests : IDisposable
         Environment.SetEnvironmentVariable(LaunchContext.OverlayTokenVariable, "overlay-token");
         var accepted = Task.Run(async () =>
         {
-            using var client = await overlay.AcceptTcpClientAsync();
-            using var stream = client.GetStream();
-            var buffer = new byte[1024];
-            var text = "";
-            while (!text.Contains("\n"))
+            for (var i = 0; i < 3; i++)
             {
-                var read = await stream.ReadAsync(buffer, 0, buffer.Length);
-                text += Encoding.UTF8.GetString(buffer, 0, read);
-            }
+                using var client = await overlay.AcceptTcpClientAsync();
+                using var stream = client.GetStream();
+                var buffer = new byte[1024];
+                var text = "";
+                while (!text.Contains("\n"))
+                {
+                    var read = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    text += Encoding.UTF8.GetString(buffer, 0, read);
+                }
 
-            var bytes = Encoding.UTF8.GetBytes(
-                "{\"v\":1,\"type\":\"open_store_overlay_result\",\"ok\":true}\n");
-            await stream.WriteAsync(bytes, 0, bytes.Length);
+                var bytes = Encoding.UTF8.GetBytes(
+                    "{\"v\":1,\"type\":\"open_store_overlay_result\",\"ok\":true}\n");
+                await stream.WriteAsync(bytes, 0, bytes.Length);
+            }
         });
 
         #region store-overlay
-        // Published store page, no cart action.
-        // AddToCart and AddToCartAndShow are only for a released or preorderable app.
-        Friends.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
+        CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
+        CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart);
+        CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCartAndShow);
         #endregion store-overlay
+
+        await accepted;
+        overlay.Stop();
+    }
+
+    [Fact]
+    public async Task Store_overlay_not_released_snippet_runs()
+    {
+        CuratedClient.InitForTests(AppId, new RecordingTransport());
+        OverlayChannel.Clear();
+        using var overlay = new TcpListener(IPAddress.Loopback, 0);
+        overlay.Start();
+        var port = ((IPEndPoint)overlay.LocalEndpoint).Port;
+        Environment.SetEnvironmentVariable(LaunchContext.OverlayEndpointVariable, "127.0.0.1:" + port);
+        Environment.SetEnvironmentVariable(LaunchContext.OverlayTokenVariable, "overlay-token");
+        var accepted = Task.Run(async () =>
+        {
+            for (var i = 0; i < 2; i++)
+            {
+                using var client = await overlay.AcceptTcpClientAsync();
+                using var stream = client.GetStream();
+                var buffer = new byte[1024];
+                var text = "";
+                while (!text.Contains("\n"))
+                {
+                    var read = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    text += Encoding.UTF8.GetString(buffer, 0, read);
+                }
+
+                var body = i == 0
+                    ? "{\"v\":1,\"type\":\"open_store_overlay_result\",\"ok\":false,\"error\":\"Add to cart is only available for released or preorderable apps. This store page is published but not released. Use OverlayToStoreFlag.None.\"}"
+                    : "{\"v\":1,\"type\":\"open_store_overlay_result\",\"ok\":true}";
+                var bytes = Encoding.UTF8.GetBytes(body + "\n");
+                await stream.WriteAsync(bytes, 0, bytes.Length);
+            }
+        });
+
+        #region store-overlay-not-released
+        try
+        {
+            CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart);
+        }
+        catch (CuratedException)
+        {
+            // Add to cart is only available for released or preorderable apps. This store page is published but not released. Use OverlayToStoreFlag.None.
+            CuratedClient.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
+        }
+        #endregion store-overlay-not-released
 
         await accepted;
         overlay.Stop();
