@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [1.10.1] - 2026-11-09
+
 ### Changed
 
 - Unity: `OverlayToStoreFlag` is declared in `Curated.Unity`. `CuratedUnity.OpenStoreOverlay` no longer requires a reference to `Curated.Sdk.dll`, so assemblies that set Override References can call it. Values match `Curated.Sdk.OverlayToStoreFlag`.
