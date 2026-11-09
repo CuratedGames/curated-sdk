@@ -80,10 +80,10 @@ See [.NET](./dotnet#features) for tested examples, and:
 `CuratedUnity.OpenStoreOverlay(appId, flag)` opens a published Curated store page in the launcher
 overlay. Call it after `InitFromLauncherAsync`. Editor play uses the overlay attached at init.
 The page can be for this game or for another Curated app.
+`OverlayToStoreFlag` is in `Curated.Unity`, so a game assembly that sets Override References can call this without listing `Curated.Sdk.dll`.
 
 ```csharp
 #if !UNITY_SERVER && !UNITY_WEBGL
-using Curated.Sdk;
 using Curated.Unity;
 
 CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
@@ -94,7 +94,7 @@ try
 {
     CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart);
 }
-catch (CuratedException)
+catch (Curated.Sdk.CuratedException)
 {
     // Add to cart is only available for released or preorderable apps. This store page is published but not released. Use OverlayToStoreFlag.None.
     CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.None);

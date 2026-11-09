@@ -1,6 +1,6 @@
 {
   "name": "com.curatedgames.sdk",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "displayName": "Curated SDK",
   "description": "Curated launcher sign-in, ownership checks, achievements, stats, Cloud Save, friends, presence, in-game purchase authorization, and the store overlay. Init fails closed without ownership. Excluded from dedicated server and WebGL builds.",
   "unity": "2021.3",
