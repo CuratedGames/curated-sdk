@@ -35,6 +35,9 @@ export default defineConfig({
   lang: "en-US",
   base: "/",
   cleanUrls: true,
+  // Public docs: an explicit allow plus a sitemap so the docs host is
+  // discoverable on the curated.games domain property.
+  sitemap: { hostname: siteUrl },
   lastUpdated: true,
   // The store is dark-only, so the docs are too (no appearance toggle). Brand: theme/brand.css.
   appearance: "force-dark",
@@ -47,6 +50,7 @@ export default defineConfig({
     ["link", { rel: "icon", href: "/brand/icon-192.png", sizes: "192x192", type: "image/png" }],
     ["link", { rel: "apple-touch-icon", href: "/brand/app-apple-touch-icon.png", sizes: "180x180" }],
     ["link", { rel: "preload", href: "/fonts/source-sans-3-latin-wght-normal.woff2", as: "font", type: "font/woff2", crossorigin: "" }],
+    ["meta", { name: "robots", content: "index, follow" }],
     ["meta", { name: "theme-color", content: "#13161c" }],
     ["meta", { property: "og:site_name", content: "Curated" }],
     ["meta", { property: "og:type", content: "website" }],
@@ -63,10 +67,12 @@ export default defineConfig({
       : `${pageData.title} | ${siteTitle}`;
     const path = pageData.relativePath.replace(/(^|\/)index\.md$/, "$1").replace(/\.md$/, "");
     pageData.frontmatter.head ??= [];
+    const canonical = path ? `${siteUrl}/${path}` : `${siteUrl}/`;
     pageData.frontmatter.head.push(
+      ["link", { rel: "canonical", href: canonical }],
       ["meta", { property: "og:title", content: title }],
       ["meta", { property: "og:description", content: pageData.description || description }],
-      ["meta", { property: "og:url", content: `${siteUrl}/${path}` }],
+      ["meta", { property: "og:url", content: canonical }],
     );
   },
   markdown: {
