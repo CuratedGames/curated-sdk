@@ -11,6 +11,10 @@ they affect this package.
 
 ## [Unreleased]
 
+### Changed
+
+- Unity: `CuratedUnity.OpenStoreOverlay` takes `Curated.Sdk.OverlayToStoreFlag`. The duplicate enum in `Curated.Unity` is removed, so a file that imports both namespaces can name the flag. An assembly that sets Override References lists `Curated.Sdk.dll` to call it.
+
 ## [1.10.1] - 2026-11-09
 
 ### Changed

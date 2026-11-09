@@ -161,6 +161,6 @@ namespace Curated.Unity
         /// <exception cref="CuratedLaunchException">The player does not own the running game.</exception>
         /// <exception cref="CuratedException">The overlay is unavailable, or the launcher rejected the request. <see cref="Exception.Message"/> is the English reason.</exception>
         public static void OpenStoreOverlay(long appId, OverlayToStoreFlag flag) =>
-            CuratedClient.OpenStoreOverlay(appId, (Curated.Sdk.OverlayToStoreFlag)(byte)flag);
+            CuratedClient.OpenStoreOverlay(appId, flag);
     }
 }

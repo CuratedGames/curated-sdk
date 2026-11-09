@@ -99,9 +99,10 @@ Stats.SetStat("CardsCreated", 10);
 await Stats.StoreStatsAsync();
 ```
 
-Open a published store page with `CuratedUnity.OpenStoreOverlay(appId, flag)`. `OverlayToStoreFlag` is in `Curated.Unity`, so this call does not need a reference to `Curated.Sdk.dll`.
+Open a published store page with `CuratedUnity.OpenStoreOverlay(appId, flag)`. `OverlayToStoreFlag` is `Curated.Sdk.OverlayToStoreFlag`. An assembly that sets Override References lists `Curated.Sdk.dll` to call this.
 
 ```csharp
+using Curated.Sdk;
 using Curated.Unity;
 
 CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
