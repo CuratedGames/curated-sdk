@@ -99,9 +99,11 @@ Stats.SetStat("CardsCreated", 10);
 await Stats.StoreStatsAsync();
 ```
 
-Open a published store page with `CuratedUnity.OpenStoreOverlay(appId, flag)`:
+Open a published store page with `CuratedUnity.OpenStoreOverlay(appId, flag)`. `OverlayToStoreFlag` is in `Curated.Unity`, so this call does not need a reference to `Curated.Sdk.dll`.
 
 ```csharp
+using Curated.Unity;
+
 CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.None);
 CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart);
 CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCartAndShow);
@@ -110,7 +112,7 @@ try
 {
     CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.AddToCart);
 }
-catch (CuratedException)
+catch (Curated.Sdk.CuratedException)
 {
     // Add to cart is only available for released or preorderable apps. This store page is published but not released. Use OverlayToStoreFlag.None.
     CuratedUnity.OpenStoreOverlay(1002, OverlayToStoreFlag.None);

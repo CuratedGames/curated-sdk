@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Unity: `OverlayToStoreFlag` is declared in `Curated.Unity`. `CuratedUnity.OpenStoreOverlay` no longer requires a reference to `Curated.Sdk.dll`, so assemblies that set Override References can call it. Values match `Curated.Sdk.OverlayToStoreFlag`.
+
+## [1.10.0] - 2026-11-05
+
+### Changed
+
 - C# SDK: `OpenStoreOverlay` moved from `Friends` to `CuratedClient.OpenStoreOverlay(long appId, OverlayToStoreFlag flag)`. Unity calls `CuratedUnity.OpenStoreOverlay(appId, flag)`. `OverlayToStoreFlag` is unchanged (`None` = 0, `AddToCart` = 1, `AddToCartAndShow` = 2). The overlay line and the launcher error text are unchanged.
 - Rebuilt Unity `Plugins/Curated.Sdk.dll` for the store overlay move.
 
@@ -167,7 +173,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial Curated.Sdk public API: launcher auth, entitlements, achievements, Cloud Save, friends and presence
 
-[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.3...v1.8.0
 [1.7.3]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.2...v1.7.3
