@@ -187,11 +187,7 @@
       "CuratedUnity.GetOpenIdIdTokenAsync": "Mint a short-lived OpenID Connect ID token for the initialized session. Pass it only to Unity Authentication (`SignInWithOpenIdConnectAsync` / `LinkWithOpenIdConnectAsync` with provider `oidc-curated`). Never log it. Same as `CuratedClient.GetOpenIdIdTokenAsync`.",
       "CuratedUnity.GetCurrentGameLanguage": "Game language the player selected in the Curated launcher (`en`, `es`, `it`, ...), or `en` outside the launcher. Same as `CuratedClient.GetCurrentGameLanguage`.",
       "CuratedUnity.GetCurrentGameLanguageSteamApiName": "Migrating from Steam: Steam client language API name for `GetCurrentGameLanguage` (`english`, `spanish`, ...).",
-      "CuratedUnity.OpenStoreOverlay": "Open a published Curated store page in the launcher overlay. `OverlayToStoreFlag.None` opens the page with no cart action. `OverlayToStoreFlag.AddToCart` and `OverlayToStoreFlag.AddToCartAndShow` also add the app to the cart, and only for a released or preorderable app. Same as `CuratedClient.OpenStoreOverlay`.",
-      "OverlayToStoreFlag": "What `CuratedUnity.OpenStoreOverlay` should do with the cart. Values match `Curated.Sdk.OverlayToStoreFlag`.",
-      "OverlayToStoreFlag.None": "Open the store page. No cart action. Allowed for a published app, including one that is not released.",
-      "OverlayToStoreFlag.AddToCart": "Open the store page and add the app to the cart. Released or preorderable apps only.",
-      "OverlayToStoreFlag.AddToCartAndShow": "Add the app to the cart and show the cart. Released or preorderable apps only."
+      "CuratedUnity.OpenStoreOverlay": "Open a published Curated store page in the launcher overlay. `OverlayToStoreFlag.None` opens the page with no cart action. `OverlayToStoreFlag.AddToCart` and `OverlayToStoreFlag.AddToCartAndShow` also add the app to the cart, and only for a released or preorderable app. Same as `CuratedClient.OpenStoreOverlay`."
     },
     "godot": {
       "Curated": "Autoload registered by the Curated SDK plugin. Call it as `Curated` from any script.",
