@@ -8,10 +8,11 @@ The checklist shows Store Presence, Content survey, Game Build, and Review statu
 ready, click **Submit for review**. If changes are requested, fix them and click **Resubmit for
 review**. The content survey must be complete first.
 
-## 2. Set the Release date
+## 2. Set the planned release date
 
-After Staff approves the store page, set the **Intended release date**. Once the store page is
-live, players can see and wishlist the game, but cannot buy it before this date and time.
+After Staff approves the store page, set the **Planned release date**. Once the store page is
+live, players can see and wishlist the game. Reaching this date does not let players buy the game.
+Players can buy after you release the game, or while preorders are on.
 
 - The earliest release is two weeks after the store page has been visible as Coming Soon.
 - The date must be at least 14 days after today.
