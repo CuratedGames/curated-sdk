@@ -6,8 +6,9 @@
 
 Enter the **Primary store price (USD)** and click **Save price**.
 
-**Hide price until the planned release date** keeps the price off the store until that date. It needs a
-planned release date first, set in [Release](../release). Reaching that date does not put the game on sale.
+**Hide price until release** keeps the price off the store until the game is released. Reaching the
+planned release date does not show the price. Players see the price while preorders are on, and after
+the game is released. The planned date is set in [Release](../release).
 
 ## Regional prices
 
