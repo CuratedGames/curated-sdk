@@ -8,7 +8,7 @@ if you need them there.
 ## Cloud Save
 
 Turn Cloud Save on and list the save paths in the admin first, under
-[More tools > Cloud Save](/admin/more-tools#cloud-save). Conflicts use last write wins.
+[Game Build > Cloud Save](/admin/game-build/cloud-save). Conflicts use last write wins.
 
 <<< @/../Curated.Sdk.Tests/DocsSnippetsTests.cs#cloud-save{csharp}
 
