@@ -159,6 +159,8 @@ export default defineConfig({
             { text: "Content Survey", link: "/admin/store-presence/content-survey" },
             { text: "Pricing", link: "/admin/store-presence/pricing" },
             { text: "Publish and player reviews", link: "/admin/store-presence/publish" },
+            { text: "Community hub", link: "/admin/store-presence/community-hub" },
+            { text: "Trading cards", link: "/admin/store-presence/trading-cards" },
           ],
         },
         {
@@ -170,6 +172,7 @@ export default defineConfig({
             { text: "Installation", link: "/admin/game-build/installation" },
             { text: "EULA", link: "/admin/game-build/eula" },
             { text: "Achievements and Stats", link: "/admin/game-build/achievements-stats" },
+            { text: "Cloud Save", link: "/admin/game-build/cloud-save" },
           ],
         },
         {
@@ -179,7 +182,7 @@ export default defineConfig({
             { text: "Resales and paid reviews", link: "/admin/visibility-sales" },
             { text: "Marketing", link: "/admin/marketing" },
             { text: "Demo", link: "/admin/demo" },
-            { text: "More tools", link: "/admin/more-tools" },
+            { text: "Playtime", link: "/admin/playtime" },
             { text: "Publisher Web API key", link: "/admin/web-api" },
           ],
         },
