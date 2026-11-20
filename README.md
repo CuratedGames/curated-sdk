@@ -50,7 +50,9 @@ bash scripts/pack-engines.sh artifacts/sdk-unity/publish/Curated.Sdk.dll artifac
 cd tooling/content-builder && cargo test && cargo build --release
 ```
 
-Godot and Unreal tests run inside the engine. See [Godot 4](https://docs.curated.games/guide/godot#tests) and [Unreal Engine 5](https://docs.curated.games/guide/unreal#tests).
+Godot and Unreal tests run inside the engine. See [MAINTAINING.md](MAINTAINING.md#godot-and-unreal-code-is-not-compiled-in-ci).
+
+Workflow, required checks, docs deploy, game language tables and releases: see [MAINTAINING.md](MAINTAINING.md).
 
 ### Documentation site
 
