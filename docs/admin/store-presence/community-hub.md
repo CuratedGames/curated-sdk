@@ -32,8 +32,9 @@ Stats follow the store's cookie choice: players who decline analytics cookies ar
 
 Click **Create new Announcement** and pick the type that fits best, for example
 **Small Update / Patch Notes**, **Major Update**, **Releasing Now**, **In-Game Event** or
-**Announcement / News**. The type sets the label players see. You can change it later with
-**Change type** in the editor.
+**Announcement / News**. Groups with several types, such as **Game Update**, start collapsed:
+click the group to show its types. The type sets the label players see. You can change it later
+with **Change type** in the editor.
 
 ## Edit an announcement
 
@@ -41,8 +42,9 @@ The editor has five tabs. **Save** keeps your changes, **Preview** shows the sto
 
 ### Description
 
-Pick a **Language** (English, Spanish or Italian) to edit its text. English is required; empty
-fields in other languages show the English text.
+Pick a **Language** tab (English, Spanish or Italian) to edit its text, the same way as in
+[Description](description.md). English is the default and required; a dot marks the languages
+that already have their own text, and empty fields in other languages show the English text.
 
 - **Announcement title**: up to 80 characters.
 - **Subtitle**: optional, up to 120 characters, shown under the title.
@@ -73,7 +75,8 @@ use your time zone; players see theirs.
 - **Header image** (suggested): 1920 x 622 px. The banner at the top of the announcement page.
   Narrow screens crop the sides, so keep text in the center safe area.
 
-PNG, JPG or WebP, 5 MB max, exact sizes. For a localized copy, end the file name with the
+One image is enough: the English image is used for every language. PNG, JPG or WebP, 5 MB max,
+exact sizes. Spanish and Italian images are optional overrides: end the file name with the
 language, for example `cover_spanish.png` or `header_italian.jpg`; no suffix means English.
 Download the Curated templates (SVG with layers and safe-area guides) from the Artwork tab.
 
