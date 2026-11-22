@@ -159,7 +159,7 @@ export default defineConfig({
             { text: "Content Survey", link: "/admin/store-presence/content-survey" },
             { text: "Pricing", link: "/admin/store-presence/pricing" },
             { text: "Publish and player reviews", link: "/admin/store-presence/publish" },
-            { text: "Community hub", link: "/admin/store-presence/community-hub" },
+            { text: "Announcements", link: "/admin/store-presence/community-hub" },
             { text: "Trading cards", link: "/admin/store-presence/trading-cards" },
           ],
         },
