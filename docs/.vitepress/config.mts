@@ -211,7 +211,7 @@ export default defineConfig({
     outline: { level: [2, 3] },
     footer: {
       message: "Curated SDK License. Source-available, not open source.",
-      copyright: "Curated and Curated Games are trademarks of Margherita Roncone, licensed to Fatum Games SL.",
+      copyright: "Curated and Curated Games are trademarks of ABELA Corp.",
     },
   },
 });

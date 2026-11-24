@@ -11,6 +11,12 @@ they affect this package.
 
 ## [Unreleased]
 
+## [1.10.3] - 2026-11-24
+
+### Changed
+
+- Legal owner is ABELA Corp, 8 The Green, Ste A, Dover, DE 19901, USA.
+
 ## [1.10.0] - 2026-11-05
 
 ### Changed
@@ -81,7 +87,7 @@ they affect this package.
 
 ### Changed
 
-- Copyright and trademark notice: Margherita Roncone, licensed to Fatum Games SL ([#3](https://github.com/CuratedGames/curated-sdk/pull/3))
+- Copyright and trademark notice: ABELA Corp ([#3](https://github.com/CuratedGames/curated-sdk/pull/3))
 
 ## [1.1.0] - 2026-10-22
 
@@ -99,7 +105,8 @@ they affect this package.
 
 - Initial Curated.Sdk public API: launcher auth, entitlements, achievements, Cloud Save, friends and presence
 
-[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.10.3...HEAD
+[1.10.3]: https://github.com/CuratedGames/curated-sdk/compare/v1.10.0...v1.10.3
 [1.10.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.7.1...v1.8.0

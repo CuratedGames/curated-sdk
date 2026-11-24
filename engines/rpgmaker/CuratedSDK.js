@@ -5,7 +5,7 @@
 /*:
  * @target MZ
  * @plugindesc v1.5.1 Curated launcher sign-in, ownership check, achievements, and stats.
- * @author Fatum Games SL
+ * @author ABELA Corp
  * @url https://github.com/CuratedGames/curated-sdk
  *
  * @param appId
