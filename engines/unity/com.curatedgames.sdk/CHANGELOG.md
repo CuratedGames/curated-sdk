@@ -11,6 +11,15 @@ they affect this package.
 
 ## [Unreleased]
 
+## [1.10.3] - 2026-11-24
+
+### Changed
+
+- Legal owner is ABELA Corp, 8 The Green, Ste A, Dover, DE 19901, USA.
+- Rebuilt Unity `Plugins/Curated.Sdk.dll` for 1.10.3.
+
+## [1.10.2] - 2026-11-09
+
 ### Changed
 
 - Unity: `CuratedUnity.OpenStoreOverlay` takes `Curated.Sdk.OverlayToStoreFlag`. The duplicate enum in `Curated.Unity` is removed, so a file that imports both namespaces can name the flag. An assembly that sets Override References lists `Curated.Sdk.dll` to call it.
@@ -153,7 +162,9 @@ they affect this package.
 
 - Initial Curated.Sdk public API: launcher auth, entitlements, achievements, Cloud Save, friends and presence
 
-[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.10.1...HEAD
+[Unreleased]: https://github.com/CuratedGames/curated-sdk/compare/v1.10.3...HEAD
+[1.10.3]: https://github.com/CuratedGames/curated-sdk/compare/v1.10.2...v1.10.3
+[1.10.2]: https://github.com/CuratedGames/curated-sdk/compare/v1.10.1...v1.10.2
 [1.10.1]: https://github.com/CuratedGames/curated-sdk/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/CuratedGames/curated-sdk/compare/v1.8.0...v1.9.0
