@@ -1,12 +1,11 @@
 # Curated SDK License
 
-Copyright (c) Margherita Roncone. All rights reserved. Licensed to Fatum Games SL.
+Copyright (c) ABELA Corp. All rights reserved.
 
-Curated Games is operated by Fatum Games SL (Business ID: B21832985), Calle Mediodia 7,
-35015, Las Palmas De Gran Canaria, Las Palmas, Spain, under license from Margherita
-Roncone. Support: support@curated.games.
+Curated Games is operated by ABELA Corp, 8 The Green, Ste A,
+Dover, DE 19901, USA. Support: support@curated.games.
 
-These license terms are an agreement between you ("Licensee") and Fatum Games SL
+These license terms are an agreement between you ("Licensee") and ABELA Corp
 ("Curated") for the Curated software development kit and redistributable client
 libraries (the "SDK").
 Please read them before downloading or using the SDK. By downloading, installing,
@@ -82,15 +81,15 @@ store, display, or transmit it to any other party or service.
 
 ## 5. Trademarks and relationship
 
-The Curated and Curated Games names, logos, and trademarks are the property of Margherita
-Roncone and are licensed to Fatum Games SL. This license does not grant any right to use
+The Curated and Curated Games names, logos, and trademarks are the property of
+ABELA Corp. This license does not grant any right to use
 them except as needed to describe factual compatibility (for example, "supports Curated").
 Licensee will not suggest that Curated sponsors, endorses, or partners with
 Licensee Software unless Curated has agreed in writing.
 
 ## 6. Ownership
 
-The SDK is licensed, not sold. Margherita Roncone, Fatum Games SL, and their licensors
+The SDK is licensed, not sold. ABELA Corp and its licensors
 retain all title and ownership in the SDK and all copies. Licensee retains all rights in Licensee
 Software, excluding the SDK itself.
 
@@ -141,8 +140,9 @@ These terms are the entire agreement regarding the SDK and supersede prior
 proposals or agreements on that subject. If any provision is unenforceable, the
 remainder stays in effect. Licensee may not assign this license without Curated's
 prior written consent. Failure to enforce a provision is not a waiver. These terms
-are governed by the laws applicable to Curated's principal place of business,
-excluding conflict-of-law rules, unless mandatory local law provides otherwise.
+are governed by the laws applicable to the principal place of business of ABELA Corp
+at 8 The Green, Ste A, Dover, DE 19901, USA, excluding conflict-of-law rules, unless
+mandatory local law provides otherwise.
 
 For partner onboarding, store distribution, and account terms, see the separate
 agreements Curated presents in its developer or admin portals.

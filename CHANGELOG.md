@@ -155,7 +155,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Copyright and trademark notice: Margherita Roncone, licensed to Fatum Games SL ([#3](https://github.com/CuratedGames/curated-sdk/pull/3))
+- Copyright and trademark notice: ABELA Corp ([#3](https://github.com/CuratedGames/curated-sdk/pull/3))
 
 ## [1.1.0] - 2026-10-22
 
