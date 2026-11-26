@@ -67,7 +67,8 @@ It does try the connection first, so a signed-in launcher is enough for the Game
 
 ## Features
 
-Achievements, stats, Cloud Save, friends, presence, and purchases use the shared C# API.
+Achievements, stats, friends, presence, and purchases use the shared C# API.
+Cloud Save is synced by the launcher from the paths set in admin.
 See [.NET](./dotnet#features) for tested examples, and:
 
 - [Achievements and stats](./achievements-stats)

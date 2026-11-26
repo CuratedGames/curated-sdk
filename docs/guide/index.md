@@ -2,8 +2,9 @@
 
 The Curated SDK connects your game to the Curated launcher. When a player presses **Play**, the
 launcher starts your game with a few environment variables. The SDK reads them, signs the player
-in, and confirms they own the game. Then you can use achievements, stats, Cloud Save, friends,
-presence, in-app purchases, and the store overlay.
+in, and confirms they own the game. Then you can use achievements, stats, friends,
+presence, in-app purchases, and the store overlay. Cloud Save is synced by the
+launcher from the paths you set in admin. The game does not call the SDK for it.
 
 Current release: **%SDK_VERSION%** ([changelog](/changelog)).
 
