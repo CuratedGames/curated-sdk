@@ -1,6 +1,6 @@
 # Curated SDK
 
-Integrate games with [Curated](https://curated.games). When the Curated launcher starts a game, the SDK signs the player in, confirms they own the game, and exposes achievements, stats, Cloud Save, friends, presence, and in-game purchases. It includes bindings for Unity, .NET, Godot 4, Unreal Engine 5, and RPG Maker MZ / MV, plus the Content Builder CLI for depot uploads.
+Integrate games with [Curated](https://curated.games). When the Curated launcher starts a game, the SDK signs the player in, confirms they own the game, and exposes achievements, stats, friends, presence, and in-game purchases. The launcher syncs Cloud Save. It includes bindings for Unity, .NET, Godot 4, Unreal Engine 5, and RPG Maker MZ / MV, plus the Content Builder CLI for depot uploads.
 
 Guides, install steps, and the API reference are at **[docs.curated.games](https://docs.curated.games)**.
 

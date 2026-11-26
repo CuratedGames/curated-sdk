@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- C# SDK: `Cloud.SyncOnLaunchAsync`, `Cloud.SyncOnQuitAsync`, and `CloudSyncResult` are removed. The Curated launcher syncs Cloud Save on launch and on exit. A game does not call the SDK. Rebuilt Unity `Plugins/Curated.Sdk.dll`.
+
 ## [1.10.3] - 2026-11-24
 
 ### Changed

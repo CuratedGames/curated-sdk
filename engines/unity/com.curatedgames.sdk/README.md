@@ -88,8 +88,9 @@ If the launcher is not signed in, the reply is `not_signed_in`. Player builds do
 session token is sent only to the Curated API.
 
 `CuratedUnity.InitFromLauncherAsync` shuts Curated down on `Application.quitting`. Achievements,
-stats, Cloud Save, friends, presence, and in-game purchase authorization are on the
-`Curated.Sdk` API (`Achievements`, `Stats`, `Cloud`, `Friends`, `Presence`, `MicroTxn`).
+stats, friends, presence, and in-game purchase authorization are on the
+`Curated.Sdk` API (`Achievements`, `Stats`, `Friends`, `Presence`, `MicroTxn`).
+The Curated launcher syncs Cloud Save.
 `MicroTxn.AuthorizeAsync` asks the Curated launcher overlay to confirm an order the game
 server created. Outside the launcher the result is error, and the client does not POST. Example:
 

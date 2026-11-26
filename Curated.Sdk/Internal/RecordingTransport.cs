@@ -44,47 +44,6 @@ internal sealed class RecordingTransport : ITransport
                 });
         }
 
-        if (path.EndsWith("/cloud-save/sync", StringComparison.Ordinal)
-            && method.Equals("POST", StringComparison.OrdinalIgnoreCase))
-        {
-            var direction = "download";
-            var urls = new List<CloudSaveSignedUrl>();
-            if (body is CloudSaveSyncRequest req)
-            {
-                direction = req.Direction;
-                if (string.Equals(direction, "upload", StringComparison.OrdinalIgnoreCase))
-                {
-                    foreach (var f in req.Files)
-                    {
-                        urls.Add(new CloudSaveSignedUrl
-                        {
-                            RelativePath = f.RelativePath,
-                            Action = "put",
-                            ContentHash = f.ContentHash,
-                            SizeBytes = f.SizeBytes,
-                            Url =
-                                $"https://cdn.test/cloud-save/content?key={Uri.EscapeDataString(f.RelativePath)}&dir=upload&sig=test"
-                        });
-                    }
-                }
-            }
-
-            return Json.Serialize(
-                new CloudSaveSyncResultWire
-                {
-                    Direction = direction,
-                    ConflictPolicy = "last_write_wins",
-                    Urls = urls
-                });
-        }
-
-        if (path.EndsWith("/cloud-save/manifest", StringComparison.Ordinal)
-            && method.Equals("GET", StringComparison.OrdinalIgnoreCase))
-        {
-            return Json.Serialize(
-                new { app_id = 0, enabled = true, conflict_policy = "last_write_wins", files = Array.Empty<object>() });
-        }
-
         if (path.EndsWith("/achievements/progress", StringComparison.Ordinal))
         {
             return Json.Serialize(

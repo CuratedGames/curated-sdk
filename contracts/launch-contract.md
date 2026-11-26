@@ -363,8 +363,9 @@ All bindings use these exact strings so support logs read the same across engine
 
 ## 6. Other features
 
-Achievements, player stats, Cloud Save, friends, presence, OpenID ID token minting, and in-game
-purchase authorization use the same bearer token and are listed in the OpenAPI file. They all
+Achievements, player stats, friends, presence, OpenID ID token minting, and in-game
+purchase authorization use the same bearer token and are listed in the OpenAPI file. Cloud Save
+is listed there too. The Curated launcher syncs it. A game does not call it. They all
 require an active entitlement for the app on the server side, so a binding that skips the
 entitlement check still cannot unlock achievements, write stats, or authorize a purchase for
 players who do not own the game. A game-scoped token gets `403` on another app's routes.
