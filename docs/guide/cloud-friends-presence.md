@@ -1,9 +1,10 @@
 # Cloud Save, friends, presence
 
-These are part of the C# API (`Curated.Sdk.dll`): .NET, Unity, and Godot C#. Godot GDScript,
-Unreal, and RPG Maker do not wrap them yet. Call the same HTTP paths from the
+Friends and presence are part of the C# API (`Curated.Sdk.dll`): .NET, Unity, and Godot C#.
+Godot GDScript, Unreal, and RPG Maker do not wrap them yet. Call the same HTTP paths from the
 [OpenAPI file](https://github.com/CuratedGames/curated-sdk/blob/main/contracts/openapi/game-sdk.v1.yaml)
-if you need them there.
+if you need friends or presence there. Cloud Save is synced by the Curated launcher. A game
+does not call it.
 
 ## Cloud Save
 
@@ -23,11 +24,6 @@ For each matching file:
 - only in the cloud: the launcher downloads it
 - on neither side: nothing happens
 - on both sides: the newer file is kept
-
-`Cloud.SyncOnLaunchAsync` and `Cloud.SyncOnQuitAsync` still work for a game that
-already calls them. New games should not call them.
-
-<<< @/../Curated.Sdk.Tests/DocsSnippetsTests.cs#cloud-save{csharp}
 
 ## Friends and presence
 

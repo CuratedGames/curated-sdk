@@ -38,8 +38,8 @@ void UMyGameInstance::Init()
 Curated launcher overlay to confirm an order the game server created and reports authorized,
 denied, or error. The boolean argument is ignored. The client does not POST. Outside the
 launcher the result is error.
-`GetOpenIdIdToken` mints an OpenID Connect ID token (never log it). Cloud Save, friends, and presence remain C#-only
-(use `Curated.Sdk` from a managed game layer, or call the same HTTP paths yourself).
+`GetOpenIdIdToken` mints an OpenID Connect ID token (never log it). Friends and presence remain C#-only
+(use `Curated.Sdk` from a managed game layer, or call the same HTTP paths yourself). Cloud Save is synced by the launcher.
 
 ## Game language
 

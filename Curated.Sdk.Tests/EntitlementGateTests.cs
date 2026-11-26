@@ -85,10 +85,6 @@ public class EntitlementGateTests : IDisposable
         var stats = await Assert.ThrowsAsync<CuratedLaunchException>(() => Stats.RefreshAsync());
         Assert.Equal(CuratedLaunchError.NotEntitled, stats.Error);
 
-        var cloud = await Assert.ThrowsAsync<CuratedLaunchException>(() =>
-            Cloud.SyncOnLaunchAsync(System.IO.Path.GetTempPath()));
-        Assert.Equal(CuratedLaunchError.NotEntitled, cloud.Error);
-
         var friends = await Assert.ThrowsAsync<CuratedLaunchException>(() => Friends.GetFriendsAsync());
         Assert.Equal(CuratedLaunchError.NotEntitled, friends.Error);
 

@@ -3,9 +3,10 @@ info:
   title: Curated game SDK API (launch contract v1)
   version: 1.0.0
   description: |
-    The subset of the Curated API that games call at runtime. Every engine binding talks to
-    these operations only. Authenticate with the `CURATED_SESSION_TOKEN` the launcher sets on
-    the game process (see ../launch-contract.md). That token is scoped to the launched app:
+    The subset of the Curated API used while a game is running. Engine bindings call these
+    operations. The Curated launcher calls Cloud Save, and a game does not. Authenticate with
+    the `CURATED_SESSION_TOKEN` the launcher sets on the game process (see ../launch-contract.md).
+    That token is scoped to the launched app:
     it works only on these operations, returns 403 on another app's routes, and 401 on every
     other Curated endpoint. In-game purchase authorization uses this same player session.
     Games never send a publisher key. Fields not listed here may appear in responses; bindings
@@ -289,7 +290,7 @@ paths:
     post:
       operationId: syncCloudSave
       tags: [cloud-save]
-      summary: Plan an upload (quit) or download (launch); returns signed transfer URLs
+      summary: Plan Cloud Save transfers and return signed URLs. The Curated launcher calls this when a game starts and when it exits.
       parameters:
         - $ref: "#/components/parameters/AppId"
       requestBody:

@@ -114,7 +114,6 @@ public class CuratedClientTests : IDisposable
         Assert.Contains("CuratedClient", publicNames);
         Assert.Contains("Achievement", publicNames);
         Assert.Contains("Achievements", publicNames);
-        Assert.Contains("Cloud", publicNames);
         Assert.Contains("Friends", publicNames);
         Assert.Contains("Presence", publicNames);
         Assert.Contains("MicroTxn", publicNames);

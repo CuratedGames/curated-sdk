@@ -102,31 +102,6 @@ public class DocsSnippetsTests : IDisposable
     }
 
     [Fact]
-    public async Task Cloud_save_snippet_runs()
-    {
-        var transport = new RecordingTransport();
-        CuratedClient.InitForTests(AppId, transport);
-        var saveFolder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "curated-docs-" + Guid.NewGuid().ToString("N"));
-        System.IO.Directory.CreateDirectory(System.IO.Path.Combine(saveFolder, "saves"));
-        System.IO.File.WriteAllText(System.IO.Path.Combine(saveFolder, "saves", "slot1.sav"), "save");
-        try
-        {
-            #region cloud-save
-            // Optional. The launcher already syncs on launch and on exit.
-            // Call these only from a game that already uses them.
-            await Cloud.SyncOnLaunchAsync(saveFolder);
-            CloudSyncResult uploaded = await Cloud.SyncOnQuitAsync(saveFolder, "saves/slot1.sav");
-            #endregion cloud-save
-
-            Assert.Contains("saves/slot1.sav", uploaded.TransferredPaths);
-        }
-        finally
-        {
-            System.IO.Directory.Delete(saveFolder, recursive: true);
-        }
-    }
-
-    [Fact]
     public async Task Friends_and_presence_snippet_runs()
     {
         CuratedClient.InitForTests(AppId, new RecordingTransport());

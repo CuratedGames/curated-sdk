@@ -132,7 +132,7 @@ if not result.ok:
 
 `Curated.unlock_achievement("BOSS_1")` and `Curated.check_entitlement()` are also available.
 The addon is inert in exports with the `dedicated_server` feature. Godot C# projects may
-reference `Curated.Sdk.dll` for Cloud Save, friends, presence, and the store overlay.
+reference `Curated.Sdk.dll` for friends, presence, and the store overlay. Cloud Save is synced by the launcher.
 
 ## 4. Unreal Engine 5
 
@@ -149,7 +149,7 @@ Copy `CuratedSDK.js` into `js/plugins/`, add it in the Plugin Manager, and set *
 The title screen waits for the ownership check. Unlock achievements with the
 **Unlock achievement** plugin command or `Curated.unlockAchievement("BOSS_1")`.
 
-## 6. C# features (Achievements, stats, Cloud Save, friends, presence, OpenID, purchases, store overlay)
+## 6. C# features (Achievements, stats, friends, presence, OpenID, purchases, store overlay)
 
 After `InitFromLauncherAsync` (or `CuratedClient.Init` / `InitAsync` when you already have a
 session). Every init path verifies ownership; game-scoped APIs require `CuratedClient.IsEntitled`:
@@ -165,9 +165,6 @@ Stats.SetStat("CardsCreated", 10);   // local (Steam-style)
 await Stats.StoreStatsAsync();       // POST /games/app/{id}/stats/store
 // Or: await Stats.SetStatAsync("CardsCreated", 10);
 // Or: await Stats.IncrementStatAsync("CardsCreated", 1);
-
-// Cloud Save is synced by the Curated launcher. Do not call
-// Cloud.SyncOnLaunchAsync or Cloud.SyncOnQuitAsync in a new game.
 
 foreach (var friend in await Friends.GetFriendsAsync()) { /* friend.Name, friend.IsOnline */ }
 await Presence.SetAsync("in_game", "Level 3");
@@ -199,7 +196,7 @@ CuratedClient.Shutdown(); // on quit
 
 `CuratedSession` exposes `UserId`, `CuratedId` (public 17-digit player id), `Username`, and
 `Entitlement`. Define achievement and stat API names in the admin Achievements and Stats tools.
-Configure Cloud Save path patterns in the Cloud Save tool. The launcher syncs them on launch and on exit and keeps the newer file. The SDK calls are optional.
+Configure Cloud Save path patterns in the Cloud Save tool. The launcher syncs them on launch and on exit and keeps the newer file. A game does not call the SDK.
 
 ### Smoke checklist
 

@@ -6,14 +6,14 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Curated.Sdk</RootNamespace>
     <AssemblyName>Curated.Sdk</AssemblyName>
-    <Description>Curated game client: launcher authentication, entitlement checks, achievements, stats, Cloud Save, friends, presence, in-game purchase authorization, and the store overlay. No third-party dependencies; netstandard2.1 for Unity and Godot.</Description>
+    <Description>Curated game client: launcher authentication, entitlement checks, achievements, stats, friends, presence, in-game purchase authorization, and the store overlay. The launcher syncs Cloud Save. No third-party dependencies; netstandard2.1 for Unity and Godot.</Description>
     <Version>1.10.3</Version>
     <Authors>ABELA Corp</Authors>
     <Company>ABELA Corp</Company>
     <Product>Curated SDK</Product>
     <Copyright>Copyright (c) ABELA Corp. All rights reserved.</Copyright>
     <PackageId>Curated.Sdk</PackageId>
-    <PackageTags>curated;games;achievements;stats;cloud-save;friends;unity</PackageTags>
+    <PackageTags>curated;games;achievements;stats;friends;unity</PackageTags>
     <PackageProjectUrl>https://github.com/CuratedGames/curated-sdk</PackageProjectUrl>
     <RepositoryUrl>https://github.com/CuratedGames/curated-sdk</RepositoryUrl>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>

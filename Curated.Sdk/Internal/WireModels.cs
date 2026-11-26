@@ -106,44 +106,6 @@ internal sealed class AchievementListResult
         Array.Empty<AchievementProgressItem>();
 }
 
-internal sealed class CloudSaveFile
-{
-    public string RelativePath { get; set; } = "";
-
-    public string ContentHash { get; set; } = "";
-
-    public long SizeBytes { get; set; }
-}
-
-internal sealed class CloudSaveSyncRequest
-{
-    public string Direction { get; set; } = "download";
-
-    public IReadOnlyList<CloudSaveFile> Files { get; set; } = Array.Empty<CloudSaveFile>();
-}
-
-internal sealed class CloudSaveSignedUrl
-{
-    public string RelativePath { get; set; } = "";
-
-    public string Action { get; set; } = "";
-
-    public string? Url { get; set; }
-
-    public string ContentHash { get; set; } = "";
-
-    public long SizeBytes { get; set; }
-}
-
-internal sealed class CloudSaveSyncResultWire
-{
-    public string Direction { get; set; } = "";
-
-    public string ConflictPolicy { get; set; } = "last_write_wins";
-
-    public IReadOnlyList<CloudSaveSignedUrl> Urls { get; set; } = Array.Empty<CloudSaveSignedUrl>();
-}
-
 internal sealed class FriendRow
 {
     public Guid UserId { get; set; }

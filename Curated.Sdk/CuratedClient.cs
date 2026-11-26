@@ -1,4 +1,4 @@
-// Entry point: Init once, then use Achievements / Cloud / Friends / MicroTxn / OpenStoreOverlay.
+// Entry point: Init once, then use Achievements / Friends / MicroTxn / OpenStoreOverlay.
 
 using System;
 using System.Collections.Generic;
@@ -221,8 +221,7 @@ public static class CuratedClient
                 throw new InvalidOperationException("CuratedClient.Init was already called");
             }
 
-            var blobs = new HttpBlobTransfer();
-            _state = new ClientState(appId, transport, blobs, ownsTransport: true, ownsBlobs: true);
+            _state = new ClientState(appId, transport, ownsTransport: true);
             return _state;
         }
     }
@@ -324,7 +323,7 @@ public static class CuratedClient
     /// Test hook: inject fakes without opening the network. Marks the client entitled so
     /// game-scoped APIs can run against the fake transport.
     /// </summary>
-    internal static void InitForTests(long appId, ITransport transport, IBlobTransfer? blobs = null)
+    internal static void InitForTests(long appId, ITransport transport)
     {
         if (appId <= 0)
         {
@@ -340,9 +339,7 @@ public static class CuratedClient
             _state = new ClientState(
                 appId,
                 transport,
-                blobs ?? new MemoryBlobTransfer(),
                 ownsTransport: false,
-                ownsBlobs: blobs is null,
                 entitlementVerified: true);
         }
     }
@@ -364,9 +361,7 @@ public static class CuratedClient
             _state = new ClientState(
                 appId,
                 transport,
-                new MemoryBlobTransfer(),
                 ownsTransport: false,
-                ownsBlobs: true,
                 entitlementVerified: false);
         }
     }
@@ -385,7 +380,7 @@ public static class CuratedClient
 
     /// <summary>
     /// Initialized client that passed ownership verification. Game-scoped APIs use this so a
-    /// token-only bootstrap cannot reach achievements, stats, Cloud Save, friends, presence, OpenID, purchases, or the store overlay.
+    /// token-only bootstrap cannot reach achievements, stats, friends, presence, OpenID, purchases, or the store overlay.
     /// </summary>
     internal static ClientState GameState
     {
@@ -419,41 +414,29 @@ public static class CuratedClient
         public ClientState(
             long appId,
             ITransport transport,
-            IBlobTransfer blobs,
             bool ownsTransport,
-            bool ownsBlobs,
             bool entitlementVerified = false)
         {
             AppId = appId;
             Transport = transport;
-            Blobs = blobs;
             EntitlementVerified = entitlementVerified;
             _ownsTransport = ownsTransport;
-            _ownsBlobs = ownsBlobs;
         }
 
         public long AppId { get; }
 
         public ITransport Transport { get; }
 
-        public IBlobTransfer Blobs { get; }
-
         /// <summary>True after a successful ownership check during init (or test init).</summary>
         public bool EntitlementVerified { get; set; }
 
         private readonly bool _ownsTransport;
-        private readonly bool _ownsBlobs;
 
         public void Dispose()
         {
-            if (_ownsTransport && Transport is IDisposable d1)
+            if (_ownsTransport && Transport is IDisposable disposable)
             {
-                d1.Dispose();
-            }
-
-            if (_ownsBlobs && Blobs is IDisposable d2)
-            {
-                d2.Dispose();
+                disposable.Dispose();
             }
         }
     }
