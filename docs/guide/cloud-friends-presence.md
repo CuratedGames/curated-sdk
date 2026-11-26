@@ -8,7 +8,24 @@ if you need them there.
 ## Cloud Save
 
 Turn Cloud Save on and list the save paths in the admin first, under
-[Game Build > Cloud Save](/admin/game-build/cloud-save). Conflicts use last write wins.
+[Game Build > Cloud Save](/admin/game-build/cloud-save). The Curated launcher scans
+those paths and syncs them when the player starts the game and when the game exits.
+That includes a crash, and a game that never calls the SDK. Writing the save files
+to disk is enough.
+
+A pattern is relative to the install folder (`saves/**/*.sav`) or starts with a known
+user folder (`%AppData%/Game/*`, `%Documents%`, `%SavedGames%`). `%AppData%` is the
+player's AppData folder, not a directory with that name.
+
+For each matching file:
+
+- only on disk: the launcher uploads it
+- only in the cloud: the launcher downloads it
+- on neither side: nothing happens
+- on both sides: the newer file is kept
+
+`Cloud.SyncOnLaunchAsync` and `Cloud.SyncOnQuitAsync` still work for a game that
+already calls them. New games should not call them.
 
 <<< @/../Curated.Sdk.Tests/DocsSnippetsTests.cs#cloud-save{csharp}
 

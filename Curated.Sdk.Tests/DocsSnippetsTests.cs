@@ -112,10 +112,9 @@ public class DocsSnippetsTests : IDisposable
         try
         {
             #region cloud-save
-            // On launch: download newer Cloud Save files into the local save folder.
+            // Optional. The launcher already syncs on launch and on exit.
+            // Call these only from a game that already uses them.
             await Cloud.SyncOnLaunchAsync(saveFolder);
-
-            // On quit: upload the files that changed, relative to the same folder.
             CloudSyncResult uploaded = await Cloud.SyncOnQuitAsync(saveFolder, "saves/slot1.sav");
             #endregion cloud-save
 

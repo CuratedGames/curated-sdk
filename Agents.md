@@ -166,8 +166,8 @@ await Stats.StoreStatsAsync();       // POST /games/app/{id}/stats/store
 // Or: await Stats.SetStatAsync("CardsCreated", 10);
 // Or: await Stats.IncrementStatAsync("CardsCreated", 1);
 
-await Cloud.SyncOnLaunchAsync(saveFolder);
-await Cloud.SyncOnQuitAsync(saveFolder, "saves/slot1.sav");
+// Cloud Save is synced by the Curated launcher. Do not call
+// Cloud.SyncOnLaunchAsync or Cloud.SyncOnQuitAsync in a new game.
 
 foreach (var friend in await Friends.GetFriendsAsync()) { /* friend.Name, friend.IsOnline */ }
 await Presence.SetAsync("in_game", "Level 3");
@@ -199,7 +199,7 @@ CuratedClient.Shutdown(); // on quit
 
 `CuratedSession` exposes `UserId`, `CuratedId` (public 17-digit player id), `Username`, and
 `Entitlement`. Define achievement and stat API names in the admin Achievements and Stats tools.
-Configure Cloud Save path patterns in the Cloud Save tool before players sync (last write wins).
+Configure Cloud Save path patterns in the Cloud Save tool. The launcher syncs them on launch and on exit and keeps the newer file. The SDK calls are optional.
 
 ### Smoke checklist
 

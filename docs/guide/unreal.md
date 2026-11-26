@@ -56,7 +56,7 @@ void UMyGameInstance::Init()
 - `GetOpenIdIdToken` for [OpenID Connect](./openid).
 - `GetCurrentGameLanguage` (static) for the [game language](./game-language).
 
-Cloud Save, friends, and presence are C# only. See
+Cloud Save is synced by the launcher. Friends and presence are C# only. See
 [Cloud Save, friends, presence](./cloud-friends-presence).
 
 ## Reference

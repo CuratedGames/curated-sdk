@@ -1,7 +1,7 @@
 # Godot 4
 
 GDScript addon. It works in GDScript and C# projects. C# projects can also reference
-`Curated.Sdk.dll` for Cloud Save, friends, and presence.
+`Curated.Sdk.dll` for friends and presence. Cloud Save is synced by the launcher.
 
 ## Install
 
@@ -42,7 +42,7 @@ func _on_boss_defeated() -> void:
 - `get_openid_id_token()` for [OpenID Connect](./openid).
 - `get_current_game_language()` for the [game language](./game-language).
 
-Cloud Save, friends, and presence are C# only (`Curated.Sdk.dll`). The store overlay on that
+Cloud Save is synced by the launcher. Friends and presence are C# only (`Curated.Sdk.dll`). The store overlay on that
 API is `CuratedClient.OpenStoreOverlay`. See
 [Cloud Save, friends, presence](./cloud-friends-presence) and
 [Store overlay](./dotnet#store-overlay).
